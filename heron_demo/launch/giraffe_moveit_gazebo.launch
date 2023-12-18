@@ -59,7 +59,6 @@
     <rosparam file="$(find franka_gazebo)/config/sim_controllers.yaml" subst_value="true" />
     <param name="m_ee" value="0.76" if="$(arg use_gripper)" />
 
-
     <node pkg="controller_manager"
           type="spawner"
           name="$(arg arm_id)_gripper_spawner"
@@ -71,7 +70,7 @@
           type="spawner"
           name="$(arg arm_id)_controller_spawner"
           respawn="false" output="screen"
-          args="--wait-for initialized franka_state_controller effort_joint_trajectory_controller" />
+          args="--wait-for initialized franka_state_controller effort_joint_trajectory_controller"/>
 
   </group>
 

@@ -2,7 +2,7 @@
 <package format="2">
   <name>heron_demo</name>
   <version>0.0.0</version>
-  <description>Temp package for the heron 4.4 deliverable package</description>
+  <description>High level planner for the Heron project</description>
 
   <maintainer email="harrisl@ethz.ch">Lucy Harris</maintainer>
 

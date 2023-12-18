@@ -19,7 +19,7 @@
   <arg name="scan_topic" default="/front/scan" />
 
   <!-- MoveIt! -->
-  <include file="$(find heron_demo)/launch/giraffe_moveit_gazebo.launch">
+  <include file="$(find moma_gazebo)/launch/giraffe_moveit_gazebo.launch">
     <arg name="rviz"    value="false"/>
     <arg name="headless" value="$(arg headless)" />
     <arg name="world"   value="$(find heron_demo)/worlds/cones.world"/>
