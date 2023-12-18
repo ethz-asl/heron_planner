@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- GDB Debug Option -->
+  <arg name="debug" default="false" />
+  <arg unless="$(arg debug)" name="launch_prefix" value="" />
+  <arg if="$(arg debug)" name="launch_prefix"
+           value="gdb -x $(dirname)/gdb_settings.gdb --ex run --args" />
+
+  <!-- Verbose Mode Option -->
+  <arg name="info" default="$(arg debug)" />
+  <arg unless="$(arg info)" name="command_args" value="" />
+  <arg     if="$(arg info)" name="command_args" value="--debug" />
+
+  <arg name="rviz" default="true"/>
+  <arg name="headless" default="false"/>
+  <arg name="initial_pose_x" default="0" />
+  <arg name="initial_pose_y" default="0" />
+  <arg name="initial_pose_yaw" default="0" />
+  <arg name="scan_topic" default="/front/scan" />
+
+  <!-- MoveIt! -->
+  <include file="$(find heron_demo)/launch/giraffe_moveit_gazebo.launch">
+    <arg name="rviz"    value="false"/>
+    <arg name="headless" value="$(arg headless)" />
+    <arg name="world"   value="$(find heron_demo)/worlds/cones.world"/>
+    <arg name="mobile_base_x" value="$(arg initial_pose_x)"/>
+    <arg name="mobile_base_y" value="$(arg initial_pose_y)"/>
+    <arg name="mobile_base_yaw" value="$(arg initial_pose_yaw)"/>
+  </include>
+
+  <!-- Move base -->
+  <group ns="mobile_base">
+    <!-- Remap topics -->
+    <remap from="/mobile_base/front/scan" to="$(arg scan_topic)"/>
+    <!-- <remap from="/cmd_vel" to="/mobile_base/swerve_controller/cmd_vel"/> -->
+    <!-- <remap from="/odom" to="/mobile_base/swerve_controller/odom"/> -->
+
+    <!-- Run Move Base and load cost map and planner -->
+    <!-- Remaps for move_base -->
+    <remap from="/mobile_base/cmd_vel" to="/mobile_base/swerve_controller/cmd_vel"/>
+    <remap from="/mobile_base/odom" to="/mobile_base/swerve_controller/odom"/>
+    <include file="$(find gmp_nav)/launch/move_base.launch"/>
+  </group>
+
+  <!-- View the robot and set Nav goal in RViz -->
+  <node if="$(arg rviz)" name="$(anon rviz)" pkg="rviz" type="rviz" 
+    respawn="false" args="-d $(find heron_demo)/config/giraffe.rviz" output="screen">
+    <remap from="/move_base_simple/goal" to="/mobile_base/move_base_simple/goal"/>
+  </node>
+
+</launch>

@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>heron_demo</name>
+  <version>0.0.0</version>
+  <description>Temp package for the heron 4.4 deliverable package</description>
+
+  <maintainer email="harrisl@ethz.ch">Lucy Harris</maintainer>
+
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>std_msgs</depend>
+  <depend>actionlib</depend>
+  <depend>actionlib_msgs</depend>
+  <depend>roscpp</depend>
+  <depend>geometry_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>vpp_msgs</depend>
+
+  <depend>grasp_demo</depend>
+  <depend>nav_demo</depend>
+  <depend>moma_utils</depend>
+  <depend>yumi_controllers</depend>
+  <depend>map_server</depend>
+  <depend>state_machine_tutorial</depend>
+
+  <export>
+  </export>
+</package>
