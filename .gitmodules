@@ -1,0 +1,8 @@
+[submodule "submodules/vgn"]
+	path = submodules/vgn
+	url = git@github.com:ethz-asl/vgn.git
+	branch = devel
+
+[submodule "submodules/-b"]
+	path = submodules/-b
+	url = git@github.com:ethz-asl/vgn.git

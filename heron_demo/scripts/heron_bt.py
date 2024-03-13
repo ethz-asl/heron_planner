@@ -30,7 +30,7 @@ class HeronBT:
     def __init__(self):
         """Initialize ROS nodes."""
         print("Initialising the HeronBT node")
-        cone_ID = 0_2
+        cone_ID = 0 #2
         # Parameters
         cone_pickup_target = rospy.get_param("heron_demo/cone_pickup")
         place_target = rospy.get_param("heron_demo/defect_zone")

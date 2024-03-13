@@ -17,16 +17,22 @@
   <arg name="initial_pose_y" default="0" />
   <arg name="initial_pose_yaw" default="0" />
   <arg name="scan_topic" default="/front/scan" />
+  <arg name="world_name" default="$(find heron_demo)/worlds/road.world"/>
+
+  <!-- Load parameters -->
+  <rosparam command="load" file="$(find heron_demo)/config/heron_demo.yaml" subst_value="true"/>
 
   <!-- Teleops -->
   <arg name="joystick" default="true" />
   <arg name="keyboard" default="false" />
 
+  <!-- LAUNCH ACTIONSHERE -->
+
   <!-- MoveIt! -->
   <include file="$(find moma_gazebo)/launch/giraffe_moveit_gazebo.launch">
     <arg name="rviz"    value="false"/>
     <arg name="headless" value="$(arg headless)" />
-    <arg name="world"   value="$(find heron_demo)/worlds/cones.world"/>
+    <arg name="world"   value="$(arg world_name)"/>
     <arg name="mobile_base_x" value="$(arg initial_pose_x)"/>
     <arg name="mobile_base_y" value="$(arg initial_pose_y)"/>
     <arg name="mobile_base_yaw" value="$(arg initial_pose_yaw)"/>
