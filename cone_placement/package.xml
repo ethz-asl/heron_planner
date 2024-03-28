@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>cone_placement</name>
+  <version>0.0.0</version>
+  <description>BT for cone placement mission</description>
+
+  <maintainer email="harrisl@ethz.ch">Lucy Harris</maintainer>
+  <license>GNU GPL</license>
+
+  <author>Lucy Harris</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>rospy</depend>
+  <depend>std_msgs</depend>
+  <depend>actionlib</depend>
+  <depend>actionlib_msgs</depend>
+  <depend>roscpp</depend>
+  <depend>geometry_msgs</depend>
+  <depend>sensor_msgs</depend>
+
+</package>

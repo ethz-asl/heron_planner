@@ -20,7 +20,7 @@
   <arg name="world_name" default="$(find heron_demo)/worlds/road.world"/>
 
   <!-- Load parameters -->
-  <rosparam command="load" file="$(find heron_demo)/config/heron_demo.yaml" subst_value="true"/>
+  <!-- <rosparam command="load" file="$(find heron_demo)/config/heron_demo.yaml" subst_value="true"/> -->
 
   <!-- Teleops -->
   <arg name="joystick" default="true" />
@@ -47,6 +47,19 @@
     <!-- Remaps for move_base -->
     <remap from="/mobile_base/cmd_vel" to="/mobile_base/swerve_controller/cmd_vel"/>
     <remap from="/mobile_base/odom" to="/mobile_base/swerve_controller/odom"/>
+
+    <!-- Launch map server-->
+    <!-- <arg name="map_file" default="$(find something)")/> -->
+    <!-- <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)")/> -->
+
+    <!-- Run AMCL - NEEDS MAP FIRST TODO-->
+    <!-- <include file="$(find ridgeback_navigation)/launch/include/amcl.launch" > -->
+      <!-- <arg name="scan_topic"     value="$(arg scan_topic)" /> -->
+      <!-- <arg name="initial_pose_x" value="$(arg initial_pose_x)" /> -->
+      <!-- <arg name="initial_pose_y" value="$(arg initial_pose_y)" /> -->
+      <!-- <arg name="initial_pose_a" value="$(arg initial_pose_yaw)" /> -->
+    <!-- </include> -->
+
 
     <!-- Launch the move_base pkg -->
     <include file="$(find gmp_nav)/launch/move_base.launch"/>

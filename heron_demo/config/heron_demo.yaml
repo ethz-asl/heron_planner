@@ -39,7 +39,7 @@ heron_demo:
   visualization_only: False
 
 vgn:
-  model: $(find vgn)/assets/models/vgn_conv.pth
+  # model: $(find vgn)/assets/models/vgn_conv.pth
 
 tsdf_server:
   frame_id: task
