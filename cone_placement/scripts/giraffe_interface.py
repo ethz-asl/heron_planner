@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from __future__ import annotations # for type hinting
+
 import rospy
 import actionlib
 import numpy as np
@@ -9,18 +11,19 @@ from scipy.spatial.transform import Rotation
 from geometry_msgs.msg import Pose, PoseWithCovarianceStamped, Twist
 from nav_msgs.msg import Odometry
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
+# from move_action.msg import MoveAction, MoveGoal, MoveFeedback
 from actionlib_msgs.msg import GoalStatus
 
 from base_robot_interface import MoveBase, Move
 import utils
 
-
-class GiraffeMoveBase(MoveBase):
+class GiraffeMoveBaseClient(MoveBase):
     def __init__(self) -> None:
+        node_name_ = rospy.get_param("~move_base_node", "/mobile_base/move_base")
         self.move_base_client = actionlib.SimpleActionClient(
-            "/mobile_base/move_base", MoveBaseAction
+            node_name_, MoveBaseAction
         )
-        rospy.loginfo("Connecting to /mobile_base/move_base...")
+        rospy.loginfo(f"Connecting to {node_name_}...")
         self.move_base_client.wait_for_server(rospy.Duration(5.0))
 
     def init_move_base(
@@ -52,7 +55,6 @@ class GiraffeMoveBase(MoveBase):
 
 
 # TODO make Move into action (?)
-# need to calc difference between current pose and goal pose, and create twist cmd.
 class GiraffeMove(Move):
     def __init__(
         self,
@@ -64,6 +66,7 @@ class GiraffeMove(Move):
         max_ang_vel: float = 0.2,
     ) -> None:
         super().__init__(goal_pose)
+        print(f"Goal pose {goal_pose}")
         self.twist_pub = rospy.Publisher(
             "/mobile_base/swerve_controller/cmd_vel", Twist, queue_size=10
         )
@@ -72,7 +75,7 @@ class GiraffeMove(Move):
     def odom_cb(self, msg: Odometry) -> None:
         self.current_pose = msg.pose.pose
 
-    def init_move(self) -> None:
+    def init_move(self) -> bool:
         """
         check if within goal tolerance, then move based on distance
         first x, then y, then turn in yaw
@@ -82,23 +85,26 @@ class GiraffeMove(Move):
         goal_x = self.goal_pose.position.x
         goal_y = self.goal_pose.position.y
 
-        at_goal = False
-
         self._move_x()
         self._move_y()
         self._turn_yaw()
 
-        disp_xy, disp_th = self.displacement_from_pose(self.goal_pose)
+        # disp_xy, disp_th = self.displacement_from_pose(self.goal_pose)
         curr_x = self.current_pose.position.x
         curr_y = self.current_pose.position.y
         goal_x = self.goal_pose.position.x
         goal_y = self.goal_pose.position.y
 
         rospy.logerr(
-            f"cur [{curr_x:.2f},{curr_y:.2f}] [m,m] goal [{goal_x},{goal_y}][m,m]"
+            f"cur ({curr_x:.2f},{curr_y:.2f}) [m,m] goal ({goal_x},{goal_y})[m,m]"
         )
-        self.displacement_from_pose(self.goal_pose)
 
+        if self.at_goal_x() and self.at_goal_y() and self.at_goal_yaw():
+            rospy.logwarn("Success")
+            return True
+        else:
+            rospy.logwarn("Failure")
+            return False
 
     def compute_twist_x(self) -> Twist:
         twist_msg = Twist()
@@ -138,7 +144,7 @@ class GiraffeMove(Move):
         current_quat = utils.array_from_pose(self.current_pose)[3:]
         current_yaw = utils.angle_from_quaternion(current_quat)
 
-        rospy.logwarn(f"[current, goal] {current_yaw:.2f}, {goal_yaw:.2f}[rad,rad]")
+        rospy.logwarn(f"[current, goal] ({current_yaw:.2f}, {goal_yaw:.2f})[rad,rad]")
         delta_yaw = goal_yaw - current_yaw
         delta_yaw = utils.wrap_angle(delta_yaw)
         rospy.logwarn(f"distance from goal {delta_yaw:.2f}[rad]")
@@ -165,7 +171,7 @@ class GiraffeMove(Move):
         goal_x = self.goal_pose.position.x
         current_x = self.current_pose.position.x
 
-        rospy.logwarn(f"X[current, goal] {current_x:.2f}, {goal_x:.2f}[m,m]")
+        rospy.logwarn(f"X[current, goal] ({current_x:.2f}, {goal_x:.2f}) [m,m]")
 
         return abs(goal_x - current_x) < self.tol_lin
 
@@ -173,7 +179,7 @@ class GiraffeMove(Move):
         goal_y = self.goal_pose.position.y
         current_y = self.current_pose.position.y
 
-        rospy.logwarn(f"Y[current, goal] {current_y:.2f}, {goal_y:.2f}[m,m]")
+        rospy.logwarn(f"Y[current, goal] ({current_y:.2f}, {goal_y:.2f}) [m,m]")
         
         return abs(goal_y - current_y) < self.tol_lin
 
@@ -186,13 +192,13 @@ class GiraffeMove(Move):
         current_yaw = utils.angle_from_quaternion(current_quat)
         current_yaw = utils.wrap_angle(current_yaw)
 
-        rospy.logwarn(f"Yaw[current, goal] {current_yaw:.2f}, {goal_yaw:.2f}[rad,rad]")
+        rospy.logwarn(f"Yaw[current, goal] ({current_yaw:.2f}, {goal_yaw:.2f}) [rad,rad]")
 
         return abs(goal_yaw - current_yaw) < self.tol_ang
 
     def displacement_from_pose(
-        self, target_pose: np.array or Pose
-    ) -> (np.array, np.array):
+        self, target_pose: np.array | Pose
+    ) -> tuple[np.array, np.array]:
         """Get distance between target and current pose [m, deg]"""
         if type(target_pose) == Pose:
             target_pose = utils.array_from_pose(target_pose)
@@ -250,11 +256,11 @@ class GiraffeMove(Move):
 
 def main():
     rospy.init_node("move_base_action")
-    move_base_client = GiraffeMoveBase()
+    move_base_client = GiraffeMoveBaseClient()
 
     goal_pose = Pose()
-    goal_pose.position.x = -2.0
-    goal_pose.position.y = 1.0
+    goal_pose.position.x = 2.0
+    goal_pose.position.y = -1.0
     goal_pose.orientation.w = 1.0
 
     rospy.loginfo("Sending goal to robot")

@@ -17,7 +17,8 @@
   <arg name="initial_pose_y" default="0" />
   <arg name="initial_pose_yaw" default="0" />
   <arg name="scan_topic" default="/front/scan" />
-  <arg name="world_name" default="$(find heron_demo)/worlds/road.world"/>
+  <!-- <arg name="world_name" default="$(find heron_demo)/worlds/road.world"/> -->
+  <arg name="world_name" default="$(find gmp_robot)/worlds/cone.world"/>
 
   <!-- Load parameters -->
   <!-- <rosparam command="load" file="$(find heron_demo)/config/heron_demo.yaml" subst_value="true"/> -->
@@ -46,7 +47,7 @@
     <!-- Run Move Base and load cost map and planner -->
     <!-- Remaps for move_base -->
     <remap from="/mobile_base/cmd_vel" to="/mobile_base/swerve_controller/cmd_vel"/>
-    <remap from="/mobile_base/odom" to="/mobile_base/swerve_controller/odom"/>
+    <!-- <remap from="/mobile_base/odom" to="/mobile_base/swerve_controller/odom"/> -->
 
     <!-- Launch map server-->
     <!-- <arg name="map_file" default="$(find something)")/> -->

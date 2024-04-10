@@ -89,7 +89,11 @@
           <max_contacts>10</max_contacts>
           <surface>
             <contact>
-              <ode/>
+              <ode>
+                <kp>1e15</kp>
+                <kd>1e13</kd>
+              </ode>
+              <collide_bitmask>65535</collide_bitmask>
             </contact>
             <bounce/>
             <friction>
