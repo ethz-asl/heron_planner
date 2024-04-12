@@ -30,8 +30,11 @@
           </geometry>
           <surface>
             <contact>
+              <ode>
+                <kp>1e15</kp>
+                <kd>1e13</kd>
+              </ode>
               <collide_bitmask>65535</collide_bitmask>
-              <ode/>
             </contact>
             <friction>
               <ode>

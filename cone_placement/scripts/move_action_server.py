@@ -4,7 +4,7 @@ import rospy
 import actionlib
 from heron_msgs.msg import MoveAction, MoveGoal, MoveFeedback
 
-from geometry_msgs.msg import Pose
+from geometry_msgs.msg import Pose, PoseStamped
 from actionlib_msgs.msg import GoalStatus
 
 from giraffe_interface import GiraffeMoveBaseClient, GiraffeMove
@@ -28,10 +28,11 @@ class MoveServer(object):
         rospy.loginfo("Starting move action server")
         self._server.start()
 
-    def execute_cb(self, goal) -> None:
+    def execute_cb(self, goal: PoseStamped) -> None:
 
         rospy.loginfo(f"Recieved goal {goal.target_pose.pose}")
 
+        goal_pose = Pose()
         goal_pose = goal.target_pose.pose
         move = None
 
@@ -48,7 +49,8 @@ class MoveServer(object):
         else:
             self._server.set_aborted()
 
-        self._feedback.base_position = move.current_pose
+        #TODO feedback only publishes once
+        self._feedback.base_position.pose = move.current_pose
         self._server.publish_feedback(self._feedback)
         
 def main():

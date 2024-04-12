@@ -17,8 +17,7 @@
   <arg name="initial_pose_y" default="0" />
   <arg name="initial_pose_yaw" default="0" />
   <arg name="scan_topic" default="/front/scan" />
-  <!-- <arg name="world_name" default="$(find heron_demo)/worlds/road.world"/> -->
-  <arg name="world_name" default="$(find gmp_robot)/worlds/cone.world"/>
+  <arg name="world_name" default="$(find heron_demo)/worlds/road.world"/>
 
   <!-- Load parameters -->
   <!-- <rosparam command="load" file="$(find heron_demo)/config/heron_demo.yaml" subst_value="true"/> -->

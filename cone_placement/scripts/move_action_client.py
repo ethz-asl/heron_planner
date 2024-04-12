@@ -30,13 +30,16 @@ class MoveClient():
         Move the robot to a target pose.
         """
         goal = MoveGoal()
+        print(f"frame_id: {goal.target_pose.header.frame_id}")
+        print(f"time: {goal.target_pose.header.stamp}")
+        print(f"pose: {goal.target_pose.pose}")
 
         goal.target_pose.header.frame_id = ref_frame
         goal.target_pose.header.stamp = rospy.Time.now()
         goal.target_pose.pose = goal_pose
 
         # send the goal
-        rospy.loginfo("Sending the move goal")
+        rospy.loginfo(f"Sending the move goal type")
         self.move_client.send_goal(goal)
 
     def get_move_status(self) -> int:

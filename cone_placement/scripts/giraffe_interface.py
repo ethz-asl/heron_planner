@@ -70,7 +70,7 @@ class GiraffeMove(Move):
         self.twist_pub = rospy.Publisher(
             "/mobile_base/swerve_controller/cmd_vel", Twist, queue_size=10
         )
-        self.odom_sub = rospy.Subscriber("/mobile_base/swerve_controller/odom", Odometry, self.odom_cb)
+        self.odom_sub = rospy.Subscriber("/odom", Odometry, self.odom_cb)
 
     def odom_cb(self, msg: Odometry) -> None:
         self.current_pose = msg.pose.pose
