@@ -17,42 +17,6 @@ from actionlib_msgs.msg import GoalStatus
 from base_robot_interface import MoveBase, Move
 import utils
 
-class GiraffeMoveBaseClient(MoveBase):
-    def __init__(self) -> None:
-        node_name_ = rospy.get_param("~move_base_node", "/mobile_base/move_base")
-        self.move_base_client = actionlib.SimpleActionClient(
-            node_name_, MoveBaseAction
-        )
-        rospy.loginfo(f"Connecting to {node_name_}...")
-        self.move_base_client.wait_for_server(rospy.Duration(5.0))
-
-    def init_move_base(
-        self,
-        goal_pose: Pose,
-        ref_frame: str = "map",
-    ) -> None:
-        """
-        Move the robot to a target pose.
-        """
-        goal_ = MoveBaseGoal()
-        goal_.target_pose.header.frame_id = ref_frame
-        goal_.target_pose.header.stamp = rospy.Time.now()
-        goal_.target_pose.pose = goal_pose
-
-        # send the goal
-        self.move_base_client.send_goal(goal_)
-
-    def get_move_base_status(self) -> int:
-        """
-        get move_base status
-        https://docs.ros.org/en/fuerte/api/actionlib_msgs/html/msg/GoalStatus.html
-        """
-        if self.move_base_client.get_state() == GoalStatus.SUCCEEDED:
-            rospy.logwarn("Proceeding to move command")
-            return GoalStatus.SUCCEEDED
-        else:
-            return self.move_base_client.get_state()
-
 
 # TODO make Move into action (?)
 class GiraffeMove(Move):

@@ -19,5 +19,7 @@
   <depend>geometry_msgs</depend>
   <depend>sensor_msgs</depend>
   <depend>message_generation</depend>
+  <depend>rostest</depend>
+  <depend>py_trees</depend>
 
 </package>

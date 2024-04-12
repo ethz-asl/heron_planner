@@ -24,6 +24,7 @@ catkin_simple(ALL_DEPS_REQUIRED)
 # )
 # target_link_libraries(move_base_action ${catkin_LIBRARIES})
 
+add_rostest(test/test_move.test)
 
 ##########
 # EXPORT #

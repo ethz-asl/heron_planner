@@ -14,27 +14,6 @@ from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from actionlib_msgs.msg import GoalStatus
 
 
-class MoveBase(ABC):
-    def __init__(self) -> None:
-        pass
-
-    @abstractmethod
-    def init_move_base(
-        self,
-        goal_pose: Pose,
-        ref_frame: str = "map",
-    ) -> None:
-        """Move the robot to a target pose."""
-        pass
-
-    @abstractmethod
-    def get_move_base_status(self) -> int:
-        """
-        get move_base status
-        https://docs.ros.org/en/fuerte/api/actionlib_msgs/html/msg/GoalStatus.html
-        """
-        pass
-
 
 class Move(ABC):
     def __init__(
