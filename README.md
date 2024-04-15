@@ -31,24 +31,7 @@ If using the **giraffe** configuration (this is the base [GMP](https://github.co
 ```bash
 git clone --recurse-submodules git@github.com:ethz-asl/robolab_gmp.git
 ```
-
-Checkout the `heron` branch on the `robolab_gmp` repo.
-
-```bash
-cd ~/heron_ws/src/robolab_gmp
-git checkout heron
-```
-
-**Currently hack required** to ignore `swerve_steering_controller` package. For the simulation using a fork of [`ros-controllers`](https://github.com/gurbain/ros_controllers/tree/swerve-drive). 
-```
-cd ~/heron_ws/src/robolab_gmp/src/swerve_steering_controller
-touch CATKIN_IGNORE
-```
-Also to ignore the `giraffe_moveit_config` package, since this is repeated in `moma`.
-```
-cd ~/heron_ws/src/robolab_gmp/src/giraffe_moveit_config
-touch CATKIN_IGNORE
-```
+> **note** the `robolab_gmp` repo is a whole catkin workspace and requires later refactor. 
 
 #### Building with Catkin
 Go to the project folder.
@@ -68,7 +51,7 @@ Then build **all project packages**.
 catkin build
 ```
 
-> Note, some of the packages in `robolab_gmp` produce some warnings, that can be ignored.
+> **note** some of the packages in `robolab_gmp` produce some warnings, that can be ignored.
 
 Then source the workspace!
 ```bash
