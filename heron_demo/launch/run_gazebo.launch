@@ -18,6 +18,10 @@
   <arg name="initial_pose_yaw" default="0" />
   <arg name="scan_topic" default="/front/scan" />
 
+  <!-- Teleops -->
+  <arg name="joystick" default="true" />
+  <arg name="keyboard" default="false" />
+
   <!-- MoveIt! -->
   <include file="$(find moma_gazebo)/launch/giraffe_moveit_gazebo.launch">
     <arg name="rviz"    value="false"/>
@@ -32,14 +36,38 @@
   <group ns="mobile_base">
     <!-- Remap topics -->
     <remap from="/mobile_base/front/scan" to="$(arg scan_topic)"/>
-    <!-- <remap from="/cmd_vel" to="/mobile_base/swerve_controller/cmd_vel"/> -->
-    <!-- <remap from="/odom" to="/mobile_base/swerve_controller/odom"/> -->
 
     <!-- Run Move Base and load cost map and planner -->
     <!-- Remaps for move_base -->
     <remap from="/mobile_base/cmd_vel" to="/mobile_base/swerve_controller/cmd_vel"/>
     <remap from="/mobile_base/odom" to="/mobile_base/swerve_controller/odom"/>
+
+    <!-- Launch the move_base pkg -->
     <include file="$(find gmp_nav)/launch/move_base.launch"/>
+
+    <!-- Interactive marker in RViz  -->
+    <node pkg="interactive_marker_twist_server" 
+      type="marker_server" name="twist_marker_server" output="screen">
+      <rosparam command="load" file="$(find interactive_marker_twist_server)/config/planar.yaml"/>
+      <param name="link_name" value="base_footprint" />
+      <param name="link_offset/z" value="0.25" />
+      <param name="marker_size_scale" value="0.8" />
+    </node>
+
+    <!-- Launch the teleoperation node -->
+    <include file="$(find gmp_bringup)/launch/teleop.launch">
+      <arg name="joystick" default="$(arg joystick)" />
+      <arg name="keyboard" default="$(arg keyboard)" />
+      <arg name="simulation" default="true" />
+      <arg name="multiple_robots" default="true" />
+    </include>
+
+    <!--Launch the twist publisher muliplexer -->
+    <node pkg="twist_mux" type="twist_mux" name="twist_mux">
+      <rosparam command="load" file="$(find gmp_bringup)/config/twist_mux.yaml" />
+      <remap from="cmd_vel_out" to="swerve_controller/cmd_vel"/>
+    </node>
+        
   </group>
 
   <!-- View the robot and set Nav goal in RViz -->
