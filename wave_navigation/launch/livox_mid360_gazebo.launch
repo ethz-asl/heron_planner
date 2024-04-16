@@ -1,0 +1,10 @@
+<launch>
+  <!-- Wavemap params -->
+  <arg name="param_file"
+       default="$(find wave_navigation)/config/wavemap_livox_mid360_gazebo.yaml"
+       doc="Name of the file from which to read wavemap's server params."/>
+
+  <!-- Run wavemap -->
+  <include file="$(find wavemap_ros)/launch/wavemap_server.launch"
+           pass_all_args="true"/>
+</launch>

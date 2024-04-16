@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>wave_navigation</name>
+  <version>0.0.0</version>
+  <description>Navigation system based on wavemap</description>
+
+  <maintainer email="lioott@ethz.ch">Lionel Ott</maintainer>
+
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>wavemap_ros</depend>
+
+  <export/>
+</package>
