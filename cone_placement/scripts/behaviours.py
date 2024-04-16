@@ -6,31 +6,27 @@ from typing import List, Any
 
 from geometry_msgs.msg import Pose, PoseStamped
 
-import giraffe_interface 
+import giraffe_interface
 from move_action_client import MoveClient
 from move_base_action_client import MoveBaseClient
 
 # TODO implement import heron_interface
 
+
 class MoveBase(pt.behaviour.Behaviour):
     """
     send goal to move_base action
     """
-    def __init__(
-            self,
-            name: str,
-            goal_pose: Pose,
-            ref_frame: str = "map"     
-    ):
+
+    def __init__(self, name: str, goal_pose: Pose, ref_frame: str = "map"):
         super().__init__(name)
         self._client = MoveBaseClient()
-        self._goal_pose  
         self._goal_pose = goal_pose
-        self._ref_frame = ref_frame  
+        self._ref_frame = ref_frame
 
     def initialise(self):
-        self._client.init_move(self._goal_pose, self._ref_frame)
-    
+        self._client.init_move_base(self._goal_pose, self._ref_frame)
+
     def update(self) -> pt.common.Status:
         status = self._client.get_move_base_status()
         if status == 0 or status == 1:
@@ -39,10 +35,11 @@ class MoveBase(pt.behaviour.Behaviour):
             return pt.common.Status.SUCCESS
         else:
             return pt.common.Status.FAILURE
-    
+
     def terminate(self, new_status: pt.common.Status):
         if new_status == pt.common.Status.INVALID:
             self._client.cancel_goal()
+
 
 class Move(pt.behaviour.Behaviour):
     """
@@ -51,29 +48,26 @@ class Move(pt.behaviour.Behaviour):
     2. linear y
     3. angular z (yaw)
     """
-    def __init__(
-            self,
-            name: str,
-            goal_pose: Pose,
-            ref_frame: str = "map"
-    ):
+
+    def __init__(self, name: str, goal_pose: Pose, ref_frame: str = "map"):
         super().__init__(name)
         self._client = MoveClient()
         self._goal_pose = goal_pose
-        self._ref_frame = ref_frame  
+        self._ref_frame = ref_frame
 
     def initialise(self):
         self._client.init_move(self._goal_pose, self._ref_frame)
-    
+
     def update(self) -> pt.common.Status:
         status = self._client.get_move_status()
+        rospy.logerr(f"move_status {status}")
         if status == 0 or status == 1:
             return pt.common.Status.RUNNING
         elif status == 3:
             return pt.common.Status.SUCCESS
         else:
             return pt.common.Status.FAILURE
-    
+
     def terminate(self, new_status: pt.common.Status):
         if new_status == pt.common.Status.INVALID:
             self._client.cancel_goal()

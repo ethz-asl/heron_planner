@@ -14,7 +14,6 @@ from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from actionlib_msgs.msg import GoalStatus
 
 
-
 class Move(ABC):
     def __init__(
         self,
@@ -53,7 +52,7 @@ class Move(ABC):
     @abstractmethod
     def at_goal_yaw(self) -> bool:
         pass
-    
+
     @abstractmethod
     def _move_x(self) -> None:
         """Move robot in X direction for predefined distance"""
@@ -63,7 +62,7 @@ class Move(ABC):
     def _move_y(self) -> None:
         """Move robot in X direction for predefined distance"""
         pass
-    
+
     @abstractmethod
     def _turn_yaw(self) -> None:
         """Move robot in Z angular direction for predefined distance"""

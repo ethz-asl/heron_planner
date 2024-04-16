@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from __future__ import annotations # for type hinting
+from __future__ import annotations  # for type hinting
 
 import rospy
 import actionlib
@@ -11,10 +11,11 @@ from scipy.spatial.transform import Rotation
 from geometry_msgs.msg import Pose, PoseWithCovarianceStamped, Twist
 from nav_msgs.msg import Odometry
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
+
 # from move_action.msg import MoveAction, MoveGoal, MoveFeedback
 from actionlib_msgs.msg import GoalStatus
 
-from base_robot_interface import MoveBase, Move
+from base_robot_interface import Move
 import utils
 
 
@@ -54,14 +55,14 @@ class GiraffeMove(Move):
         self._turn_yaw()
 
         # disp_xy, disp_th = self.displacement_from_pose(self.goal_pose)
-        curr_x = self.current_pose.position.x
-        curr_y = self.current_pose.position.y
-        goal_x = self.goal_pose.position.x
-        goal_y = self.goal_pose.position.y
+        # curr_x = self.current_pose.position.x
+        # curr_y = self.current_pose.position.y
+        # goal_x = self.goal_pose.position.x
+        # goal_y = self.goal_pose.position.y
 
-        rospy.logerr(
-            f"cur ({curr_x:.2f},{curr_y:.2f}) [m,m] goal ({goal_x},{goal_y})[m,m]"
-        )
+        # rospy.logerr(
+        #     f"cur ({curr_x:.2f},{curr_y:.2f}) [m,m] goal ({goal_x},{goal_y})[m,m]"
+        # )
 
         if self.at_goal_x() and self.at_goal_y() and self.at_goal_yaw():
             rospy.logwarn("Success")
@@ -103,7 +104,6 @@ class GiraffeMove(Move):
 
         goal_quat = utils.array_from_pose(self.goal_pose)[3:]
         goal_yaw = utils.angle_from_quaternion(goal_quat)
-        rospy.logerr(f"goal_yaw {goal_yaw}")
 
         current_quat = utils.array_from_pose(self.current_pose)[3:]
         current_yaw = utils.angle_from_quaternion(current_quat)
@@ -144,7 +144,7 @@ class GiraffeMove(Move):
         current_y = self.current_pose.position.y
 
         rospy.logwarn(f"Y[current, goal] ({current_y:.2f}, {goal_y:.2f}) [m,m]")
-        
+
         return abs(goal_y - current_y) < self.tol_lin
 
     def at_goal_yaw(self) -> bool:
@@ -156,7 +156,9 @@ class GiraffeMove(Move):
         current_yaw = utils.angle_from_quaternion(current_quat)
         current_yaw = utils.wrap_angle(current_yaw)
 
-        rospy.logwarn(f"Yaw[current, goal] ({current_yaw:.2f}, {goal_yaw:.2f}) [rad,rad]")
+        rospy.logwarn(
+            f"Yaw[current, goal] ({current_yaw:.2f}, {goal_yaw:.2f}) [rad,rad]"
+        )
 
         return abs(goal_yaw - current_yaw) < self.tol_ang
 
@@ -217,34 +219,3 @@ class GiraffeMove(Move):
             self.rate.sleep()
 
         self.twist_pub.publish(self.compute_empty_twist())
-
-def main():
-    rospy.init_node("move_base_action")
-    move_base_client = GiraffeMoveBaseClient()
-
-    goal_pose = Pose()
-    goal_pose.position.x = 2.0
-    goal_pose.position.y = -1.0
-    goal_pose.orientation.w = 1.0
-
-    rospy.loginfo("Sending goal to robot")
-    move_base_client.init_move_base(goal_pose)
-
-    move_base_running = True
-
-    while move_base_running:
-        status = move_base_client.get_move_base_status()
-        if (
-            status == GoalStatus.SUCCEEDED
-            or status == GoalStatus.REJECTED
-            or status == GoalStatus.ABORTED
-        ):
-            giraffe_move = GiraffeMove(goal_pose)
-            rospy.sleep(1)
-            giraffe_move.init_move()
-
-            move_base_running = False
-
-
-if __name__ == "__main__":
-    main()

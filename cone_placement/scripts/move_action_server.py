@@ -7,26 +7,28 @@ from heron_msgs.msg import MoveAction, MoveGoal, MoveFeedback
 from geometry_msgs.msg import Pose, PoseStamped
 from actionlib_msgs.msg import GoalStatus
 
-from giraffe_interface import GiraffeMoveBaseClient, GiraffeMove
+from giraffe_interface import GiraffeMove
+
 
 class MoveServer(object):
     """
     Move action server, to move robot to specific position with tolerance
     """
-    def __init__(
-        self,
-        name,
-    ) -> None:
+
+    def __init__(self, name) -> None:
         self._action_name = name
         self._robot_name = rospy.get_param("~robot_name", "giraffe")
-        
+
         self._action = MoveAction()
         self._goal = MoveGoal()
         self._feedback = MoveFeedback()
 
-        self._server = actionlib.SimpleActionServer(self._action_name, MoveAction, self.execute_cb, auto_start=False)
+        self._server = actionlib.SimpleActionServer(
+            self._action_name, MoveAction, self.execute_cb, auto_start=False
+        )
         rospy.loginfo("Starting move action server")
         self._server.start()
+        self._cancel_requested = False
 
     def execute_cb(self, goal: PoseStamped) -> None:
 
@@ -42,22 +44,42 @@ class MoveServer(object):
         elif self._robot_name == "heron":
             raise NotImplementedError
 
+        if self._cancel_requested:
+            self._server.set_preempted()
+            return
+
         if self._server.is_preempt_requested():
-            self._server.set_preempted() 
+            self._server.set_preempted()
+            self._cancel_requested = True
         elif move.init_move():
             self._server.set_succeeded()
         else:
             self._server.set_aborted()
 
-        #TODO feedback only publishes once
+        # TODO feedback only publishes once
         self._feedback.base_position.pose = move.current_pose
         self._server.publish_feedback(self._feedback)
-        
+        rospy.logerr(f"state {self._server.get_state()}")
+
+    def cancel_goal(self):
+        """
+        Cancel the move goal.
+        """
+        rospy.loginfo("Cancelling move goal")
+        self._server.set_preempted()  # Preempt the server
+
+        # If the server is not done, preempt the goal
+        rospy.logerr(f"state {self._server.get_state()}")
+        if self._server.get_state() != actionlib.SimpleGoalState.DONE:
+            self._server.set_preempted()
+
+
 def main():
 
-    rospy.init_node('move')
+    rospy.init_node("move")
     MoveServer(rospy.get_name())
     rospy.spin()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

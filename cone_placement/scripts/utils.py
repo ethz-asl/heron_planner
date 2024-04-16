@@ -9,6 +9,7 @@ from scipy.spatial.transform import Rotation
 from geometry_msgs.msg import Pose
 from actionlib_msgs.msg import GoalStatus
 
+
 def array_from_pose(pose: Pose) -> np.array:
     array = np.array(
         [
@@ -54,9 +55,7 @@ def angle_from_quaternion(
     elif axis == "roll":
         r = r.as_euler("zyx")[2]
     else:
-        raise ValueError(
-            f"Only [yaw, pitch, roll] are accepted (yours: [{axis}])"
-        )
+        raise ValueError(f"Only [yaw, pitch, roll] are accepted (yours: [{axis}])")
 
     if radians:
         return r
