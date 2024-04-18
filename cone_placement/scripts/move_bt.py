@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-"""Build the BT to fetch 5 items, recharge and dock."""
 
 import visualizer as vis
 import behaviours as bt
@@ -34,16 +33,16 @@ class TaskBT:
         # rospy.get_param("~goal_pose")
         #  self.root = bt.RSequence(name="Sequence")
 
+        self.root = py_trees.composites.Sequence(name="MoveSequence", memory=True)
         self.visualize_only = False
         move_base = bt.MoveBase("move_base to goal", goal_pose)
         move = bt.Move("move to goal", goal_pose)
 
-        sequence = py_trees.composites.Sequence(name="MoveSequence")
-        sequence.add_children([move_base, move])
+        self.root.add_children([move_base, move])
 
         #  self.root.add_children(sequence)
 
-        self.tree = py_trees.trees.BehaviourTree(sequence)
+        self.tree = py_trees.trees.BehaviourTree(self.root)
 
     #  def get_root(self) -> py_trees.composites.Selector:
     #  return self.root

@@ -24,6 +24,7 @@ class GiraffeMove(Move):
     def __init__(
         self,
         goal_pose: Pose,
+        feedback_pub: Callable[[Pose], None],
         timeout: rospy.Rate = 1.0,
         tol_lin: float = 0.05,
         tol_ang: float = 5.0 * np.pi / 180.0,
@@ -36,6 +37,7 @@ class GiraffeMove(Move):
             "/mobile_base/swerve_controller/cmd_vel", Twist, queue_size=10
         )
         self.odom_sub = rospy.Subscriber("/odom", Odometry, self.odom_cb)
+        self.feedback_pub = feedback_pub
 
     def odom_cb(self, msg: Odometry) -> None:
         self.current_pose = msg.pose.pose
@@ -49,27 +51,24 @@ class GiraffeMove(Move):
         curr_y = self.current_pose.position.y
         goal_x = self.goal_pose.position.x
         goal_y = self.goal_pose.position.y
+        
+        while not rospy.is_shutdown():
+            self.feedback_pub(self.current_pose)
+            
+            self._move_x()
+            self._move_y()
+            self._turn_yaw()
 
-        self._move_x()
-        self._move_y()
-        self._turn_yaw()
+            if self.at_goal_x() and self.at_goal_y() and self.at_goal_yaw():
+                self.feedback_pub(self.current_pose)
+                rospy.loginfo("Success, robot reached move goal")
+                return True
+            else:
+                self.feedback_pub(self.current_pose)
+                rospy.logerr("Failure, robot did not reach move goal")
+                return False
 
-        # disp_xy, disp_th = self.displacement_from_pose(self.goal_pose)
-        # curr_x = self.current_pose.position.x
-        # curr_y = self.current_pose.position.y
-        # goal_x = self.goal_pose.position.x
-        # goal_y = self.goal_pose.position.y
-
-        # rospy.logerr(
-        #     f"cur ({curr_x:.2f},{curr_y:.2f}) [m,m] goal ({goal_x},{goal_y})[m,m]"
-        # )
-
-        if self.at_goal_x() and self.at_goal_y() and self.at_goal_yaw():
-            rospy.logwarn("Success")
-            return True
-        else:
-            rospy.logwarn("Failure")
-            return False
+        return False
 
     def compute_twist_x(self) -> Twist:
         twist_msg = Twist()
@@ -196,6 +195,7 @@ class GiraffeMove(Move):
     def _move_x(self) -> None:
 
         while not self.at_goal_x():
+            self.feedback_pub(self.current_pose)
             twist_msg = self.compute_twist_x()
             self.twist_pub.publish(twist_msg)
             self.rate.sleep()
@@ -205,6 +205,7 @@ class GiraffeMove(Move):
     def _move_y(self) -> None:
 
         while not self.at_goal_y():
+            self.feedback_pub(self.current_pose)
             twist_msg = self.compute_twist_y()
             self.twist_pub.publish(twist_msg)
             self.rate.sleep()
@@ -214,6 +215,7 @@ class GiraffeMove(Move):
     def _turn_yaw(self) -> None:
 
         while not self.at_goal_yaw():
+            self.feedback_pub(self.current_pose)
             twist_msg = self.compute_twist_yaw()
             self.twist_pub.publish(twist_msg)
             self.rate.sleep()
