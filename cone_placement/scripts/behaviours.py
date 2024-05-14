@@ -73,22 +73,23 @@ class Move(pt.behaviour.Behaviour):
         if new_status == pt.common.Status.INVALID:
             self._client.cancel_goal()
 
-class MoveArm(pt.behaviour.Behaviour):
 
+class MoveArm(pt.behaviour.Behaviour):
     def __init__(self, name: str, goal_pose: Pose):
         super().__init__(name)
         self._client = MoveArmClient()
         self._goal_pose = goal_pose
 
     def initialise(self):
-        self._client.init_move_arm(self._goal_pose)
+        self._client.goto(self._goal_pose)
 
     def update(self):
-        status = self._client
+        # status = self._client.
         return super().update()
 
     def terminate(self, new_status):
         return super().terminate(new_status)
+
 
 class RSequence(pt.composites.Selector):
     """

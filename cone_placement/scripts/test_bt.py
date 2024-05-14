@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+
 def tutorial_create_root() -> py_trees.behaviour.Behaviour:
     """
     Create a basic tree and start a 'Topics2BB' work sequence that
@@ -10,9 +11,7 @@ def tutorial_create_root() -> py_trees.behaviour.Behaviour:
     """
     root = py_trees.composites.Parallel(
         name="Tutorial One",
-        policy=py_trees.common.ParallelPolicy.SuccessOnAll(
-            synchronise=False
-        )
+        policy=py_trees.common.ParallelPolicy.SuccessOnAll(synchronise=False),
     )
 
     topics2bb = py_trees.composites.Sequence(name="Topics2BB", memory=True)
@@ -20,7 +19,7 @@ def tutorial_create_root() -> py_trees.behaviour.Behaviour:
         name="Battery2BB",
         topic_name="/battery/state",
         qos_profile=py_trees_ros.utilities.qos_profile_unlatched(),
-        threshold=30.0
+        threshold=30.0,
     )
     priorities = py_trees.composites.Selector(name="Tasks", memory=False)
     idle = py_trees.behaviours.Running(name="Idle")

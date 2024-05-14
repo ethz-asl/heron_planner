@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from __future__ import annotations  # for type hinting
+from typing import Callable
 
 import rospy
 import actionlib
@@ -19,7 +20,6 @@ from base_robot_interface import Move
 import utils
 
 
-# TODO make Move into action (?)
 class GiraffeMove(Move):
     def __init__(
         self,
@@ -42,22 +42,17 @@ class GiraffeMove(Move):
     def odom_cb(self, msg: Odometry) -> None:
         self.current_pose = msg.pose.pose
 
-    def init_move(self) -> bool:
+    def init_move_sequence(self) -> bool:
         """
         check if within goal tolerance, then move based on distance
         first x, then y, then turn in yaw
         """
-        curr_x = self.current_pose.position.x
-        curr_y = self.current_pose.position.y
-        goal_x = self.goal_pose.position.x
-        goal_y = self.goal_pose.position.y
-        
         while not rospy.is_shutdown():
             self.feedback_pub(self.current_pose)
-            
-            self._move_x()
-            self._move_y()
-            self._turn_yaw()
+
+            self.move_x()
+            self.move_y()
+            self.turn_yaw()
 
             if self.at_goal_x() and self.at_goal_y() and self.at_goal_yaw():
                 self.feedback_pub(self.current_pose)
@@ -192,8 +187,7 @@ class GiraffeMove(Move):
 
         return disp_xy, disp_th
 
-    def _move_x(self) -> None:
-
+    def move_x(self) -> None:
         while not self.at_goal_x():
             self.feedback_pub(self.current_pose)
             twist_msg = self.compute_twist_x()
@@ -201,9 +195,9 @@ class GiraffeMove(Move):
             self.rate.sleep()
 
         self.twist_pub.publish(self.compute_empty_twist())
+        rospy.loginfo("Success, robot reached x goal")
 
-    def _move_y(self) -> None:
-
+    def move_y(self) -> None:
         while not self.at_goal_y():
             self.feedback_pub(self.current_pose)
             twist_msg = self.compute_twist_y()
@@ -211,9 +205,9 @@ class GiraffeMove(Move):
             self.rate.sleep()
 
         self.twist_pub.publish(self.compute_empty_twist())
+        rospy.loginfo("Success, robot reached y goal")
 
-    def _turn_yaw(self) -> None:
-
+    def turn_yaw(self) -> None:
         while not self.at_goal_yaw():
             self.feedback_pub(self.current_pose)
             twist_msg = self.compute_twist_yaw()
@@ -221,3 +215,4 @@ class GiraffeMove(Move):
             self.rate.sleep()
 
         self.twist_pub.publish(self.compute_empty_twist())
+        rospy.loginfo("Success, robot reached yaw goal")

@@ -38,7 +38,7 @@ class Move(ABC):
         pass
 
     @abstractmethod
-    def init_move(self) -> None:
+    def init_move_sequence(self) -> None:
         pass
 
     @abstractmethod
@@ -54,16 +54,16 @@ class Move(ABC):
         pass
 
     @abstractmethod
-    def _move_x(self) -> None:
+    def move_x(self) -> None:
         """Move robot in X direction for predefined distance"""
         pass
 
     @abstractmethod
-    def _move_y(self) -> None:
+    def move_y(self) -> None:
         """Move robot in X direction for predefined distance"""
         pass
 
     @abstractmethod
-    def _turn_yaw(self) -> None:
+    def turn_yaw(self) -> None:
         """Move robot in Z angular direction for predefined distance"""
         pass

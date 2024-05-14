@@ -45,6 +45,8 @@ class MoveServer(object):
             rospy.sleep(2.0)
         elif self._robot_name == "heron":
             raise NotImplementedError
+        else:
+            raise ValueError
 
         while True:
             if (
@@ -64,12 +66,14 @@ class MoveServer(object):
                 self._server.set_succeeded()
                 success = True
                 break
+
     def _publish_feedback(self, pose: Pose) -> None:
         """
         publish the current pose of the robot
         """
         self._feedback.base_position.pose = pose
         self._server.publish_feedback(self._feedback)
+
     def cancel_goal(self):
         """
         Cancel the move goal.
@@ -79,7 +83,7 @@ class MoveServer(object):
 
         # If the server is not done, preempt the goal
         rospy.logerr(f"state {self._server.get_state()}")
-        if self_server.get_state() == actionlib.GoalStatus.DONE:
+        if self._server.get_state() == actionlib.GoalStatus.DONE:
             rospy.loginfo("Goal was already reached")
             return
         else:

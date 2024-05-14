@@ -13,6 +13,8 @@ import scipy as sc
 from moveit_msgs.msg import RobotTrajectory, DisplayTrajectory
 from geometry_msgs.msg import Pose, PoseStamped
 from scipy.spatial.transform import Rotation
+import moma_utils.ros.conversion as moma_conv
+from moma_utils.spartial import Transform
 
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import axes3d
@@ -65,22 +67,20 @@ def all_close(
 
     return True
 
-class MoveArmClient(object):
-    """MoveGroupSphereSamples"""
 
-    def __init__(self) -> None:
+class MoveArmClient(object):
+    """MoveIt Arm client for manipulator"""
+
+    def __init__(self, group_name: str = "panda_arm") -> None:
         moveit_commander.roscpp_initialize(sys.argv)
         rospy.init_node("move_group_client", anonymous=True)
 
         robot = moveit_commander.RobotCommander()
         scene = moveit_commander.PlanningSceneInterface()
 
-        group_name = "panda_arm"
         move_group = moveit_commander.MoveGroupCommander(group_name)
         display_trajectory_publisher = rospy.Publisher(
-            "/move_group/display_planned_path",
-            DisplayTrajectory,
-            queue_size=20,
+            "/move_group/display_planned_path", DisplayTrajectory, queue_size=20
         )
 
         planning_frame = move_group.get_planning_frame()
@@ -104,12 +104,47 @@ class MoveArmClient(object):
         self.eef_link = eef_link
         self.group_names = group_names
         self.named_targets = named_targets
-        self.status : int = 0
+        self.status: int = 0
 
-    def init_move_arm(self, goal_pose: Pose) -> None:
-        # here add a method to feedback a status
-        # maybe make this a action? or not?
-        pass
+    def goto(
+        self,
+        target: Transform | list | np.ndarray | str,
+        vel_scale: float = 0.2,
+        acc_scale: float = 0.2,
+    ) -> bool:
+        plan = self.plan(target, vel_scale, acc_scale)
+        return self.execute(plan)
+
+    def plan(
+        self,
+        target: Transform | list | np.ndarray | str,
+        vel_scale: float = 0.2,
+        acc_scale: float = 0.2,
+    ) -> RobotTrajectory:
+        self.move_group.set_max_velocity_scaling_factor(vel_scale)
+        self.move_group.set_max_acceleration_scaling_factor(acc_scale)
+
+        if isinstance(target, Transform):
+            self.move_group.set_pose_target(moma_conv.to_pose_msg(target))
+        elif isinstance(target, (list, np.ndarry)):
+            self.move_group.set_joint_value_target(target)
+        elif isinstance(target, str):
+            self.move_group.set_named_target(target)
+        else:
+            rospy.logerr(f"Type of target goal, {type(target)}, is not valid")
+            raise ValueError
+
+        plan = self.move_group.plan()
+        if type(plan) is tuple:
+            plan = plan[1]
+
+        return plan
+
+    def execute(self, plan: RobotTrajectory) -> bool:
+        success = self.move_group.execute(plan, wait=True)
+        self.move_group.stop()
+        self.move_group.clear_pose_targets()
+        return success
 
     def go_to_named_target(self, target: str) -> bool:
         """go to named target"""
@@ -124,10 +159,11 @@ class MoveArmClient(object):
     def go_to_safe(self) -> bool:
         return self.go_to_named_target("safe")
 
-    def go_to_joint_goal(self, joint_goal) -> bool:
+    def go_to_joint_goal(self, joint_goal: dict) -> bool:
         """
         Planning to a Joint Goal
         """
+        rospy.logerr(f"type of joint_goal: {type(joint_goal)}")
         self.move_group.go(joint_goal, wait=True)
         self.move_group.stop()
         current_joints = self.move_group.get_current_joint_values()
@@ -200,80 +236,10 @@ class MoveArmClient(object):
         rospy.loginfo("Cancelling MoveIt goal")
         self.move_group.stop()
 
-def plot_3D_no_truth(position_list):
-    # Extract x, y, and z coordinates
-    x = [pos[0] for pos in position_list]
-    y = [pos[1] for pos in position_list]
-    z = [pos[2] for pos in position_list]
-
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection="3d")
-    ax.plot_trisurf(x, y, z, color="white", edgecolors="grey", alpha=0.5)
-
-    ax.scatter(x, y, z, c="cyan", alpha=0.5)
-    # add here different colours for made position and didn't make position
-
-    # Set labels for the axes
-    ax.set_xlabel("X")
-    ax.set_ylabel("Y")
-    ax.set_zlabel("Z")
-
-    # Show the plot
-    plt.legend()
-    plt.show()
-
-
-def plot_3D(position_list, truth_list):
-    # Extract x, y, and z coordinates
-    x = [pos[0] for pos in position_list]
-    y = [pos[1] for pos in position_list]
-    z = [pos[2] for pos in position_list]
-
-    # Separate points into two lists based on the truth values
-    true_points = [position_list[i] for i in range(len(position_list)) if truth_list[i]]
-    false_points = [
-        position_list[i] for i in range(len(position_list)) if not truth_list[i]
-    ]
-
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection="3d")
-    ax.plot_trisurf(x, y, z, color="white", edgecolors="grey", alpha=0.5)
-
-    # add here different colours for made position and didn't make position
-    # Scatter plot for True points (in one color)
-    ax.scatter(
-        [pos[0] for pos in true_points],
-        [pos[1] for pos in true_points],
-        [pos[2] for pos in true_points],
-        c="cyan",
-        alpha=0.5,
-    )
-
-    # Scatter plot for False points (in another color)
-    ax.scatter(
-        [pos[0] for pos in false_points],
-        [pos[1] for pos in false_points],
-        [pos[2] for pos in false_points],
-        c="magenta",
-        label="did not reach",
-        alpha=0.5,
-    )
-    # Set labels for the axes
-    ax.set_xlabel("X")
-    ax.set_ylabel("Y")
-    ax.set_zlabel("Z")
-
-    # Show the plot
-    plt.legend()
-    plt.show()
-
 
 def main():
-    move = MoveGroupClient()
+    move = MoveArmClient()
     move.go_to_home()
-
-    pos_list = []
-    truth_list = []
 
     while True:
         try:
@@ -286,10 +252,6 @@ def main():
             print("Press 's' to go to a safe state")
             print("----------------------------------------------------------")
             print("Press 'f' to go to a floor state")
-            print("----------------------------------------------------------")
-            print("Press 'enter' to go to the next sample point")
-            print("----------------------------------------------------------")
-            print("Press 'g' to plot a graph")
             print("----------------------------------------------------------")
             print("Press 'q' to stop sampling exit")
 
@@ -304,9 +266,6 @@ def main():
                 move.go_to_safe()
             elif user_input == "f":
                 move.go_to_floor()
-            elif user_input == "g":
-                plot_3D(pos_list, truth_list)
-                # plot_3D_no_truth(pos_list)
             elif user_input == "q":
                 print("============ Sampling complete!")
                 print("")
