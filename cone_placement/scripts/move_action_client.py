@@ -17,10 +17,10 @@ class MoveClient:
         #  self._feedback = heron_msgs.msg.MoveFeedback
 
         node_name_ = rospy.get_param("~move_node", "/move")
-        self.move_client = actionlib.SimpleActionClient(node_name_, MoveAction)
+        self._client = actionlib.SimpleActionClient(node_name_, MoveAction)
 
         rospy.loginfo(f"Connecting to {node_name_}...")
-        self.move_client.wait_for_server(rospy.Duration(5.0))
+        self._client.wait_for_server(rospy.Duration(5.0))
 
     def init_move(self, goal_pose: Pose, ref_frame: str = "map") -> None:
         """
@@ -36,26 +36,26 @@ class MoveClient:
         goal.target_pose.pose = goal_pose
 
         # send the goal
-        rospy.loginfo(f"Sending the move goal")
-        self.move_client.send_goal(goal)
+        rospy.loginfo(f"Sending the goal")
+        self._client.send_goal(goal)
 
-    def get_move_status(self) -> int:
+    def get_status(self) -> int:
         """
         get move_base status
         https://docs.ros.org/en/fuerte/api/actionlib_msgs/html/msg/GoalStatus.html
         """
-        if self.move_client.get_state() == GoalStatus.SUCCEEDED:
+        if self._client.get_state() == GoalStatus.SUCCEEDED:
             rospy.logwarn("Successfully reached the goal")
             return GoalStatus.SUCCEEDED
         else:
-            return self.move_client.get_state()
+            return self._client.get_state()
 
     def cancel_goal(self) -> None:
         """
         Cancel the current goal
         """
         rospy.loginfo("Cancelling the move goal")
-        self.move_client.cancel_goal()
+        self._client.cancel_goal()
 
 
 #  def main():

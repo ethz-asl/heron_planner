@@ -5,8 +5,7 @@ import scipy
 from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import Pose
 
-from moma_utils.ros import conversions
-from utils import marker as marker_utils
+from utils import marker_utils
 
 DELETE_MARKER_MSG = Marker(action=Marker.DELETEALL)
 DELETE_MARKER_ARRAY_MSG = MarkerArray(markers=[DELETE_MARKER_MSG])

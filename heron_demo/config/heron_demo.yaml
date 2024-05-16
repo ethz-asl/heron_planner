@@ -1,5 +1,6 @@
 heron_demo:
-  base_frame_id: panda_link0
+  arm_id: panda_arm
+  base_frame_id: base_footprint
   ee_grasp_offset_z: -0.04
   scan_joints:
     - [0.010, -1.479, 0.100, -2.416, 0.089, 1.402, 0.851]

@@ -1,5 +1,6 @@
 <sdf version='1.7'>
   <world name='default'>
+    <plugin name="ros_link_attacher_plugin" filename="libgazebo_ros_link_attacher.so"/>
     <scene>
       <grid>0</grid>
       <ambient>0.4 0.4 0.4 1</ambient>

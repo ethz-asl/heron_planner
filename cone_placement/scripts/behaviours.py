@@ -9,8 +9,8 @@ from geometry_msgs.msg import Pose, PoseStamped
 import giraffe_interface
 from move_action_client import MoveClient
 from move_base_action_client import MoveBaseClient
-from move_arm_client import MoveArmClient
-
+from moma_utils.ros.panda_client import PandaArmClient, PandaGripperClient
+from grasp_node import GraspExecutionAction
 # TODO implement import heron_interface
 
 
@@ -77,7 +77,7 @@ class Move(pt.behaviour.Behaviour):
 class MoveArm(pt.behaviour.Behaviour):
     def __init__(self, name: str, goal_pose: Pose):
         super().__init__(name)
-        self._client = MoveArmClient()
+        self._client = PandaArmClient()
         self._goal_pose = goal_pose
 
     def initialise(self):
@@ -90,6 +90,17 @@ class MoveArm(pt.behaviour.Behaviour):
     def terminate(self, new_status):
         return super().terminate(new_status)
 
+class GraspObject(pt.behaviour.Behaviour):
+    def __init__(self, name: str, goal_pose: Pose):
+        super().__init__(name)
+        self._client = GraspExecutionAction()
+        self._goal_pose = goal_pose
+
+    def initialise(self):
+        pass
+
+    def update(self):
+        pass
 
 class RSequence(pt.composites.Selector):
     """
