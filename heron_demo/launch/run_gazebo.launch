@@ -20,7 +20,7 @@
   <arg name="world_name" default="$(find heron_demo)/worlds/road.world"/>
 
   <!-- Load parameters -->
-  <!-- <rosparam command="load" file="$(find heron_demo)/config/heron_demo.yaml" subst_value="true"/> -->
+  <rosparam command="load" file="$(find heron_demo)/config/heron_demo.yaml" subst_value="true"/>
 
   <!-- Teleops -->
   <arg name="joystick" default="true" />

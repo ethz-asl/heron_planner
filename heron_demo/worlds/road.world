@@ -82,7 +82,7 @@
       <elevation>0</elevation>
       <heading_deg>0</heading_deg>
     </spherical_coordinates>
-    <model name='cone_0_2'>
+    <model name='cone_2'>
       <link name='link'>
         <collision name='collision'>
           <geometry>
@@ -171,7 +171,7 @@
       </link>
       <pose>-6.36828 -2.73892 0 0 -0 0</pose>
     </model>
-    <model name='cone_1_2'>
+    <model name='cone_5'>
       <link name='link'>
         <collision name='collision'>
           <geometry>
@@ -220,7 +220,7 @@
       </link>
       <pose>-3.78204 -0.946144 0 -0 -0 -0</pose>
     </model>
-    <model name='cone_1_1'>
+    <model name='cone_4'>
       <link name='link'>
         <collision name='collision'>
           <geometry>
@@ -269,7 +269,7 @@
       </link>
       <pose>-3.85023 -1.50887 0 -0 -0 -0</pose>
     </model>
-    <model name='cone_0_1'>
+    <model name='cone_1'>
       <link name='link'>
         <collision name='collision'>
           <geometry>
@@ -318,7 +318,7 @@
       </link>
       <pose>-3.04447 -1.61584 0 -0 -0 -0</pose>
     </model>
-    <model name='cone_0_0'>
+    <model name='cone_0'>
       <link name='link'>
         <collision name='collision'>
           <geometry>
@@ -367,7 +367,7 @@
       </link>
       <pose>-3.07259 -2.21178 0 -0 -0 -0</pose>
     </model>
-    <model name='cone_1_0'>
+    <model name='cone_3'>
       <link name='link'>
         <collision name='collision'>
           <geometry>
@@ -1465,7 +1465,7 @@
       <real_time>2847 382479237</real_time>
       <wall_time>1700141516 558182962</wall_time>
       <iterations>2830637</iterations>
-      <model name='cone_0_2'>
+      <model name='cone_2'>
         <pose>-3.00205 -0.997563 -0 0 0 -0.000427</pose>
         <scale>1 1 1</scale>
         <link name='link'>
@@ -1475,7 +1475,7 @@
           <wrench>0 -0 -0.008512 0 -0 0</wrench>
         </link>
       </model>
-      <model name='cone_1_2'>
+      <model name='cone_5'>
         <pose>-3.6 -1 -1e-05 0 -0 0</pose>
         <scale>1 1 1</scale>
         <link name='link'>
@@ -1485,7 +1485,7 @@
           <wrench>0 0 -9.8 0 -0 0</wrench>
         </link>
       </model>
-      <model name='cone_1_1'>
+      <model name='cone_4'>
         <pose>-3.6 -1.6 -0 0 -0 0</pose>
         <scale>1 1 1</scale>
         <link name='link'>
@@ -1495,7 +1495,7 @@
           <wrench>0 -0 -0.008512 0 -0 0</wrench>
         </link>
       </model>
-      <model name='cone_0_1'>
+      <model name='cone_1'>
         <pose>-3 -1.6 -1e-05 0 -0 0</pose>
         <scale>1 1 1</scale>
         <link name='link'>
@@ -1505,7 +1505,7 @@
           <wrench>0 0 -9.8 0 -0 0</wrench>
         </link>
       </model>
-      <model name='cone_0_0'>
+      <model name='cone_0'>
         <pose>-3 -2.2 -0 0 -0 0</pose>
         <scale>1 1 1</scale>
         <link name='link'>
@@ -1515,7 +1515,7 @@
           <wrench>0 -0 -0.008512 0 -0 0</wrench>
         </link>
       </model>
-      <model name='cone_1_0'>
+      <model name='cone_3'>
         <pose>-3.6 -2.2 -1e-05 0 -0 0</pose>
         <scale>1 1 1</scale>
         <link name='link'>

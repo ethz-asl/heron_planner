@@ -33,7 +33,9 @@ class TaskBT:
         # rospy.get_param("~goal_pose")
         #  self.root = bt.RSequence(name="Sequence")
 
-        self.root = py_trees.composites.Sequence(name="MoveSequence", memory=True)
+        self.root = py_trees.composites.Sequence(
+            name="MoveSequence", memory=True
+        )
         self.visualize_only = False
         move_base = bt.MoveBase("move_base to goal", goal_pose)
         move = bt.Move("move to goal", goal_pose)
@@ -70,6 +72,9 @@ class TaskBT:
         while not rospy.is_shutdown():
             rospy.Rate(3).sleep()
             self.tree.tick()
+            if self.tree.root.status == py_trees.common.Status.SUCCESS:
+                rospy.loginfo("Goal reached successfully")
+                break
 
     def run_online(self):
         """The BT execution is visualized in a Chrome page that opens upon execution."""
@@ -80,6 +85,9 @@ class TaskBT:
             rospy.Rate(3).sleep()
             # visulizer.tick()
             self.tree.tick()
+            if self.tree.root.status == py_trees.common.Status.SUCCESS:
+                rospy.loginfo("Goal reached successfully")
+                break
 
 
 def main():

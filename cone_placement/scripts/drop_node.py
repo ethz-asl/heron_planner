@@ -4,10 +4,10 @@ from actionlib import SimpleActionServer
 import numpy as np
 import rospy
 
-from grasp_demo.msg import DropAction, DropResult
+from heron_msgs.msg import DropAction, DropResult, DropGoal
 from moma_utils.transform import Rotation, Transform
 from moma_utils.ros.moveit import MoveItClient
-from moma_utils.ros.panda_client import PandaGripperClient
+from moma_utils.ros.panda_client import PandaArmClient, PandaGripperClient
 
 
 class DropActionNode(object):
@@ -15,8 +15,8 @@ class DropActionNode(object):
 
     def __init__(self):
         self.load_parameters()
-        self.moveit = MoveItClient("panda_arm")
-        self.gripper = PandaGripperClient()
+        self.moveit = PandaArmClient(self.arm_id)
+        self.gripper = PandaGripperClient(self.gripper_id)
         self.action_server = SimpleActionServer(
             "drop_action",
             DropAction,
@@ -28,18 +28,24 @@ class DropActionNode(object):
         rospy.loginfo("Drop action server ready")
 
     def load_parameters(self):
-        self.velocity_scaling = rospy.get_param("heron_demo/arm_velocity_scaling_drop")
+        self.arm_id = rospy.get_param("heron_demo/arm_id", "panda_arm")
+        self.gripper_id = rospy.get_param(
+            "heron_demo/gripper_id", "panda/franka_gripper/"
+        )
+        self.velocity_scaling = rospy.get_param(
+            "heron_demo/arm_velocity_scaling_drop", 0.3
+        )
 
-    def drop_object(self):
+    def drop_object(self, drop_goal : DropGoal):
         rospy.loginfo("Dropping object")
-        drop_joints = rospy.get_param("heron_demo/drop_joints")
-        self.moveit.goto(drop_joints, velocity_scaling=self.velocity_scaling)
+        rospy.loginfo(f"Drop joints: {drop_goal.joints.data}")
+        self.moveit.goto(list(drop_goal.joints.data), vel_scale=self.velocity_scaling)
         self.gripper.release()
         self.action_server.set_succeeded(DropResult())
 
 
 def main():
-    rospy.init_node("drop_action_node")
+    rospy.init_node("drop_node")
     DropActionNode()
     rospy.spin()
 

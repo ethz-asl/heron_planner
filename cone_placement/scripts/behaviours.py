@@ -11,6 +11,7 @@ from move_action_client import MoveClient
 from move_base_action_client import MoveBaseClient
 from moma_utils.ros.panda_client import PandaArmClient, PandaGripperClient
 from grasp_node import GraspExecutionAction
+
 # TODO implement import heron_interface
 
 
@@ -90,6 +91,7 @@ class MoveArm(pt.behaviour.Behaviour):
     def terminate(self, new_status):
         return super().terminate(new_status)
 
+
 class GraspObject(pt.behaviour.Behaviour):
     def __init__(self, name: str, goal_pose: Pose):
         super().__init__(name)
@@ -101,6 +103,7 @@ class GraspObject(pt.behaviour.Behaviour):
 
     def update(self):
         pass
+
 
 class RSequence(pt.composites.Selector):
     """
@@ -145,7 +148,10 @@ class RSequence(pt.composites.Selector):
                         # we interrupted, invalidate everything at a lower priority
                         passed = False
                         for sibling in self.children:
-                            if passed and sibling.status != pt.common.Status.INVALID:
+                            if (
+                                passed
+                                and sibling.status != pt.common.Status.INVALID
+                            ):
                                 sibling.stop(pt.common.Status.INVALID)
                             if sibling == self.current_child:
                                 passed = True

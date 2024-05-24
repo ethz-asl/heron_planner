@@ -72,7 +72,9 @@ class GiraffeMove(Move):
         current_x = self.current_pose.position.x
         delta_x = goal_x - current_x
 
-        twist_msg.linear.x = np.clip(delta_x, -self.max_lin_vel, self.max_lin_vel)
+        twist_msg.linear.x = np.clip(
+            delta_x, -self.max_lin_vel, self.max_lin_vel
+        )
         twist_msg.linear.y = 0.0
         twist_msg.angular.z = 0.0
         rospy.logwarn(f"sending velocity {twist_msg.linear.x:.2f}[m/s] to x")
@@ -87,7 +89,9 @@ class GiraffeMove(Move):
         delta_y = goal_y - current_y
 
         twist_msg.linear.x = 0.0
-        twist_msg.linear.y = np.clip(delta_y, -self.max_lin_vel, self.max_lin_vel)
+        twist_msg.linear.y = np.clip(
+            delta_y, -self.max_lin_vel, self.max_lin_vel
+        )
         twist_msg.angular.z = 0.0
         rospy.logwarn(f"sending velocity {twist_msg.linear.y:.2f}[m/s] to y")
 
@@ -102,7 +106,9 @@ class GiraffeMove(Move):
         current_quat = utils.array_from_pose(self.current_pose)[3:]
         current_yaw = utils.angle_from_quaternion(current_quat)
 
-        rospy.logwarn(f"[current, goal] ({current_yaw:.2f}, {goal_yaw:.2f})[rad,rad]")
+        rospy.logwarn(
+            f"[current, goal] ({current_yaw:.2f}, {goal_yaw:.2f})[rad,rad]"
+        )
         delta_yaw = goal_yaw - current_yaw
         delta_yaw = utils.wrap_angle(delta_yaw)
         rospy.logwarn(f"distance from goal {delta_yaw:.2f}[rad]")
@@ -114,7 +120,9 @@ class GiraffeMove(Move):
         twist_msg.angular.z = np.clip(
             delta_yaw * gain, -self.max_ang_vel, self.max_ang_vel
         )
-        rospy.logwarn(f"sending velocity {twist_msg.angular.z:.2f}[rad/s] to yaw")
+        rospy.logwarn(
+            f"sending velocity {twist_msg.angular.z:.2f}[rad/s] to yaw"
+        )
 
         return twist_msg
 
@@ -129,7 +137,9 @@ class GiraffeMove(Move):
         goal_x = self.goal_pose.position.x
         current_x = self.current_pose.position.x
 
-        rospy.logwarn(f"X[current, goal] ({current_x:.2f}, {goal_x:.2f}) [m,m]")
+        rospy.logwarn(
+            f"X[current, goal] ({current_x:.2f}, {goal_x:.2f}) [m,m]"
+        )
 
         return abs(goal_x - current_x) < self.tol_lin
 
@@ -137,7 +147,9 @@ class GiraffeMove(Move):
         goal_y = self.goal_pose.position.y
         current_y = self.current_pose.position.y
 
-        rospy.logwarn(f"Y[current, goal] ({current_y:.2f}, {goal_y:.2f}) [m,m]")
+        rospy.logwarn(
+            f"Y[current, goal] ({current_y:.2f}, {goal_y:.2f}) [m,m]"
+        )
 
         return abs(goal_y - current_y) < self.tol_lin
 
@@ -175,7 +187,9 @@ class GiraffeMove(Move):
         current_pose_th = utils.angle_from_quaternion(current_pose[3:], "yaw")
         current_pose_th = utils.wrap_angle(current_pose_th)
 
-        disp_xy = round(np.linalg.norm(current_pose_xy - target_pose_xy) - 0.5, 3)
+        disp_xy = round(
+            np.linalg.norm(current_pose_xy - target_pose_xy) - 0.5, 3
+        )
         delta_th = target_pose_th - current_pose_th
 
         disp_th = round(delta_th, 3)

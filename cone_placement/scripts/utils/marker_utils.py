@@ -71,14 +71,11 @@ def create_text_marker_msg(
     scale = [scale, scale, scale]
     pose = pose2Transform(pose)
     msg = _create_marker_msg(
-        Marker.TEXT_VIEW_FACING,
-        frame,
-        pose,
-        scale,
-        color,
+        Marker.TEXT_VIEW_FACING, frame, pose, scale, color
     )
     msg.text = text
     return msg
+
 
 def delete_marker_msg(msg: Marker):
     """
@@ -86,13 +83,15 @@ def delete_marker_msg(msg: Marker):
     """
     msg.action = Marker.DELETE
     return msg
-    
+
+
 def show_marker_msg(msg: Marker):
     """
     setting specific marker to ADD
     """
     msg.action = Marker.ADD
     return msg
+
 
 def getColorRGBA(color: str | list, transparency: float = 1.0) -> ColorRGBA:
     """
@@ -193,8 +192,8 @@ def getColorRGBA(color: str | list, transparency: float = 1.0) -> ColorRGBA:
         result.g = 0.77
         result.b = 0.91
     elif color == "teal":
-        result.r = 0.00 
-        result.g = 0.59 
+        result.r = 0.00
+        result.g = 0.59
         result.b = 0.53
     elif color == "random":
         # Get a random color that is not too light

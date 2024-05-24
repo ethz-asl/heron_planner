@@ -2,9 +2,10 @@
 
 import rospy
 import copy
-import test_marker as vis
+import heron_planner.cone_placement.scripts.heron_markers as vis
 from geometry_msgs.msg import Pose, Point, Quaternion, Vector3
 import numpy as np
+
 
 def main():
 
@@ -23,7 +24,7 @@ def main():
     cones.clear()
     count = 0
     while not rospy.is_shutdown():
-    
+
         p = copy.deepcopy(poses)
         c = copy.deepcopy(colours)
         i = copy.deepcopy(ids)
@@ -59,6 +60,7 @@ def main():
 
     rospy.logwarn("clearing grasps")
     cones.clear()
+
 
 if __name__ == "__main__":
     main()

@@ -1,7 +1,6 @@
 from __future__ import annotations
 import numpy as np
 import rospy
-import scipy
 from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import Pose
 
@@ -10,19 +9,22 @@ from utils import marker_utils
 DELETE_MARKER_MSG = Marker(action=Marker.DELETEALL)
 DELETE_MARKER_ARRAY_MSG = MarkerArray(markers=[DELETE_MARKER_MSG])
 
-class DrawMarkers:
+
+class DrawCones:
     def __init__(self):
         self.cone_markers = []
         self.pubs = None
-        self._create_publishers()        
+        self._create_publishers()
 
     def _create_publishers(self):
         self.pubs = dict()
-        self.pubs["cones"] = rospy.Publisher("cones", MarkerArray, queue_size=1, latch=True)
+        self.pubs["cones"] = rospy.Publisher(
+            "cones", MarkerArray, queue_size=1, latch=True
+        )
 
     def draw_cones(
         self,
-        poses: np.array,
+        poses: list,
         colors: np.array,
         ids: np.array,
         frame: str = "map",
@@ -32,14 +34,22 @@ class DrawMarkers:
         """
         draw list of cones, cylinder marker with text over the top
         """
-        
+
         for _, (pose, color, id) in enumerate(zip(poses, colors, ids)):
             self.add_cone(pose, id, frame, color, height=height, radius=radius)
 
         msg = MarkerArray(markers=self.cone_markers)
         self.pubs["cones"].publish(msg)
 
-    def draw_cone(self, pose: Pose, id: int, color: str | list, frame : str = "map", height : float = 0.5, radius : float = 0.05):
+    def draw_cone(
+        self,
+        pose: Pose,
+        id: int,
+        color: str | list,
+        frame: str = "map",
+        height: float = 0.5,
+        radius: float = 0.05,
+    ):
         """
         draw singular cone
         """
@@ -61,11 +71,15 @@ class DrawMarkers:
         get marker msg, add cone to it
         """
         text_buffer = 0.05
-        cone_msg = marker_utils.create_cylinder_marker_msg(pose, cone_color, frame, height, radius)
+        cone_msg = marker_utils.create_cylinder_marker_msg(
+            pose, cone_color, frame, height, radius
+        )
         cone_msg.id = int(id * 2)
         pose.position.z = pose.position.z + (height / 2.0) + text_buffer
         text = "cone_" + str(id)
-        text_msg = marker_utils.create_text_marker_msg(pose, text, text_color, frame)
+        text_msg = marker_utils.create_text_marker_msg(
+            pose, text, text_color, frame
+        )
         text_msg.id = int((id * 2) + 1)
 
         self.cone_markers.append(cone_msg)
@@ -85,9 +99,13 @@ class DrawMarkers:
         cone_id = int(id * 2)
         text_id = int(cone_id + 1)
 
-        self.cone_markers[cone_id] = marker_utils.delete_marker_msg(self.cone_markers[cone_id])
-        self.cone_markers[text_id] = marker_utils.delete_marker_msg(self.cone_markers[text_id])
-        
+        self.cone_markers[cone_id] = marker_utils.delete_marker_msg(
+            self.cone_markers[cone_id]
+        )
+        self.cone_markers[text_id] = marker_utils.delete_marker_msg(
+            self.cone_markers[text_id]
+        )
+
         msg = MarkerArray(markers=self.cone_markers)
         self.pubs["cones"].publish(msg)
 
@@ -98,15 +116,18 @@ class DrawMarkers:
         cone_id = int(id * 2)
         text_id = int(cone_id + 1)
 
-        self.cone_markers[cone_id] = marker_utils.show_marker_msg(self.cone_markers[cone_id])
-        self.cone_markers[text_id] = marker_utils.show_marker_msg(self.cone_markers[text_id])
-        
+        self.cone_markers[cone_id] = marker_utils.show_marker_msg(
+            self.cone_markers[cone_id]
+        )
+        self.cone_markers[text_id] = marker_utils.show_marker_msg(
+            self.cone_markers[text_id]
+        )
+
         msg = MarkerArray(markers=self.cone_markers)
         self.pubs["cones"].publish(msg)
 
     def clear(self):
         self.clear_cones()
-
 
     def clear_cones(self):
         self.cone_markers = []

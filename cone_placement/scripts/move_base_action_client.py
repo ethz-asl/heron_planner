@@ -12,8 +12,12 @@ from actionlib_msgs.msg import GoalStatus
 
 class MoveBaseClient:
     def __init__(self) -> None:
-        node_name_ = rospy.get_param("~move_base_node", "/mobile_base/move_base")
-        self.move_base_client = actionlib.SimpleActionClient(node_name_, MoveBaseAction)
+        node_name_ = rospy.get_param(
+            "~move_base_node", "/mobile_base/move_base"
+        )
+        self.move_base_client = actionlib.SimpleActionClient(
+            node_name_, MoveBaseAction
+        )
         rospy.loginfo(f"Connecting to {node_name_}...")
         self.move_base_client.wait_for_server(rospy.Duration(5.0))
 

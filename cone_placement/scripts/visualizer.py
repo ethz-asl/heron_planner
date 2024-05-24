@@ -51,7 +51,9 @@ class BTVisualizer:
     elif platform.system() == "Windows":
         CHROME_PATH = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
     else:
-        raise NotImplementedError("Platform type not implemented, cannot visualize BT")
+        raise NotImplementedError(
+            "Platform type not implemented, cannot visualize BT"
+        )
 
     DISPLAY_HTML = '<!DOCTYPE html>\
                         <html>\
@@ -81,7 +83,9 @@ class BTVisualizer:
         self.html_document = os.path.join(self.temp_dir, "behavior_tree.html")
         self.svg_document = os.path.join(self.temp_dir, "tree.svg")
 
-        dot_graph(self.tree, True).write_svg(self.svg_document, encoding="utf8")
+        dot_graph(self.tree, True).write_svg(
+            self.svg_document, encoding="utf8"
+        )
         with open(self.html_document, "w") as f:
             f.write(self.DISPLAY_HTML)
 

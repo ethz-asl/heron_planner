@@ -1,5 +1,6 @@
 heron_demo:
   arm_id: panda_arm
+  ee_link: panda_link7
   base_frame_id: base_footprint
   ee_grasp_offset_z: -0.04
   scan_joints:
@@ -18,6 +19,7 @@ heron_demo:
   arm_velocity_scaling_grasp: 0.2
 
   object_type: "cones"
+  gazebo_cones: ["cone_0", "cone_1", "cone_2", "cone_3", "cone_4", "cone_5"]
 
   battery_lv: 1000
   battery_drop_rate: 5
@@ -39,15 +41,15 @@ heron_demo:
   experiment: 3
   visualization_only: False
 
-vgn:
+# vgn:
   # model: $(find vgn)/assets/models/vgn_conv.pth
 
-tsdf_server:
-  frame_id: task
-  length: 0.3
-  resolution: 40
-  depth_scaling: 1.0  # Set to 1.0 for Gazebo, 0.001 for a RealSense
-  camera:
-    frame_id: wrist_camera_depth_optical_frame
-    info_topic: /wrist_camera/color/camera_info
-    depth_topic: /wrist_camera/depth/image_rect_raw
+# tsdf_server:
+#   frame_id: task
+#   length: 0.3
+#   resolution: 40
+#   depth_scaling: 1.0  # Set to 1.0 for Gazebo, 0.001 for a RealSense
+#   camera:
+#     frame_id: wrist_camera_depth_optical_frame
+#     info_topic: /wrist_camera/color/camera_info
+#     depth_topic: /wrist_camera/depth/image_rect_raw
