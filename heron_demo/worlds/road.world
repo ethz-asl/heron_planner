@@ -1,6 +1,6 @@
 <sdf version='1.7'>
   <world name='default'>
-    <plugin name="ros_link_attacher_plugin" filename="libgazebo_ros_link_attacher.so"/>
+    <plugin name='ros_link_attacher_plugin' filename='libgazebo_ros_link_attacher.so'/>
     <scene>
       <grid>0</grid>
       <ambient>0.4 0.4 0.4 1</ambient>
@@ -46,8 +46,8 @@
             </friction>
             <contact>
               <ode>
-                <kp>1e15</kp>
-                <kd>1e13</kd>
+                <kp>1e+15</kp>
+                <kd>1e+13</kd>
               </ode>
               <collide_bitmask>65535</collide_bitmask>
             </contact>
@@ -95,8 +95,8 @@
           <surface>
             <contact>
               <ode>
-                <kp>1e15</kp>
-                <kd>1e13</kd>
+                <kp>1e+15</kp>
+                <kd>1e+13</kd>
               </ode>
               <collide_bitmask>65535</collide_bitmask>
             </contact>
@@ -1461,68 +1461,78 @@
       <pose>-18.9305 3.57203 0 0 -0 1.58699</pose>
     </model>
     <state world_name='default'>
-      <sim_time>2830 637000000</sim_time>
-      <real_time>2847 382479237</real_time>
-      <wall_time>1700141516 558182962</wall_time>
-      <iterations>2830637</iterations>
-      <model name='cone_2'>
-        <pose>-3.00205 -0.997563 -0 0 0 -0.000427</pose>
+      <sim_time>2887 845000000</sim_time>
+      <real_time>57 484494604</real_time>
+      <wall_time>1719502066 433785555</wall_time>
+      <iterations>57208</iterations>
+      <model name='Apriltag36_11_00000'>
+        <pose>-9.55355 1.56643 0 0 -0 0</pose>
         <scale>1 1 1</scale>
-        <link name='link'>
-          <pose>-3.00205 -0.997563 -0 0 0 -0.000427</pose>
+        <link name='main'>
+          <pose>-9.55355 1.56643 0 0 -0 0</pose>
           <velocity>0 0 0 0 -0 0</velocity>
-          <acceleration>0 -0 -0.008512 -2.585 1.13705 3.14159</acceleration>
-          <wrench>0 -0 -0.008512 0 -0 0</wrench>
-        </link>
-      </model>
-      <model name='cone_5'>
-        <pose>-3.6 -1 -1e-05 0 -0 0</pose>
-        <scale>1 1 1</scale>
-        <link name='link'>
-          <pose>-3.6 -1 -1e-05 0 -0 0</pose>
-          <velocity>0 0 0 0 -0 0</velocity>
-          <acceleration>0 0 -9.8 0 -0 0</acceleration>
-          <wrench>0 0 -9.8 0 -0 0</wrench>
-        </link>
-      </model>
-      <model name='cone_4'>
-        <pose>-3.6 -1.6 -0 0 -0 0</pose>
-        <scale>1 1 1</scale>
-        <link name='link'>
-          <pose>-3.6 -1.6 -0 0 -0 0</pose>
-          <velocity>0 0 0 0 -0 0</velocity>
-          <acceleration>0 -0 -0.008512 -2.58585 1.13682 3.14159</acceleration>
-          <wrench>0 -0 -0.008512 0 -0 0</wrench>
-        </link>
-      </model>
-      <model name='cone_1'>
-        <pose>-3 -1.6 -1e-05 0 -0 0</pose>
-        <scale>1 1 1</scale>
-        <link name='link'>
-          <pose>-3 -1.6 -1e-05 0 -0 0</pose>
-          <velocity>0 0 0 0 -0 0</velocity>
-          <acceleration>0 0 -9.8 0 -0 0</acceleration>
-          <wrench>0 0 -9.8 0 -0 0</wrench>
+          <acceleration>0 0 0 0 -0 0</acceleration>
+          <wrench>0 0 0 0 -0 0</wrench>
         </link>
       </model>
       <model name='cone_0'>
-        <pose>-3 -2.2 -0 0 -0 0</pose>
+        <pose>-3 -2.2 -3e-06 1.9e-05 4e-06 0</pose>
         <scale>1 1 1</scale>
         <link name='link'>
-          <pose>-3 -2.2 -0 0 -0 0</pose>
+          <pose>-3 -2.2 -3e-06 1.9e-05 4e-06 0</pose>
           <velocity>0 0 0 0 -0 0</velocity>
-          <acceleration>0 -0 -0.008512 -2.58585 1.13682 3.14159</acceleration>
-          <wrench>0 -0 -0.008512 0 -0 0</wrench>
+          <acceleration>0 0 -1.3e-05 -3e-05 -1.9e-05 0</acceleration>
+          <wrench>0 0 -1e-06 0 -0 0</wrench>
+        </link>
+      </model>
+      <model name='cone_1'>
+        <pose>-3 -1.6 -3e-06 1.9e-05 4e-06 0</pose>
+        <scale>1 1 1</scale>
+        <link name='link'>
+          <pose>-3 -1.6 -3e-06 1.9e-05 4e-06 0</pose>
+          <velocity>0 0 0 0 -0 0</velocity>
+          <acceleration>-0 0 -3.9e-05 -9.5e-05 -5.3e-05 0</acceleration>
+          <wrench>-0 0 -4e-06 0 -0 0</wrench>
+        </link>
+      </model>
+      <model name='cone_2'>
+        <pose>-3.00205 -0.997563 0 0 0 -0.000427</pose>
+        <scale>1 1 1</scale>
+        <link name='link'>
+          <pose>-3.00205 -0.997563 0 0 0 -0.000427</pose>
+          <velocity>0 0 0 0 -0 0</velocity>
+          <acceleration>-0 0 -0.057882 -0.082585 -0.240271 0</acceleration>
+          <wrench>-0 0 -0.005788 0 -0 0</wrench>
         </link>
       </model>
       <model name='cone_3'>
-        <pose>-3.6 -2.2 -1e-05 0 -0 0</pose>
+        <pose>-3.6 -2.2 -3e-06 1.9e-05 4e-06 0</pose>
         <scale>1 1 1</scale>
         <link name='link'>
-          <pose>-3.6 -2.2 -1e-05 0 -0 0</pose>
+          <pose>-3.6 -2.2 -3e-06 1.9e-05 4e-06 0</pose>
           <velocity>0 0 0 0 -0 0</velocity>
-          <acceleration>0 0 -9.8 0 -0 0</acceleration>
-          <wrench>0 0 -9.8 0 -0 0</wrench>
+          <acceleration>-0 0 -3.9e-05 -9.5e-05 -5.3e-05 0</acceleration>
+          <wrench>-0 0 -4e-06 0 -0 0</wrench>
+        </link>
+      </model>
+      <model name='cone_4'>
+        <pose>-3.6 -1.6 -3e-06 1.9e-05 4e-06 0</pose>
+        <scale>1 1 1</scale>
+        <link name='link'>
+          <pose>-3.6 -1.6 -3e-06 1.9e-05 4e-06 0</pose>
+          <velocity>0 0 0 0 -0 0</velocity>
+          <acceleration>0 0 -1.3e-05 -3e-05 -1.9e-05 0</acceleration>
+          <wrench>0 0 -1e-06 0 -0 0</wrench>
+        </link>
+      </model>
+      <model name='cone_5'>
+        <pose>-3.6 -1 -3e-06 1.9e-05 4e-06 0</pose>
+        <scale>1 1 1</scale>
+        <link name='link'>
+          <pose>-3.6 -1 -3e-06 1.9e-05 4e-06 0</pose>
+          <velocity>0 0 0 0 -0 0</velocity>
+          <acceleration>-0 0 -3.9e-05 -9.5e-05 -5.3e-05 0</acceleration>
+          <wrench>-0 0 -4e-06 0 -0 0</wrench>
         </link>
       </model>
       <model name='drc_practice_organge_jersey_barrier'>
@@ -1841,10 +1851,34 @@
     </state>
     <gui fullscreen='0'>
       <camera name='user_camera'>
-        <pose>6.65877 2.346 3.67784 0 0.425797 -2.80698</pose>
+        <pose>11.8188 3.42344 6.29881 0 0.425797 -2.80698</pose>
         <view_controller>orbit</view_controller>
         <projection_type>perspective</projection_type>
       </camera>
     </gui>
+    <model name='Apriltag36_11_00000'>
+      <link name='main'>
+        <pose>0 0 0 0 -0 0</pose>
+        <visual name='main_Visual'>
+          <geometry>
+            <box>
+              <size>1 1 0.01</size>
+            </box>
+          </geometry>
+          <material>
+            <script>
+              <uri>model://Apriltag36_11_00000/materials/scripts</uri>
+              <uri>model://Apriltag36_11_00000/materials/textures</uri>
+              <name>Apriltag36_11_00000</name>
+            </script>
+          </material>
+        </visual>
+        <self_collide>0</self_collide>
+        <enable_wind>0</enable_wind>
+        <kinematic>0</kinematic>
+      </link>
+      <static>1</static>
+      <pose>-9.55355 1.56643 0 0 -0 0</pose>
+    </model>
   </world>
 </sdf>

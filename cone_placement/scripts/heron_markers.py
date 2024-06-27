@@ -132,3 +132,84 @@ class DrawCones:
     def clear_cones(self):
         self.cone_markers = []
         self.pubs["cones"].publish(DELETE_MARKER_ARRAY_MSG)
+
+class DrawText:
+    def __init__(self, topic_name: str):
+        self.text_markers = []
+        self.pubs = None
+        self.state = rospy.get_param(topic_name, "start")
+        self._create_publishers()
+
+    def _create_publisher(self):
+        self.pubs = dict()
+        self.pubs["text"] = rospy.Publisher(
+            "text_marker", MarkerArray, queue_size=1, latch=True
+        )
+
+    def draw_text(
+        self,
+        text: str,
+        pose: Pose,
+        id: int,
+        frame: str = "map",
+    ):
+        """
+        draw text
+        """
+        self.add_text(text, pose, id, frame)
+        msg = MarkerArray(markers=self.text_markers)
+        self.pubs["text"].publish(msg)
+
+    def add_text(
+        self,
+        text: str,
+        pose: Pose,
+        id: int,
+        frame: str = "map",
+        text_color: str | list = "white",
+    ):
+        """
+        get marker msg
+        """
+        text_msg = marker_utils.create_text_marker_msg(
+            pose, text, text_color, frame
+        )
+        text_msg.id = id
+
+        self.text_markers.append(text_msg)
+
+    """
+    id = 0, cyl.id = 0 text.id = 1
+    id = 1, cyl.id = 2 text.id = 3
+    id = 2, cyl.id = 4, text.id = 5
+    id = 3, cyl.id = 6, text.id = 6
+    """
+
+    def clear_cone(self, id: int):
+        """
+        from id, set marker to delete
+        """
+        self.text_markers[id] = marker_utils.delete_marker_msg(
+            self.text_markers[id]
+        )
+
+        msg = MarkerArray(markers=self.text_markers)
+        self.pubs["text"].publish(msg)
+
+    def show_text(self, id: int):
+        """
+        from id, find cone and text and set marker to delete
+        """
+        self.text_markers[id] = marker_utils.show_marker_msg(
+            self.text_markers[id]
+        )
+
+        msg = MarkerArray(markers=self.text_markers)
+        self.pubs["text"].publish(msg)
+
+    def clear(self):
+        self.clear_text()
+
+    def clear_text(self):
+        self.text_markers = []
+        self.pubs["text"].publish(DELETE_MARKER_ARRAY_MSG)
