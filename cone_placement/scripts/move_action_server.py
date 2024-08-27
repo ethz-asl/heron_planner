@@ -60,7 +60,7 @@ class MoveServer(object):
                 success = False
                 break
 
-            elif move.init_move():
+            elif move.init_move_sequence():
                 self._feedback.base_position.pose = move.current_pose
                 self._server.publish_feedback(self._feedback)
                 self._server.set_succeeded()

@@ -4,7 +4,7 @@ from actionlib import SimpleActionServer
 from geometry_msgs.msg import Pose, PoseStamped
 import rospy
 
-from grasp_demo.msg import GraspAction
+from heron_msgs.msg import GraspAction
 from moma_utils.ros.conversions import from_pose_msg, to_pose_stamped_msg
 from moma_utils.ros.moveit import MoveItClient
 from moma_utils.ros.panda_client import PandaArmClient, PandaGripperClient

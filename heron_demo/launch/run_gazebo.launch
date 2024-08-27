@@ -18,6 +18,7 @@
   <arg name="initial_pose_yaw" default="0" />
   <arg name="scan_topic" default="/front/scan" />
   <arg name="world_name" default="$(find heron_demo)/worlds/road.world"/>
+  <arg name="z_axis_height" default="0.0" />
 
   <!-- Load parameters -->
   <rosparam command="load" file="$(find heron_demo)/config/heron_demo.yaml" subst_value="true"/>
@@ -29,24 +30,20 @@
   <!-- LAUNCH ACTIONSHERE -->
 
   <!-- MoveIt! -->
-  <include file="$(find moma_gazebo)/launch/giraffe_moveit_gazebo.launch">
+  <include file="$(find moma_gazebo)/launch/giraffe_sim.launch">
     <arg name="rviz"    value="false"/>
     <arg name="headless" value="$(arg headless)" />
     <arg name="world"   value="$(arg world_name)"/>
     <arg name="mobile_base_x" value="$(arg initial_pose_x)"/>
     <arg name="mobile_base_y" value="$(arg initial_pose_y)"/>
     <arg name="mobile_base_yaw" value="$(arg initial_pose_yaw)"/>
+    <arg name="z_axis_height" value="$(arg z_axis_height)"/>
   </include>
 
   <!-- Move base -->
   <group ns="mobile_base">
     <!-- Remap topics -->
     <remap from="/mobile_base/front/scan" to="$(arg scan_topic)"/>
-
-    <!-- Run Move Base and load cost map and planner -->
-    <!-- Remaps for move_base -->
-    <remap from="/mobile_base/cmd_vel" to="/mobile_base/swerve_controller/cmd_vel"/>
-    <!-- <remap from="/mobile_base/odom" to="/mobile_base/swerve_controller/odom"/> -->
 
     <!-- Launch map server-->
     <!-- <arg name="map_file" default="$(find something)")/> -->
@@ -59,7 +56,6 @@
       <!-- <arg name="initial_pose_y" value="$(arg initial_pose_y)" /> -->
       <!-- <arg name="initial_pose_a" value="$(arg initial_pose_yaw)" /> -->
     <!-- </include> -->
-
 
     <!-- Launch the move_base pkg -->
     <include file="$(find gmp_nav)/launch/move_base.launch"/>
@@ -78,6 +74,8 @@
       <arg name="joystick" default="$(arg joystick)" />
       <arg name="keyboard" default="$(arg keyboard)" />
       <arg name="simulation" default="true" />
+      <!-- Turn off teleop lock for movebase in sim -->
+      <arg name="lock_move_base" default="false"/>
       <arg name="multiple_robots" default="true" />
     </include>
 

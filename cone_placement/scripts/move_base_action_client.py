@@ -34,7 +34,7 @@ class MoveBaseClient:
         rospy.loginfo(f"Sending goal to move_base")
         self.move_base_client.send_goal(goal)
 
-    def get_move_base_status(self) -> int:
+    def get_status(self) -> int:
         """
         get move_base status
         https://docs.ros.org/en/fuerte/api/actionlib_msgs/html/msg/GoalStatus.html

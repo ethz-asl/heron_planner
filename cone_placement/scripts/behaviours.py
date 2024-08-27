@@ -30,7 +30,7 @@ class MoveBase(pt.behaviour.Behaviour):
         self._client.init_move_base(self._goal_pose, self._ref_frame)
 
     def update(self) -> pt.common.Status:
-        status = self._client.get_move_base_status()
+        status = self._client.get_status()
         if status == 0 or status == 1:
             return pt.common.Status.RUNNING
         elif status == 3:
@@ -61,8 +61,8 @@ class Move(pt.behaviour.Behaviour):
         self._client.init_move(self._goal_pose, self._ref_frame)
 
     def update(self) -> pt.common.Status:
-        status = self._client.get_move_status()
-        rospy.logerr(f"move_status {status}")
+        status = self._client.get_status()
+        # rospy.logerr(f"move_status {status}")
         if status == 0 or status == 1:
             return pt.common.Status.RUNNING
         elif status == 3:
@@ -74,6 +74,35 @@ class Move(pt.behaviour.Behaviour):
         if new_status == pt.common.Status.INVALID:
             self._client.cancel_goal()
 
+class MovePredefinedPath(pt.behaviour.Behaviour):
+    """
+    From a start pose, start a predefined path trajectory for the base
+
+    :param start_pose [Pose]: the starting postion the trajectory will start from
+    :param path [str]: the type of path,  [pot_hole]    
+    """
+    def __init__(self, name: str, start_pose: Pose, path: str = "pot_hole" ,ref_frame: str = "map"):
+        super().__init__(name)
+        self._client = MovePredefinedPathClient()
+        self._start_pose = start_pose
+        self._path = path
+        self._ref_frame = ref_frame
+
+    def initialise(self):
+        self._client.init_predefined_move(self._start_pose, self._path, self._ref_frame)
+
+    def update(self) -> pt.common.Status: 
+        status = self._client.get_status()
+        if status == 0 or status == 1:
+            return pt.common.Status.RUNNING
+        elif status == 3:
+            return pt.common.Status.SUCCESS
+        else:
+            return pt.common.Status.FAILURE
+        
+    def terminate(self, new_status: pt.common.Status):
+        if new_status == pt.common.Status.INVALID:
+            self._client.cancel_goal()
 
 class MoveArm(pt.behaviour.Behaviour):
     def __init__(self, name: str, goal_pose: Pose):

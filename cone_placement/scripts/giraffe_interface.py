@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from __future__ import annotations  # for type hinting
-from typing import Callable
+from typing import Callable, Optional
 
 import rospy
 import actionlib
@@ -16,8 +16,10 @@ from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 # from move_action.msg import MoveAction, MoveGoal, MoveFeedback
 from actionlib_msgs.msg import GoalStatus
 
-from base_robot_interface import Move
-import utils
+from base_robot_interface import Move, MovePredefinedTask, PotholeFilling
+
+# import moma_utils.transform_utils as utils # should migrate to moma_utils
+import utils.transform_utils as utils
 
 
 class GiraffeMove(Move):
@@ -137,9 +139,7 @@ class GiraffeMove(Move):
         goal_x = self.goal_pose.position.x
         current_x = self.current_pose.position.x
 
-        rospy.logwarn(
-            f"X[current, goal] ({current_x:.2f}, {goal_x:.2f}) [m,m]"
-        )
+        rospy.logwarn(f"X[current, goal] ({current_x:.2f}, {goal_x:.2f}) [m,m]")
 
         return abs(goal_x - current_x) < self.tol_lin
 
@@ -147,9 +147,7 @@ class GiraffeMove(Move):
         goal_y = self.goal_pose.position.y
         current_y = self.current_pose.position.y
 
-        rospy.logwarn(
-            f"Y[current, goal] ({current_y:.2f}, {goal_y:.2f}) [m,m]"
-        )
+        rospy.logwarn(f"Y[current, goal] ({current_y:.2f}, {goal_y:.2f}) [m,m]")
 
         return abs(goal_y - current_y) < self.tol_lin
 
@@ -230,3 +228,246 @@ class GiraffeMove(Move):
 
         self.twist_pub.publish(self.compute_empty_twist())
         rospy.loginfo("Success, robot reached yaw goal")
+
+
+class GiraffeMovePredefinedTask(MovePredefinedTask):
+    """
+    """
+
+    def __init__(
+        self,
+        start_pose: Pose,
+        task_type: str = "pot_hole",
+        rate: float = 1.0,
+        tol_lin: float = 0.05,
+        tol_ang: float = 5.0 * np.pi / 180.0,
+        max_lin_vel: float = 0.2,
+        max_ang_vel: float = 0.2,
+    ) -> None:
+        self.start_pose: Pose = start_pose
+        self.task_type: str = task_type
+        self.current_pose: Optional[Pose] = None
+        self.rate: rospy.Rate = rospy.Rate(rate)
+        self.tol_lin = tol_lin
+        self.tol_ang = tol_ang
+        self.max_lin_vel = max_lin_vel
+        self.max_ang_vel = max_ang_vel
+
+    def init_predefined_task(self) -> None:
+        """
+        """
+        # first check if robot is at start pose from odometry with tolerance
+        if self.task_type == "pot_hole":
+            rospy.loginfo("Commencing pot hole path")
+            task = GiraffePotholeFilling()
+            task.init_pothole_filling()
+
+
+class GiraffePotholeFilling(PotholeFilling):
+    def __init__(self) -> None:
+        # first get pothole pose from paramter server
+        # also get rate for waiting for deposit
+        self.load_parameters()
+        self.move_obj = GiraffeMove(self.pothole_goal)
+        self.safe_pose: Pose = self.move_obj.current_pose
+
+        self.roller_up = True
+
+    def load_parameters(self) -> None:
+        self.pothole_goal: Pose = rospy.get_param("~pothole_goal")
+        self.deposit_time: float = rospy.get_param("~deposit_time", 5.0)
+        self.pothole_diameter: float = rospy.get_param("~pothole_diameter", 0.3)
+
+    def init_pothole_filling() -> bool:
+        # this fnc should sequence through the diff tasks below
+        # move_over_pothole
+        # deposit_material
+        # smooth_pothole
+
+        return False
+
+    def move_over_pothole(self):
+        # set pothole centre as goal
+        self.move_obj.goal_pose = self.pothole_goal
+
+        # turn front towards pothole goal
+        self.move_obj.turn_yaw()
+
+        # move only x position
+        self.move_obj.move_x()
+        return
+
+    def deposit_material(self):
+        self.open_hatch()
+        rospy.loginfo(f"Depositing material for %f s", self.deposit_time)
+        rospy.sleep(self.deposit_time)
+        self.close_hatch()
+
+    def open_hatch(self):
+        # some srv call that shows a marker on rviz
+        return super().open_hatch()
+
+    def close_hatch(self):
+        return super().close_hatch()
+
+    # need to create waypoint follower
+
+    def find_sweep_points(
+        self, pose_a: Pose, pose_b: Pose, dist_1: float, dist_2: float = None
+    ) -> list:
+        """
+        pose_a : start
+        pose_b : goal
+
+        finds 3 straight trajectories all parallel to pose_a -> pose_b
+        length of trajectories : dist_2 (default is dist_1 * 2)
+        
+        (P1 -> P2) goes through (pose_a -> pose_b) with pose_b as midpoint
+        (P3 -> P4)  & (P5 -> P6) are parallel to (P1 -> P2) with dist_1 / 2
+
+        returns P1, P2, P3, P4, P5, P6 
+        """
+        if dist_2 == None:
+            dist_2 = 2 * dist_1
+
+        point_a = utils.point_from_pose(pose_a)
+        point_b = utils.point_from_pose(pose_b)
+
+        para_slope = utils.find_slope(point_a, point_b, perpendicular=False)
+        perp_slope = utils.find_slope(point_a, point_b, perpendicular=True)
+
+        # distance for perp line (d)
+        if perp_slope == None:  # vertical slope
+            d = dist_1 / 2.0
+            perp_1 = (point_b[0], point_b[1] + d)
+            perp_2 = (point_b[0], point_b[1] - d)
+
+        elif perp_slope == 0:  # horizontal slope
+            d = dist_1 / 2.0
+            perp_1 = (point_b[0] + d, point_b[1])
+            perp_2 = (point_b[0] - d, point_b[1])
+
+        else:
+            d = (dist_1 / 2.0) / np.sqrt(1 + perp_slope ** 2)
+            perp_1 = (point_b[0] + d, point_b[1] + perp_slope * d)
+            perp_2 = (point_b[0] - d, point_b[1] - perp_slope * d)
+
+        # distance for perp line (d)
+        d = dist_2 / 2.0
+        if para_slope == None:  # vertical slope
+            P4 = (perp_1[0], perp_1[1] + d)
+            P6 = (perp_2[0], perp_2[1] - d)
+            P3 = (perp_1[0], perp_1[1] - d)
+            P5 = (perp_2[0], perp_2[1] + d)
+
+        elif perp_slope == 0:  # horizontal slope
+            P4 = (perp_1[0] + d, perp_1[1])
+            P6 = (perp_2[0] - d, perp_2[1])
+            P3 = (perp_1[0] - d, perp_1[1])
+            P5 = (perp_2[0] + d, perp_1[1])
+
+        else:
+            d = d / np.sqrt(1 + para_slope ** 2)
+            P4 = (perp_1[0] + d, perp_1[1] + para_slope * d)
+            P6 = (perp_2[0] + d, perp_2[1] + para_slope * d)
+            P3 = (perp_1[0] - d, perp_1[1] - para_slope * d)
+            P5 = (perp_2[0] - d, perp_2[1] - para_slope * d)
+
+        P1 = utils.find_midpoint(P3, P5)
+        P2 = utils.find_midpoint(P4, P6)
+
+        P1 = utils.pose_from_point(P1)
+        P2 = utils.pose_from_point(P2)
+        P3 = utils.pose_from_point(P3)
+        P4 = utils.pose_from_point(P4)
+        P5 = utils.pose_from_point(P5)
+        P6 = utils.pose_from_point(P6)
+
+        return [P1, P2, P3, P4, P5, P6]
+
+    def calc_smoothing_waypoints(
+        self,
+        pothole_goal: Pose,
+        initial_pose: Pose,
+        pothole_diameter: float = 0.3,
+    ) -> dict:
+
+        sweep_points = self.find_sweep_points(
+            pothole_goal, initial_pose, pothole_diameter * 0.75
+        )
+
+        # initial_pose -> P1
+        # lower roller 
+        # P1 -> P2
+        # raise roller
+        # P2 -> P1 
+        # P1 -> P3
+        # lower roller
+        # P3 -> P4
+        # raise roller 
+        # P4 -> P3 (backwards)
+        # P3 -> P5zip and a list of tuples if you primarily need indexed access and want to keep it simple.
+        # lower roller 
+        # P5 -> P6
+        # raise roller
+
+        ###TODO make this more verbose by writing out zip (pose, true)
+        points = [
+            initial_pose,
+            sweep_points[0],
+            sweep_points[1],
+            sweep_points[0],
+            sweep_points[2],
+            sweep_points[3],
+            sweep_points[2],
+            sweep_points[4],
+            sweep_points[5]
+        ]                
+        roller_up = [   
+            True, 
+            False, 
+            True, 
+            True, 
+            False, 
+            True, 
+            True, 
+            False, 
+            True
+        ]
+        waypoints = list(zip(points, roller_up))
+        return waypoints
+
+    def smooth_pothole(self):
+        # first drive back to pos
+        self.move_obj.goal_pose = self.safe_pose
+        self.move_obj.turn_yaw()
+        self.move_obj.move_x()
+        #
+        waypoints = self.calc_smoothing_waypoints(
+            self.pothole_goal, self.safe_pose, self.pothole_diameter
+        )
+        # waypoints have start position
+        for waypoint, move_roller_up in waypoints:
+            self.move_obj.goal_pose = waypoint
+            self.move_obj.turn_yaw()
+            self.move_obj.move_x()
+
+            if move_roller_up != self.roller_up:
+                if move_roller_up:
+                    self.raise_roller()
+                elif not move_roller_up:
+                    self.lower_roller()
+
+        return
+
+    def lower_roller(self):
+        self.roller_up = False
+        return super().lower_roller()
+
+    def raise_roller(self):
+        self.roller_up = True
+        return super().raise_roller()
+
+    def retreat_from_pothole(self):
+        # move to safe distance away from pothole
+        pass

@@ -63,3 +63,43 @@ def angle_from_quaternion(
         return r
     else:
         return np.degree(r)
+    
+def find_midpoint(point_a: list, point_b: list) -> list:
+
+    midpoint = [
+        (point_a[0] + point_b[0]) / 2.0,
+        (point_a[1] + point_b[1]) / 2.0
+    ]
+    return midpoint
+
+def find_slope(point_a: list, point_b: list, perpendicular: bool=False) -> float:
+    
+    if perpendicular == True:
+        if point_b[0] - point_a[0] == 0: # AB is vertical 
+            m_perp = 0   
+        elif point_b[1] - point_a[1] == 0: # AB is horizontal
+            m_perp = None 
+        else:
+            m_ab = (point_b[1] - point_a[1]) / (point_b[0] - point_a[0])
+            m_perp = -1 / m_ab
+
+        return m_perp
+
+    elif perpendicular==False:
+        if point_b[0] - point_a[0] == 0: # AB is vertical 
+            m_ab = None 
+        elif point_b[1] - point_a[1] == 0: # AB is horizontal
+            m_ab = 0 
+        else:
+            m_ab = (point_b[1] - point_a[1]) / (point_b[0] - point_a[0])
+
+        return m_ab
+
+def pose_from_point(point: list) -> Pose:
+    pose = Pose()
+    pose.position.x = point[0]
+    pose.position.y = point[1]
+    return pose
+
+def point_from_pose(pose: Pose) -> list:
+    return [pose.position.x, pose.position.y]
