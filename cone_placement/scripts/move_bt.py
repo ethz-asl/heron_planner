@@ -38,9 +38,14 @@ class TaskBT:
         )
         self.visualize_only = False
         move_base = bt.MoveBase("move_base to goal", goal_pose)
-        move = bt.Move("move to goal", goal_pose)
-
-        self.root.add_children([move_base, move])
+        move = bt.Move("move to goal", "combined", goal_pose)
+        move_forward = bt.Move("move forward", "forward", goal_distance=0.5)
+        move_reverse = bt.Move("move backwards", "reverse", goal_distance=1.0)
+        move_right = bt.Move("move right", "right", goal_distance=0.8)
+        move_left = bt.Move("move left", "left", goal_distance=1.2)
+        move_cw = bt.Move("move cw", "cw", goal_distance=np.deg2rad(180))
+        move_ccw = bt.Move("move ccw", "ccw", goal_distance=np.deg2rad(45))
+        self.root.add_children([move_base, move, move_cw, move_ccw])
 
         #  self.root.add_children(sequence)
 
@@ -96,8 +101,11 @@ def main():
     goal_pose = Pose()
     goal_pose.position.x = 2.0
     goal_pose.position.y = -1.0
-    goal_pose.orientation.w = 1.0
+    goal_pose.orientation.z = 1.0
 
+    forward_dist = 0.5
+    reverse_dist = 1.0
+    
     rospy.loginfo("Sending goal to robot")
     node = TaskBT(goal_pose)
 

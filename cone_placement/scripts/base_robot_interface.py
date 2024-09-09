@@ -17,7 +17,7 @@ from actionlib_msgs.msg import GoalStatus
 class Move(ABC):
     def __init__(
         self,
-        goal_pose: Pose,
+        goal_pose: Pose = Pose(),
         rate: float = 1.0,
         tol_lin: float = 0.05,
         tol_ang: float = 5.0 * np.pi / 180.0,
@@ -38,50 +38,21 @@ class Move(ABC):
         pass
 
     @abstractmethod
-    def init_move_sequence(self) -> None:
-        pass
-
-    @abstractmethod
-    def at_goal_x(self) -> bool:
-        pass
-
-    @abstractmethod
-    def at_goal_y(self) -> bool:
-        pass
-
-    @abstractmethod
-    def at_goal_yaw(self) -> bool:
-        pass
-
-    @abstractmethod
-    def move_x(self) -> None:
-        """Move robot in X direction for predefined distance"""
-        pass
-
-    @abstractmethod
-    def move_y(self) -> None:
-        """Move robot in X direction for predefined distance"""
-        pass
-
-    @abstractmethod
-    def turn_yaw(self) -> None:
-        """Move robot in Z angular direction for predefined distance"""
+    def init_move(self) -> None:
         pass
 
 
-class MovePredefinedTask(ABC):
+class PredefinedPath(ABC):
     def __init__(
         self,
-        start_pose: Pose,
-        task_type: str = "pot_hole",
+        path_type: str = "pothole",
         rate: float = 1.0,
         tol_lin: float = 0.05,
         tol_ang: float = 5.0 * np.pi / 180.0,
         max_lin_vel: float = 0.2,
         max_ang_vel: float = 0.2,
     ) -> None:
-        self.start_pose: Pose = start_pose
-        self.task_type: str = task_type
+        self.path_type: str = path_type
         self.current_pose: Optional[Pose] = None
         self.rate: rospy.Rate = rospy.Rate(rate)
         self.tol_lin = tol_lin
@@ -90,7 +61,7 @@ class MovePredefinedTask(ABC):
         self.max_ang_vel = max_ang_vel
 
     @abstractmethod
-    def init_predefined_task(self) -> bool:
+    def init_predefined_path(self) -> bool:
         pass 
 
 class PotholeFilling(ABC):

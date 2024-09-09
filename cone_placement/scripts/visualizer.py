@@ -104,8 +104,8 @@ class BTVisualizer:
                 f = open(self.svg_document, encoding="utf8")
                 f.close()
                 shutil.rmtree(self.temp_dir)
-            except IOError:
-                pass
+            except IOError(f"Visualisation IOError when closing"):
+                f.close()
 
     def tick(self) -> pt.common.Status:
         """Tick the tree once and display its status."""

@@ -7,7 +7,7 @@ from heron_msgs.msg import MoveAction, MoveGoal, MoveFeedback
 from geometry_msgs.msg import Pose, PoseStamped
 from actionlib_msgs.msg import GoalStatus
 
-from giraffe_interface import GiraffeMove
+from giraffe_interface import GiraffeMove, GiraffeMoveX, GiraffeMoveY, GiraffeTurnYaw
 
 
 class MoveServer(object):
@@ -30,19 +30,39 @@ class MoveServer(object):
         self._server.start()
         self._cancel_requested = False
 
-    def execute_cb(self, goal: PoseStamped) -> None:
-        rospy.loginfo(f"Recieved goal {goal.target_pose.pose}")
-
-        goal_pose = Pose()
-        goal_pose = goal.target_pose.pose
+    def execute_cb(self, goal: MoveGoal) -> None:
+        
+        rospy.loginfo(f"Recieved goal type {goal.direction.data}")
         move = None
 
         self._server.preempt_request = False
         feedback_pub = lambda pose: self._publish_feedback(pose)
 
         if self._robot_name == "giraffe":
-            move = GiraffeMove(goal_pose, feedback_pub)
-            rospy.sleep(2.0)
+            if goal.direction.data == "combined":
+                move = GiraffeMove(goal.target_pose.pose, feedback_pub)
+                rospy.sleep(1.0)
+            elif goal.direction.data == "forward":
+                move = GiraffeMoveX(goal.distance, feedback_pub)
+                rospy.sleep(1.0)
+            elif goal.direction.data == "reverse":
+                move = GiraffeMoveX(goal.distance, feedback_pub, reverse=True)
+                rospy.sleep(1.0)
+            elif goal.direction.data == "right":
+                move = GiraffeMoveY(goal.distance, feedback_pub)
+                rospy.sleep(1.0)
+            elif goal.direction.data == "left":
+                move = GiraffeMoveY(goal.distance, feedback_pub, left=True)
+                rospy.sleep(1.0)
+            elif goal.direction.data == "cw":
+                move = GiraffeTurnYaw(goal.distance, feedback_pub)
+                rospy.sleep(1.0)
+            elif goal.direction.data == "ccw":
+                move = GiraffeTurnYaw(goal.distance, feedback_pub, ccw=True)
+                rospy.sleep(1.0)
+            else:
+                rospy.logerr(f"goal.direction must be [combined, forward, reverse], yours is {goal.direction.data}")
+                raise ValueError
         elif self._robot_name == "heron":
             raise NotImplementedError
         else:
@@ -60,7 +80,7 @@ class MoveServer(object):
                 success = False
                 break
 
-            elif move.init_move_sequence():
+            elif move.init_move():
                 self._feedback.base_position.pose = move.current_pose
                 self._server.publish_feedback(self._feedback)
                 self._server.set_succeeded()

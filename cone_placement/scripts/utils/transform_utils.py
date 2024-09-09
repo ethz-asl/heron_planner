@@ -45,7 +45,11 @@ def angle_from_quaternion(
         - default radians, rotation around yaw 
         - zyx euler rotation order
     """
-
+    
+    # Ensure quaternion has a non-zero norm
+    if np.isclose(np.linalg.norm(quaternion), 0):
+        raise ValueError("Quaternion has zero norm, cannot calculate angle.")
+    
     r = Rotation.from_quat(quaternion)
 
     if axis == "yaw":
@@ -63,6 +67,41 @@ def angle_from_quaternion(
         return r
     else:
         return np.degree(r)
+    
+def quaternion_from_angle(
+        angle: float, axis: str = "yaw", radians: bool = True
+) -> np.ndarray:
+    """
+    Convert an Euler angle to a quaternion
+        - default radiuans, rotation around yaw
+        - zyx euler rotation order
+
+    return [x, y, z, w]
+    """
+    if not radians:
+        angle = np.radians(angle)
+
+    if axis == "yaw":
+        r = Rotation.from_euler("z", angle)
+    elif axis == "pitch":
+        r = Rotation.from_euler("y", angle)
+    elif axis == "roll":
+        r = Rotation.from_euler("x", angle)
+    else:
+        raise ValueError(f"only [yaw, pitch, roll] accepted, ({axis})")
+    
+    return r.as_quat()    
+
+def empty_pose() -> Pose:
+    """
+    empty pose with neutral non-zero quaternion
+    """
+    pose = Pose()
+    pose.position.x = 0.0
+    pose.position.y = 0.0
+    pose.position.z = 0.0
+    pose.orientation.w = 1.0
+    return pose
     
 def find_midpoint(point_a: list, point_b: list) -> list:
 
@@ -95,11 +134,47 @@ def find_slope(point_a: list, point_b: list, perpendicular: bool=False) -> float
 
         return m_ab
 
-def pose_from_point(point: list) -> Pose:
+def find_parallel_pose(pose_a: Pose, pose_b: Pose, distance: float, towards: bool = True) -> Pose:
+    """
+    finds a new pose 
+    distance from pose_a along the vector pose_a -> pose_b
+    towards: true -> orientation facing pose_a
+    """
+    [x_a, y_a] = point_from_pose(pose_a)
+    [x_b, y_b] = point_from_pose(pose_b)
+
+    vector = np.array([x_b - x_a, y_b - y_a])
+    magnitude = np.sqrt(np.sum(vector**2))
+    if magnitude == 0:
+        raise ValueError("pose_a and pose_b are identical")
+    
+    unit_vector = vector / magnitude
+    
+    new_point = np.array([x_a, y_a]) + distance * unit_vector    
+
+    new_angle = np.arctan2(y_b - y_a, x_b - x_a)
+    
+    if towards:
+        new_angle = new_angle + np.pi  
+
+    new_quat = quaternion_from_angle(new_angle)
+
+    return pose_from_point(new_point, new_quat)
+
+def pose_from_point(point: list, orientation: np.ndarray = np.ndarray([0, 0, 0, 1])) -> Pose:
     pose = Pose()
     pose.position.x = point[0]
     pose.position.y = point[1]
+    
+    pose.orientation.x = orientation[0]
+    pose.orientation.y = orientation[1]
+    pose.orientation.z = orientation[2]  
+    pose.orientation.w = orientation[3]
+    
     return pose
 
 def point_from_pose(pose: Pose) -> list:
     return [pose.position.x, pose.position.y]
+
+def quaternion_from_pose(pose: Pose) -> list:
+    return [pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w]

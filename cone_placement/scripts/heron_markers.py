@@ -185,7 +185,7 @@ class DrawText:
     id = 3, cyl.id = 6, text.id = 6
     """
 
-    def clear_cone(self, id: int):
+    def clear_text(self, id: int):
         """
         from id, set marker to delete
         """

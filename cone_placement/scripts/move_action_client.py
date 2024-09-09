@@ -22,11 +22,23 @@ class MoveClient:
         rospy.loginfo(f"Connecting to {node_name_}...")
         self._client.wait_for_server(rospy.Duration(5.0))
 
-    def init_move(self, goal_pose: Pose, ref_frame: str = "map") -> None:
+    def send_distance_goal(self, direction: str, distance: float) -> None:
+        """
+        Move the robot with distance direction with type
+        """
+        goal = MoveGoal()
+        goal.direction.data = direction
+        goal.distance = distance
+
+        rospy.loginfo(f"Sending goal")
+        self._client.send_goal(goal)
+
+    def send_combined_move(self, goal_pose: Pose, ref_frame: str = "map") -> None:
         """
         Move the robot to a target pose.
         """
         goal = MoveGoal()
+        goal.direction.data = 'combined'
         print(f"frame_id: {goal.target_pose.header.frame_id}")
         print(f"time: {goal.target_pose.header.stamp}")
         print(f"pose: {goal.target_pose.pose}")
@@ -35,9 +47,9 @@ class MoveClient:
         goal.target_pose.header.stamp = rospy.Time.now()
         goal.target_pose.pose = goal_pose
 
-        # send the goal
-        rospy.loginfo(f"Sending the goal")
+        rospy.loginfo(f"Sending combined goal")
         self._client.send_goal(goal)
+        # self._client.wait_for_result()
 
     def get_status(self) -> int:
         """

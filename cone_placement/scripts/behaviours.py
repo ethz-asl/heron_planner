@@ -9,6 +9,7 @@ from geometry_msgs.msg import Pose, PoseStamped
 import giraffe_interface
 from move_action_client import MoveClient
 from move_base_action_client import MoveBaseClient
+from predefined_path_action_client import PredefinedPathClient
 from moma_utils.ros.panda_client import PandaArmClient, PandaGripperClient
 from grasp_node import GraspExecutionAction
 
@@ -51,14 +52,19 @@ class Move(pt.behaviour.Behaviour):
     3. angular z (yaw)
     """
 
-    def __init__(self, name: str, goal_pose: Pose, ref_frame: str = "map"):
+    def __init__(self, name: str, goal_direction: str = 'combined', goal_pose: Pose = Pose(), goal_distance : float = 0.0, ref_frame: str = "map"):
         super().__init__(name)
         self._client = MoveClient()
+        self._goal_direction = goal_direction
         self._goal_pose = goal_pose
+        self._goal_distance = goal_distance
         self._ref_frame = ref_frame
 
     def initialise(self):
-        self._client.init_move(self._goal_pose, self._ref_frame)
+        if self._goal_direction == 'combined':
+            self._client.send_combined_move(self._goal_pose, self._ref_frame)
+        else:
+            self._client.send_distance_goal(self._goal_direction, self._goal_distance)
 
     def update(self) -> pt.common.Status:
         status = self._client.get_status()
@@ -74,7 +80,7 @@ class Move(pt.behaviour.Behaviour):
         if new_status == pt.common.Status.INVALID:
             self._client.cancel_goal()
 
-class MovePredefinedPath(pt.behaviour.Behaviour):
+class PredefinedPath(pt.behaviour.Behaviour):
     """
     From a start pose, start a predefined path trajectory for the base
 
@@ -83,13 +89,13 @@ class MovePredefinedPath(pt.behaviour.Behaviour):
     """
     def __init__(self, name: str, start_pose: Pose, path: str = "pot_hole" ,ref_frame: str = "map"):
         super().__init__(name)
-        self._client = MovePredefinedPathClient()
+        self._client = PredefinedPathClient()
         self._start_pose = start_pose
         self._path = path
         self._ref_frame = ref_frame
 
     def initialise(self):
-        self._client.init_predefined_move(self._start_pose, self._path, self._ref_frame)
+        self._client.init_predefined_path(self._start_pose, self._path, self._ref_frame)
 
     def update(self) -> pt.common.Status: 
         status = self._client.get_status()
