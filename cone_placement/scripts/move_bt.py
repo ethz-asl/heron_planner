@@ -45,7 +45,14 @@ class TaskBT:
         move_left = bt.Move("move left", "left", goal_distance=1.2)
         move_cw = bt.Move("move cw", "cw", goal_distance=np.deg2rad(180))
         move_ccw = bt.Move("move ccw", "ccw", goal_distance=np.deg2rad(45))
-        self.root.add_children([move_base, move, move_cw, move_ccw])
+
+        self.move_to_goal = py_trees.composites.Sequence(name="MoveToGoal", memory=True)
+        self.move_to_goal.add_children([move_base, move])
+
+        self.move_around = py_trees.composites.Sequence(name="MoveAround", memory=True)
+        self.move_around.add_children([move_right, move_cw, move_left, move_ccw])
+
+        self.root.add_children([self.move_to_goal, self.move_around])
 
         #  self.root.add_children(sequence)
 
