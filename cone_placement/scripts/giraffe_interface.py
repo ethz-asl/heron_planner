@@ -3,25 +3,25 @@
 from __future__ import annotations  # for type hinting
 from typing import Callable, Optional
 
+import os
 import rospy
+import rospkg
 import actionlib
 import numpy as np
 import scipy as sc
 from scipy.spatial.transform import Rotation
 
-from std_msgs.msg import String
+from std_msgs.msg import String, Bool
 from geometry_msgs.msg import Pose, PoseWithCovarianceStamped, Twist
 from nav_msgs.msg import Odometry
-from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
+from gazebo_msgs.msg import ModelStates
+from std_srvs.srv import Trigger
 
-# from move_action.msg import MoveAction, MoveGoal, MoveFeedback
-from actionlib_msgs.msg import GoalStatus
-
-from base_robot_interface import Move, PredefinedPath, PotholeFilling
-from move_base_action_client import MoveBaseClient
+from base_robot_interface import Move, AtPose, ParamClient, TopicClient, ComponentStatus
 
 # import moma_utils.transform_utils as utils # should migrate to moma_utils
-import utils.transform_utils as utils
+import cone_placement.gazebo_utils as gazebo_utils
+import cone_placement.transform_utils as utils
 
 
 class GiraffeMove(Move):
@@ -286,7 +286,7 @@ class GiraffeMoveX(Move):
         if self.reverse:
             vel = -vel
 
-        twist_msg.linear.x = np.clip(vel, -self.max_lin_vel, self.max_lin_vel)
+        twist_msg.linear.x = np.clip(vel, -self.max_lin_vel/2, self.max_lin_vel/2)
         twist_msg.linear.y = 0.0
         twist_msg.angular.z = 0.0  # No rotation needed
 
@@ -304,7 +304,7 @@ class GiraffeMoveX(Move):
 
     def at_goal_x(self) -> bool:
         """
-        Check if the robot has moved the desired forward distance
+        Check if the robot has moved the desired distance
         """
         current_x = self.current_pose.position.x
         current_y = self.current_pose.position.y
@@ -326,6 +326,8 @@ class GiraffeMoveX(Move):
             target_x = -self.distance
         else:
             target_x = self.distance
+
+        rospy.logwarn(f"target_x: {target_x:.2f}, delta_x_local: {delta_x_local:.2f}")
 
         return abs(target_x - delta_x_local) < self.tol_lin
 
@@ -410,7 +412,7 @@ class GiraffeMoveY(Move):
             vel = -vel
 
         twist_msg.linear.x = 0.0
-        twist_msg.linear.y = np.clip(vel, -self.max_lin_vel, self.max_lin_vel)
+        twist_msg.linear.y = np.clip(vel, -self.max_lin_vel/2, self.max_lin_vel/2)
         twist_msg.angular.z = 0.0  # No rotation needed
 
         rospy.loginfo(
@@ -537,7 +539,7 @@ class GiraffeTurnYaw(Move):
 
         twist_msg.linear.x = 0.0
         twist_msg.linear.y = 0.0
-        twist_msg.angular.z = np.clip(vel, -self.max_ang_vel, self.max_ang_vel)
+        twist_msg.angular.z = np.clip(vel, -self.max_ang_vel/2, self.max_ang_vel/2)
 
         rospy.loginfo(
             f"TurnYaw: Sending velocity {twist_msg.angular.z:.2f} [rad/s]"
@@ -568,307 +570,335 @@ class GiraffeTurnYaw(Move):
 
         return abs(yaw_diff) < self.tol_ang
 
-class GiraffePredefinedPath(PredefinedPath):
-    """
-    """
+class GiraffeComponents():
+    def __init__(self):
+        self.init_srvs()
+        self.init_publishers()
+        self.init_gazebo_models()
 
-    def __init__(
-        self,
-        feedback_pub: Callable[[Pose], None],
-        path_type: String,
-        rate: float = 1.0,
-        tol_lin: float = 0.05,
-        tol_ang: float = 5.0 * np.pi / 180.0,
-        max_lin_vel: float = 0.2,
-        max_ang_vel: float = 0.2,
-    ) -> None:
-        self.path_type: String = path_type
-        self.feeback_pub: Callable[[Pose], None] = feedback_pub
-        self.current_pose: Optional[Pose] = None
-        self.rate: rospy.Rate = rospy.Rate(rate)
-        self.tol_lin = tol_lin
-        self.tol_ang = tol_ang
-        self.max_lin_vel = max_lin_vel
-        self.max_ang_vel = max_ang_vel
+    def init_publishers(self):
+        self.hatch_up_pub = rospy.Publisher("/hatch_up", Bool, queue_size=10, latch=True)
+        self.roller_up_pub = rospy.Publisher("/roller_up", Bool, queue_size=10, latch=True)
 
-        self.odom_sub = rospy.Subscriber("/odom", Odometry, self.odom_cb)
+        rospy.sleep(0.5)
+        msg = Bool()
+        msg.data = True
+        self.hatch_up_pub.publish(msg)
+        self.roller_up_pub.publish(msg)
+        rospy.logwarn("published messages")
+
+    def init_srvs(self):
+        self.open_hatch_srv = rospy.get_param("~open_hatch_srv", "/open_hatch")
+        self.close_hatch_srv = rospy.get_param("~close_hatch_srv", "/close_hatch")
+        self.raise_roller_srv = rospy.get_param("~raise_roller_srv", "/raise_roller")
+        self.lower_roller_srv = rospy.get_param("~lower_roller_srv", "/lower_roller")
+        
+        rospy.wait_for_service(self.open_hatch_srv)
+        rospy.wait_for_service(self.close_hatch_srv)
+        rospy.wait_for_service(self.raise_roller_srv)
+        rospy.wait_for_service(self.lower_roller_srv)
+
+    def init_gazebo_models(self):
+        pkg = rospkg.RosPack()
+        pkg_path = pkg.get_path('heron_demo')
+
+        model_mesh_path = os.path.join(pkg_path + '/meshes')
+        gazebo_model_path = os.getenv('GAZEBO_MODEL_PATH', '')
+        
+        if model_mesh_path not in gazebo_model_path:
+            new_gazebo_model_path = f"{gazebo_model_path}:{model_mesh_path}" if gazebo_model_path else model_mesh_path
+            os.environ['GAZEBO_MODEL_PATH'] = new_gazebo_model_path
+            print(f"GAZEBO_MODEL_PATH set to: {new_gazebo_model_path}")
+        else:
+            print(f"GAZEBO_MODEL_PATH already contains: {model_mesh_path}")
+
+        self.arr_name = "arrow"
+        self.arr_path = pkg_path + "/urdf/arrow.sdf"
+
+        # self.platypus_name = "platypus"
+        # self.platypus_path = pkg_path + "/meshes/platypus/platypus.sdf"
+        
+        self.open_pose = Pose()
+        self.open_pose.position.x = 0.0
+        self.open_pose.position.y = 0.0
+        self.open_pose.position.z = 0.0
+        self.open_pose.orientation.w = 1.0
+
+        self.close_pose = Pose()
+        self.close_pose.position.x = 0.0
+        self.close_pose.position.y = 0.0
+        self.close_pose.position.z = 0.54
+        self.close_pose.orientation.x = 1.0 
+
+        self.raise_pose = Pose()
+        self.raise_pose.position.x = 2.0
+        self.raise_pose.position.y = 1.0
+        self.raise_pose.position.z = 0.0
+        self.raise_pose.orientation.w = 1.0
+
+        self.lower_pose = Pose()
+        self.lower_pose.position.x = 2.0
+        self.lower_pose.position.y = 1.0
+        self.lower_pose.position.z = 3.0
+        self.lower_pose.orientation.z = 1.0
+
+
+    def trigger(self, component: str, cmd: str) -> bool:
+        if component == "hatch":
+            success = self.trigger_hatch(cmd)
+        elif component == "roller":
+            success = self.trigger_roller(cmd)
+        else:
+            raise ValueError(f"only [hatch, roller] allowed, {component}")
+        
+        return success
+    
+    def trigger_srv(self, srv_name: str) -> bool:
+        try:
+            srv = rospy.ServiceProxy(srv_name, Trigger)
+            res = srv()
+            if not res.success:
+                rospy.logerr(f"{res.message}")
+            
+            return res.success
+        except rospy.ServiceException as err:
+            rospy.logerr(f"{self.open_hatch_srv} srv call failed: {err}")
+
+        return False
+        
+    def trigger_hatch(self, cmd: str) -> bool:
+        if cmd == "open":
+            success = self.open_hatch()
+        elif cmd == "close": 
+           success = self.close_hatch()
+        else:
+           raise ValueError(f"cmd not valid: [{cmd}]")
+        rospy.sleep(2.0)
+        return success 
+
+    def open_hatch(self) -> bool:
+        rospy.loginfo("Opening hatch")
+        msg = Bool()
+        if not gazebo_utils.model_exists(self.arr_name):
+            gazebo_utils.spawn_model(self.arr_name, self.arr_path, self.open_pose)
+        else:
+            gazebo_utils.teleport_model(self.arr_name, self.open_pose)
+
+        if self.trigger_srv(self.open_hatch_srv):
+            msg.data = False
+            self.hatch_up_pub.publish(msg)
+            return True
+        else:
+            msg.data = True
+            self.hatch_up_pub.publish(msg)
+            return False
+
+    def close_hatch(self):
+        rospy.loginfo("Closing hatch")
+        msg = Bool()
+        if not gazebo_utils.model_exists(self.arr_name):
+            gazebo_utils.spawn_model(self.arr_name, self.arr_path, self.close_pose)
+        else:
+            gazebo_utils.teleport_model(self.arr_name, self.close_pose)
+            rospy.sleep(1.0)
+            gazebo_utils.delete_model(self.arr_name)
+            rospy.sleep(1.0)
+
+        if self.trigger_srv(self.close_hatch_srv):
+            msg.data = True
+            self.hatch_up_pub.publish(msg)
+            return True
+        else:
+            msg.data = False
+            self.hatch_up_pub.publish(msg)
+            return False
+
+    def trigger_roller(self, cmd: str) -> bool:
+        if cmd == "raise":
+            success = self.raise_roller()
+        elif cmd == "lower": 
+           success = self.lower_roller()
+        else:
+           raise ValueError(f"cmd not valid: [{cmd}]")
+
+        return success 
+
+    def raise_roller(self) -> bool:
+        rospy.loginfo("Raising roller")
+        msg = Bool()
+        if not gazebo_utils.model_exists(self.arr_name):
+            gazebo_utils.spawn_model(self.arr_name, self.arr_path, self.close_pose)
+        else:
+            gazebo_utils.teleport_model(self.arr_name, self.close_pose)
+            rospy.sleep(1.0)
+            gazebo_utils.delete_model(self.arr_name)
+            rospy.sleep(1.0)
+
+        if self.trigger_srv(self.raise_roller_srv):
+            msg.data = True
+            self.roller_up_pub.publish(msg)
+            return True
+        else:
+            msg.data = False
+            self.roller_up_pub.publish(msg)
+            return False
+        
+    def lower_roller(self):
+        rospy.loginfo("Lowering roller")
+        msg = Bool()
+        if not gazebo_utils.model_exists(self.arr_name):
+            gazebo_utils.spawn_model(self.arr_name, self.arr_path, self.open_pose)
+        else:
+            gazebo_utils.teleport_model(self.arr_name, self.open_pose)
+
+        if self.trigger_srv(self.lower_roller_srv):
+            msg.data = False
+            self.roller_up_pub.publish(msg)
+            return True
+        else:
+            msg.data = True
+            self.roller_up_pub.publish(msg)
+            return False
+
+class GiraffeComponentStatus(ComponentStatus):
+    def __init__(self, component: str) -> None: 
+        super().__init__(component)
+        self.hatch_up = None
+        self._hatch_sig = False
+        self.roller_up = None
+        self._roller_sig = False
+
+        if component == "hatch":
+            rospy.Subscriber("/hatch_up", Bool, self.hatch_up_cb)
+            self.wait_for_hatch_status()
+        elif component == "roller":
+            rospy.Subscriber("/roller_up", Bool, self.roller_up_cb)
+            self.wait_for_roller_status()
+        else:
+            raise ValueError(f"only [hatch, roller] allowed, {component}")
+        
+    def is_hatch_up(self) -> Bool:
+        rospy.loginfo(f"Is the hatch up {self.hatch_up}")
+        return self.hatch_up
+
+    def hatch_up_cb(self, msg: Bool) -> None:
+        self.hatch_up = msg.data
+        self._hatch_sig = True
+
+    def wait_for_hatch_status(self, timeout: float = 5.0) -> bool:
+        start_time = rospy.get_time()
+        rate = rospy.Rate(10)
+        while not self._hatch_sig and rospy.get_time() - start_time < timeout:
+            rate.sleep()
+        
+        if self._hatch_sig:
+            rospy.loginfo("hatch status recieved")
+        else:
+            rospy.logerr(f"timeout, hatch status not recieved in {timeout}[s]")
+        return self._hatch_sig
+
+
+    def is_roller_up(self) -> Bool:
+        if self.roller_up is not None:
+            rospy.loginfo(f"Is the roller up: {self.roller_up}")
+            return self.roller_up
+        else:
+            rospy.logerr("self.roller_up is None")
+            return False
+
+    def roller_up_cb(self, msg: Bool) -> None:
+        self.roller_up = msg.data
+        self._roller_sig = True
+        
+    def wait_for_roller_status(self, timeout: float = 5.0) -> bool:
+        start_time = rospy.get_time()
+        rate = rospy.Rate(10)
+        while not self._roller_sig and rospy.get_time() - start_time < timeout:
+            rate.sleep()
+        
+        if self._roller_sig:
+            rospy.loginfo("roller status recieved")
+        else:
+            rospy.logerr(f"timeout, roller status not recieved in {timeout}[s]")
+        return self._roller_sig
+
+class GiraffeAtPose(AtPose):
+    def __init__(self) -> None:
+        super().__init__()
+
+        self.load_parameters()
+        rospy.Subscriber("/odom", Odometry, self.odom_cb)
+        rospy.Subscriber("/gazebo/model_states", ModelStates, self.gazebo_cb)
+        
+        self.current_pose: Pose = None
+        self.gazebo_pose: Pose = None
+
+    def load_parameters(self) -> None:
+        self.robot_name = rospy.get_param("~robot_name", "giraffe")
 
     def odom_cb(self, msg: Odometry) -> None:
         self.current_pose = msg.pose.pose
 
-    def init_predefined_path(self) -> bool:
-        """
-        """
-        # first check if robot is at start pose from odometry with tolerance
-        if self.path_type == String("pothole"):
-            task = GiraffePotholeFilling(self.feeback_pub)
-            rospy.loginfo("Commencing pot hole path")
-            success = task.init_pothole_filling()
+    def amcl_cb(self, msg: PoseWithCovarianceStamped) -> None:
+        self.current_pose = msg.pose.pose
+
+    def gazebo_cb(self, msg: ModelStates) -> None: 
+        if self.robot_name in msg.name:
+            for idx in range(len(msg.name)):
+                if msg.name[idx] == self.robot_name:
+                    break
+                else:
+                    continue
+            self.gazebo_pose = msg.pose[idx]
+
+    def at_pose(self, goal_pose: Pose, tol: float = 0.01, ground_truth: bool = True)-> bool:
+        goal_arr = utils.array_from_pose(goal_pose)
+
+        goal_xy = goal_arr[:2]
+        goal_yaw = utils.angle_from_quaternion(goal_arr[3:])
+
+        if ground_truth or self.current_pose is None:
+            gazebo_arr = utils.array_from_pose(self.gazebo_pose)
+            current_xy = gazebo_arr[:2]
+            current_yaw = utils.angle_from_quaternion(gazebo_arr[3:])
         else:
-            rospy.logerr("only pothole path is defined!!")
-            raise NotImplementedError
+            current_arr = utils.array_from_pose(self.current_pose)
+            current_xy = current_arr[:2]
+            current_yaw = utils.angle_from_quaternion(current_arr[3:])
 
-        return success
-
-
-class GiraffePotholeFilling(PotholeFilling):
-    def __init__(self, feedback_pub: Callable[[Pose], None]) -> None:
-
-        # first get pothole pose from paramter server
-        # then move towards with distance. Save as safe postion
-        self.load_parameters()
-
-        self.pothole_sub = rospy.Subscriber(
-            "pothole_goal", Pose, self.pothole_cb, queue_size=10
+        disp_xy = round(
+            np.linalg.norm(current_xy - goal_xy) - 0.5, 3
         )
-        rospy.sleep(1)  # wait for subscriber to latch
-        rospy.logwarn(f"Goal : {self.pothole_goal}")
-        self.move_obj = GiraffeMove(self.pothole_goal, feedback_pub)
-        rospy.logwarn(f"current pose: {self.move_obj.current_pose}")
-        rospy.logwarn(f"goal pose: {self.move_obj.goal_pose}")
-
-        self.safe_pose = utils.find_parallel_pose(
-            self.pothole_goal,
-            self.move_obj.current_pose,
-            self.pothole_diameter * 2,
-            towards=True,
+        delta_yaw = round(
+            utils.wrap_angle(
+                np.arctan2(
+                    np.sin(goal_yaw - current_yaw),
+                    np.cos(goal_yaw - current_yaw)
+                )    
+            ), 3
         )
 
-        self.roller_up = True
-
-    def pothole_cb(self, msg):
-        self.pothole_goal: Pose = msg
-
-    def load_parameters(self) -> None:
-        # self.pothole_goal = utils.empty_pose() # initialise empty pose
-        self.move_base_dist: float = rospy.get_param("~move_base_dist", 1.0)
-        self.deposit_time: float = rospy.get_param("~deposit_time", 5.0)
-        self.pothole_diameter: float = rospy.get_param("~pothole_diameter", 0.3)
-
-    def init_pothole_filling(self) -> bool:
-        # this fnc should sequence through the diff tasks below
-        rospy.logwarn("moving towards pothole location")
-        if self.move_to_start_pos():
-            self.move_over_pothole()
-            # deposit_material
-            rospy.logwarn("starting deposit")
-            self.deposit_material()
-            success = True
-        else:
-            rospy.logerr("did not get to start")
-            success = False
-
-        # moving back to start position
-        rospy.logwarn("moving back to start")
-        success = self.move_to_start_pos()
-        # smooth_pothole
-        # rospy.logwarn("starting smoothing of pothole")
-        # self.smooth_pothole()
-
-        # TODO need to add some checking here
-        return success
-
-    def move_to_start_pos(self) -> bool:
-        rospy.loginfo("moving to start position!")
-
-        # if disp_xy >= self.move_base_dist:
-        rospy.loginfo("move base to safe position")
-        # TODO somehow put this
-        move_base_client = MoveBaseClient()
-        move_base_client.init_move_base(self.safe_pose)
-        while True:
-            status = move_base_client.get_status()
-            if status == 3:
-                self.move_obj.goal_pose = self.safe_pose
-                rospy.loginfo("move to safe position")
-                success = self.move_obj.init_move_sequence()
-                break
-            elif status == 0 or status == 1:
-                success = False
-            else:
-                success = False
-                rospy.logerr("MoveBase failed to get to safe position")
-                break
-
-        return success
-
-    def move_over_pothole(self):
-        # set pothole centre as goal
-        self.move_obj.goal_pose = self.pothole_goal
-
-        # turn front towards pothole goal
-        # self.move_obj.turn_yaw()
-
-        # move only x position
-        self.move_obj.move_x()
-        return
-
-    def deposit_material(self):
-        self.open_hatch()
-        rospy.loginfo(f"Depositing material for %f s", self.deposit_time)
-        rospy.sleep(self.deposit_time)
-        self.close_hatch()
-
-    def open_hatch(self):
-        # some srv call that shows a marker on rviz
-        rospy.logwarn("opening hatch!")
-
-    def close_hatch(self):
-        rospy.logwarn("closing hatch!")
-
-    # need to create waypoint follower
-
-    def find_sweep_points(
-        self, pose_a: Pose, pose_b: Pose, dist_1: float, dist_2: float = None
-    ) -> list:
-        """
-        pose_a : start
-        pose_b : goal
-
-        finds 3 straight trajectories all parallel to pose_a -> pose_b
-        length of trajectories : dist_2 (default is dist_1 * 2)
+        rospy.logwarn(f"Robot at dist {abs(disp_xy):.2}[m] and {delta_yaw:.2}[rad] from goal")
         
-        (P1 -> P2) goes through (pose_a -> pose_b) with pose_b as midpoint
-        (P3 -> P4)  & (P5 -> P6) are parallel to (P1 -> P2) with dist_1 / 2
+        return abs(disp_xy) < tol and abs(delta_yaw) < tol
 
-        returns P1, P2, P3, P4, P5, P6 
-        """
-        # TODO NEED TO CONSIDER ORIENTATION HERE!!!
-        if dist_2 == None:
-            dist_2 = 2 * dist_1
+class GiraffeParamClient(ParamClient):
+    def __init__(self, param_name: str, check_condition: callable):
+        self._param_name = param_name
+        self._check_condition = check_condition
 
-        point_a = utils.point_from_pose(pose_a)
-        point_b = utils.point_from_pose(pose_b)
+    def is_condition_met(self):
+        param_val = rospy.get_param(self._param_name, None)
+        return self._check_condition(param_val)
 
-        para_slope = utils.find_slope(point_a, point_b, perpendicular=False)
-        perp_slope = utils.find_slope(point_a, point_b, perpendicular=True)
+class GiraffeTopicClient(TopicClient):
+    def __init__(self, topic_name: str, msg_type, check_condition: callable):
+        self._is_condition_met = False
+        self._check_condition = check_condition
+        rospy.Subscriber(topic_name, msg_type, self._topic_cb)
 
-        # distance for perp line (d)
-        if perp_slope == None:  # vertical slope
-            d = dist_1 / 2.0
-            perp_1 = (point_b[0], point_b[1] + d)
-            perp_2 = (point_b[0], point_b[1] - d)
-
-        elif perp_slope == 0:  # horizontal slope
-            d = dist_1 / 2.0
-            perp_1 = (point_b[0] + d, point_b[1])
-            perp_2 = (point_b[0] - d, point_b[1])
-
-        else:
-            d = (dist_1 / 2.0) / np.sqrt(1 + perp_slope ** 2)
-            perp_1 = (point_b[0] + d, point_b[1] + perp_slope * d)
-            perp_2 = (point_b[0] - d, point_b[1] - perp_slope * d)
-
-        # distance for perp line (d)
-        d = dist_2 / 2.0
-        if para_slope == None:  # vertical slope
-            P4 = (perp_1[0], perp_1[1] + d)
-            P6 = (perp_2[0], perp_2[1] - d)
-            P3 = (perp_1[0], perp_1[1] - d)
-            P5 = (perp_2[0], perp_2[1] + d)
-
-        elif perp_slope == 0:  # horizontal slope
-            P4 = (perp_1[0] + d, perp_1[1])
-            P6 = (perp_2[0] - d, perp_2[1])
-            P3 = (perp_1[0] - d, perp_1[1])
-            P5 = (perp_2[0] + d, perp_1[1])
-
-        else:
-            d = d / np.sqrt(1 + para_slope ** 2)
-            P4 = (perp_1[0] + d, perp_1[1] + para_slope * d)
-            P6 = (perp_2[0] + d, perp_2[1] + para_slope * d)
-            P3 = (perp_1[0] - d, perp_1[1] - para_slope * d)
-            P5 = (perp_2[0] - d, perp_2[1] - para_slope * d)
-
-        P1 = utils.find_midpoint(P3, P5)
-        P2 = utils.find_midpoint(P4, P6)
-
-        P1 = utils.pose_from_point(P1)
-        P2 = utils.pose_from_point(P2)
-        P3 = utils.pose_from_point(P3)
-        P4 = utils.pose_from_point(P4)
-        P5 = utils.pose_from_point(P5)
-        P6 = utils.pose_from_point(P6)
-
-        return [P1, P2, P3, P4, P5, P6]
-
-    def calc_smoothing_waypoints(
-        self,
-        pothole_goal: Pose,
-        initial_pose: Pose,
-        pothole_diameter: float = 0.3,
-    ) -> dict:
-
-        sweep_points = self.find_sweep_points(
-            pothole_goal, initial_pose, pothole_diameter * 0.75
-        )
-
-        # initial_pose -> P1
-        # lower roller
-        # P1 -> P2
-        # raise roller
-        # P2 -> P1
-        # P1 -> P3
-        # lower roller
-        # P3 -> P4
-        # raise roller
-        # P4 -> P3 (backwards)
-        # P3 -> P5zip and a list of tuples if you primarily need indexed access and want to keep it simple.
-        # lower roller
-        # P5 -> P6
-        # raise roller
-
-        ###TODO make this more verbose by writing out zip (pose, true)
-        points = [
-            initial_pose,
-            sweep_points[0],
-            sweep_points[1],
-            sweep_points[0],
-            sweep_points[2],
-            sweep_points[3],
-            sweep_points[2],
-            sweep_points[4],
-            sweep_points[5],
-        ]
-        roller_up = [True, False, True, True, False, True, True, False, True]
-        waypoints = list(zip(points, roller_up))
-        return waypoints
-
-    def smooth_pothole(self) -> bool:
-        rospy.loginfo("Starting smoothing procedure!")
-        # first drive back to pos
-        self.move_obj.goal_pose = self.safe_pose
-        self.move_obj.turn_yaw()
-        self.move_obj.move_x()
-        #
-        waypoints = self.calc_smoothing_waypoints(
-            self.pothole_goal, self.safe_pose, self.pothole_diameter
-        )
-        # waypoints have start position
-        for waypoint, move_roller_up in waypoints:
-            self.move_obj.goal_pose = waypoint
-            self.move_obj.turn_yaw()
-            self.move_obj.move_x()
-
-            if move_roller_up != self.roller_up:
-                if move_roller_up:
-                    self.raise_roller()
-                elif not move_roller_up:
-                    self.lower_roller()
-
-        if not self.roller_up:
-            self.raise_roller()
-
-        return True
-
-    def lower_roller(self):
-        rospy.logwarn("lowering roller!")
-        self.roller_up = False
-
-    def raise_roller(self):
-        rospy.logwarn("raising roller!")
-        self.roller_up = True
-
-    def retreat_from_pothole(self):
-        # move to safe distance away from pothole
-        pass
+    def _topic_cb(self, msg):
+        self._is_condition_met = self._check_condition(msg)
+        
+    def is_condition_met(self):
+        return self._is_condition_met

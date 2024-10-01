@@ -28,69 +28,19 @@
   <arg name="keyboard" default="false" />
 
   <!-- LAUNCH ACTIONSHERE -->
+  <node pkg="moma_actions" name="move" type="move_action_server.py" output="screen"/>
+  <node pkg="moma_actions" name="components" type="trigger_action_server.py" output="screen"/>
 
-  <!-- MoveIt! -->
-  <include file="$(find moma_gazebo)/launch/giraffe_sim.launch">
-    <arg name="rviz"    value="false"/>
+  <!-- launch giraffe with navigation! -->
+  <include file="$(find moma_gazebo)/launch/giraffe_nav.launch">
+    <arg name="rviz"    value="true"/>
     <arg name="headless" value="$(arg headless)" />
-    <arg name="world"   value="$(arg world_name)"/>
-    <arg name="mobile_base_x" value="$(arg initial_pose_x)"/>
-    <arg name="mobile_base_y" value="$(arg initial_pose_y)"/>
-    <arg name="mobile_base_yaw" value="$(arg initial_pose_yaw)"/>
+    <arg name="world_name"   value="$(arg world_name)"/>
+    <arg name="initial_pose_x" value="$(arg initial_pose_x)"/>
+    <arg name="initial_pose_y" value="$(arg initial_pose_y)"/>
+    <arg name="initial_pose_yaw" value="$(arg initial_pose_yaw)"/>
     <arg name="z_axis_height" value="$(arg z_axis_height)"/>
+    <arg name="joystick" value="$(arg joystick)"/>
   </include>
-
-  <!-- Move base -->
-  <group ns="mobile_base">
-    <!-- Remap topics -->
-    <remap from="/mobile_base/front/scan" to="$(arg scan_topic)"/>
-
-    <!-- Launch map server-->
-    <!-- <arg name="map_file" default="$(find something)")/> -->
-    <!-- <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)")/> -->
-
-    <!-- Run AMCL - NEEDS MAP FIRST TODO-->
-    <!-- <include file="$(find ridgeback_navigation)/launch/include/amcl.launch" > -->
-      <!-- <arg name="scan_topic"     value="$(arg scan_topic)" /> -->
-      <!-- <arg name="initial_pose_x" value="$(arg initial_pose_x)" /> -->
-      <!-- <arg name="initial_pose_y" value="$(arg initial_pose_y)" /> -->
-      <!-- <arg name="initial_pose_a" value="$(arg initial_pose_yaw)" /> -->
-    <!-- </include> -->
-
-    <!-- Launch the move_base pkg -->
-    <include file="$(find gmp_nav)/launch/move_base.launch"/>
-
-    <!-- Interactive marker in RViz  -->
-    <node pkg="interactive_marker_twist_server" 
-      type="marker_server" name="twist_marker_server" output="screen">
-      <rosparam command="load" file="$(find interactive_marker_twist_server)/config/planar.yaml"/>
-      <param name="link_name" value="base_footprint" />
-      <param name="link_offset/z" value="0.25" />
-      <param name="marker_size_scale" value="0.8" />
-    </node>
-
-    <!-- Launch the teleoperation node -->
-    <include file="$(find gmp_bringup)/launch/teleop.launch">
-      <arg name="joystick" default="$(arg joystick)" />
-      <arg name="keyboard" default="$(arg keyboard)" />
-      <arg name="simulation" default="true" />
-      <!-- Turn off teleop lock for movebase in sim -->
-      <arg name="lock_move_base" default="false"/>
-      <arg name="multiple_robots" default="true" />
-    </include>
-
-    <!--Launch the twist publisher muliplexer -->
-    <node pkg="twist_mux" type="twist_mux" name="twist_mux">
-      <rosparam command="load" file="$(find gmp_bringup)/config/twist_mux.yaml" />
-      <remap from="cmd_vel_out" to="swerve_controller/cmd_vel"/>
-    </node>
-        
-  </group>
-
-  <!-- View the robot and set Nav goal in RViz -->
-  <node if="$(arg rviz)" name="$(anon rviz)" pkg="rviz" type="rviz" 
-    respawn="false" args="-d $(find heron_demo)/config/giraffe.rviz" output="screen">
-    <remap from="/move_base_simple/goal" to="/mobile_base/move_base_simple/goal"/>
-  </node>
 
 </launch>

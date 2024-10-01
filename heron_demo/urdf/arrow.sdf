@@ -1,0 +1,72 @@
+<?xml version="1.0" ?>
+<sdf version="1.6">
+  <model name="arrow">
+    <static>0</static> <!-- Make the model movable -->
+    <link name="link">
+      <inertial>
+        <mass>1.0</mass> <!-- You can adjust the mass as needed -->
+      </inertial>
+
+      <!-- Cube for the arrow shaft -->
+      <visual name="shaft">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.4</size> <!-- Shaft dimensions: Width, Depth, Height -->
+          </box>
+        </geometry>
+        <pose>0 0 0.2 0 0 0</pose> <!-- Shaft centered at z = 0.2m -->
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Turquoise</name>
+          </script>
+        </material>
+      </visual>
+
+      <!-- Collision element for physics -->
+      <collision name="collision_shaft">
+        <geometry>
+          <box>
+            <size>0.05 0.05 0.4</size> <!-- Match the size of the visual shaft -->
+          </box>
+        </geometry>
+        <pose>0 0 0.2 0 0 0</pose> <!-- Ensure the collision aligns with the visual -->
+      </collision>
+
+      <!-- Polyline for the triangle arrowhead -->
+      <visual name="arrowhead">
+        <geometry>
+          <polyline>
+            <!-- Define points for the triangle arrowhead -->
+            <point> 0 0.075 </point> <!-- Top point (tip of the arrow) -->
+            <point> -0.075 -0.075 </point> <!-- Bottom left corner -->
+            <point> 0.075 -0.075 </point> <!-- Bottom right corner -->
+            <point> 0 0.075 </point> <!-- Close the triangle (back to tip) -->
+            <height>0.05</height> <!-- Arrowhead thickness -->
+          </polyline>
+        </geometry>
+        <pose>0 0.025 0.45 1.57 0 0</pose> <!-- Arrowhead placed at the top of the shaft -->
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Turquoise</name>
+          </script>
+        </material>
+      </visual>
+
+      <!-- Collision element for the arrowhead -->
+      <collision name="collision_arrowhead">
+        <geometry>
+          <box>
+            <size>0.15 0.15 0.05</size> <!-- Approximate size of the arrowhead -->
+          </box>
+        </geometry>
+        <pose>0 0.025 0.45 1.57 0 0</pose> <!-- Ensure the collision aligns with the visual -->
+      </collision>
+
+      <self_collide>0</self_collide>
+      <enable_wind>0</enable_wind>
+      <kinematic>0</kinematic>
+    </link>
+  </model>
+</sdf>

@@ -1,33 +1,39 @@
 cmake_minimum_required(VERSION 3.0.0)
 project(cone_placement)
 
-find_package(catkin_simple REQUIRED message_generation)
-catkin_simple(ALL_DEPS_REQUIRED)
+find_package(catkin REQUIRED message_generation)
+catkin_python_setup()
 
 # add_compile_options(-std=c++17 -Wall -Wextra)
 
-# catkin_python_setup()
+catkin_package(
+  CATKIN_DEPENDS
+  rospy
+  roscpp
+  std_msgs
+  actionlib
+  actionlib_msgs
+  geometry_msgs
+  sensor_msgs
+  message_generation
+  rostest
+  py_trees
 
+)
 #############
 # LIBRARIES #
-#############
-# cs_add_library(${PROJECT_NAME}
-  # src/simple_navigation_goals.cpp
+# #############
+# include_directories(
+#   ${catkin_INCLUDE_DIRS}
 # )
 
 ############
 # BINARIES #
 ############
+# add_executable(${PROJECT_NAME}_node, src/node.cpp)
+# target_link_libraries(${PROJECT_NAME}_node ${catkin_LIBRARIES})
 
-# cs_add_executable(move_base_action
-  # src/move_base_action.cpp
-# )
-# target_link_libraries(move_base_action ${catkin_LIBRARIES})
-
-add_rostest(test/test_move.test)
 
 ##########
 # EXPORT #
 ##########
-cs_install()
-cs_export()

@@ -3,18 +3,19 @@
 import rospy
 import py_trees as pt
 from typing import List, Any
+import numpy as np
 
 from geometry_msgs.msg import Pose, PoseStamped
 
-import giraffe_interface
-from move_action_client import MoveClient
-from move_base_action_client import MoveBaseClient
-from predefined_path_action_client import PredefinedPathClient
+from moma_actions.giraffe_interface import GiraffeAtPose, GiraffeTopicClient, GiraffeParamClient, GiraffeComponentStatus
+from moma_actions.move_action_client import MoveClient
+from moma_actions.move_base_action_client import MoveBaseClient
+from moma_actions.trigger_action_client import TriggerComponentClient
 from moma_utils.ros.panda_client import PandaArmClient, PandaGripperClient
 from grasp_node import GraspExecutionAction
 
-# TODO implement import heron_interface
-
+import moma_utils.ros.gazebo_utils as gazebo_utils
+import moma_utils.ros.transform_utils as utils
 
 class MoveBase(pt.behaviour.Behaviour):
     """
@@ -46,10 +47,11 @@ class MoveBase(pt.behaviour.Behaviour):
 
 class Move(pt.behaviour.Behaviour):
     """
-    Make small discrete adjustment movements to goal pose
-    1. linear x
-    2. linear y
-    3. angular z (yaw)
+    Make small discrete adjustment movements to goal pose or goal distance
+
+    1. combined (goal: Pose) -> linear x, linear y, and angular z (yaw)
+    2. direction (distance: float) -> specific direction cmd
+    directions: [forward, reverse, left, right, ccw, cw]
     """
 
     def __init__(self, name: str, goal_direction: str = 'combined', goal_pose: Pose = Pose(), goal_distance : float = 0.0, ref_frame: str = "map"):
@@ -62,7 +64,7 @@ class Move(pt.behaviour.Behaviour):
 
     def initialise(self):
         if self._goal_direction == 'combined':
-            self._client.send_combined_move(self._goal_pose, self._ref_frame)
+            self._client.send_combined_goal(self._goal_pose, self._ref_frame)
         else:
             self._client.send_distance_goal(self._goal_direction, self._goal_distance)
 
@@ -80,24 +82,25 @@ class Move(pt.behaviour.Behaviour):
         if new_status == pt.common.Status.INVALID:
             self._client.cancel_goal()
 
-class PredefinedPath(pt.behaviour.Behaviour):
+class TriggerComponent(pt.behaviour.Behaviour):
     """
-    From a start pose, start a predefined path trajectory for the base
+    send a cmd to one of the robot components
 
-    :param start_pose [Pose]: the starting postion the trajectory will start from
-    :param path [str]: the type of path,  [pot_hole]    
+    e.g. painting, roller, led
     """
-    def __init__(self, name: str, start_pose: Pose, path: str = "pot_hole" ,ref_frame: str = "map"):
+    def __init__(self, name: str, component: str, cmd: str):
         super().__init__(name)
-        self._client = PredefinedPathClient()
-        self._start_pose = start_pose
-        self._path = path
-        self._ref_frame = ref_frame
+        self._client = TriggerComponentClient()
+        self._component = component
+        self._cmd = cmd
 
     def initialise(self):
-        self._client.init_predefined_path(self._start_pose, self._path, self._ref_frame)
+        """
+        here add the different kind of components or just send the goal
+        """
+        self._client.send_goal(self._component, self._cmd)
 
-    def update(self) -> pt.common.Status: 
+    def update(self):
         status = self._client.get_status()
         if status == 0 or status == 1:
             return pt.common.Status.RUNNING
@@ -105,8 +108,8 @@ class PredefinedPath(pt.behaviour.Behaviour):
             return pt.common.Status.SUCCESS
         else:
             return pt.common.Status.FAILURE
-        
-    def terminate(self, new_status: pt.common.Status):
+    
+    def terminate(self, new_status):
         if new_status == pt.common.Status.INVALID:
             self._client.cancel_goal()
 
@@ -139,6 +142,71 @@ class GraspObject(pt.behaviour.Behaviour):
     def update(self):
         pass
 
+class RobotAtPose(pt.behaviour.Behaviour):
+    def __init__(self, name: str, goal_pose: Pose, tol: float = 0.01):
+        super().__init__(name)
+        self._goal_pose = goal_pose
+        self._tol = tol
+        robot_name = rospy.get_param("~robot_name", "giraffe")
+        if robot_name == "giraffe":   
+            self._client = GiraffeAtPose()
+        else:
+            rospy.logerr("Not implemented robot besides giraffe")
+            raise(NotImplementedError)
+        
+    def update(self):
+        if self._client.at_pose(self._goal_pose, self._tol):
+            return pt.common.Status.SUCCESS
+        else:
+            return pt.common.Status.FAILURE
+        
+class HatchUp(pt.behaviour.Behaviour):
+    def __init__(self, name: str) -> None:
+        super().__init__(name)
+        robot_name = rospy.get_param("~robot_name", "giraffe")
+        if robot_name == "giraffe":   
+            self._client = GiraffeComponentStatus("hatch")
+        else:
+            rospy.logerr("Not implemented robot besides giraffe")
+            raise(NotImplementedError)
+
+    def update(self):
+        if self._client.is_hatch_up():
+            return pt.common.Status.SUCCESS
+        else:
+            return pt.common.Status.FAILURE
+
+class RollerUp(pt.behaviour.Behaviour):
+    def __init__(self, name: str) -> None:
+        super().__init__(name)
+        robot_name = rospy.get_param("~robot_name", "giraffe")
+        if robot_name == "giraffe":   
+            self._client = GiraffeComponentStatus("roller")
+        else:
+            rospy.logerr("Not implemented robot besides giraffe")
+            raise(NotImplementedError)
+
+    def update(self):
+        if self._client.is_roller_up():
+            return pt.common.Status.SUCCESS
+        else:
+            return pt.common.Status.FAILURE
+
+# class SprayerOff(pt.behaviour.Behaviour):
+#     def __init__(self, name: str) -> None:
+#         super().__init__(name)
+#         robot_name = rospy.get_param("~robot_name", "giraffe")
+#         if robot_name == "giraffe":   
+#             self._client = GiraffeComponentStatus("sprayer")
+#         else:
+#             rospy.logerr("Not implemented robot besides giraffe")
+#             raise(NotImplementedError)
+
+#     def update(self):
+#         if self._client.is_sprayer_off():
+#             return pt.common.Status.SUCCESS
+#         else:
+#             return pt.common.Status.FAILURE
 
 class RSequence(pt.composites.Selector):
     """

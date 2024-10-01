@@ -2,7 +2,7 @@
 
 import rospy
 import copy
-from heron_markers import DrawCones
+from heron_markers import DrawCylinders
 from geometry_msgs.msg import Pose, Point, Quaternion, Vector3
 from gazebo_msgs.srv import GetModelState
 import numpy as np
@@ -11,7 +11,7 @@ import numpy as np
 class ConeMarkerNode:
     def __init__(self):
         self.load_parameters()
-        self.cones = DrawCones()
+        self.cones = DrawCylinders("cone")
         self.cones.clear()
 
     def load_parameters(self):
@@ -43,7 +43,7 @@ class ConeMarkerNode:
         cols = copy.deepcopy(self.colours)
         ids = copy.deepcopy(self.indexes)
 
-        self.cones.draw_cones(poses, cols, ids)
+        self.cones.draw_markers(poses, cols, ids)
 
 
 def main():

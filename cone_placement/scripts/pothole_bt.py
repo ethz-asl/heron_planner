@@ -9,11 +9,13 @@ import functools
 import networkx as nx
 import numpy as np
 import py_trees
+from typing import Tuple
 
 from geometry_msgs.msg import Pose
 from nav_msgs.msg import Odometry
 
-import utils.transform_utils as utils
+import moma_utils.ros.gazebo_utils as gazebo_utils
+import moma_utils.ros.transform_utils as utils
 
 def post_tick_handler(snapshot_visitor, behavior_tree):
     """Prints an ascii tree with the current snapshot status."""
@@ -34,33 +36,25 @@ class PotholeBT:
         self.load_parameters()
 
         self.root = py_trees.composites.Sequence(
-            name="MoveSequence", memory=True
+            name="Pothole", memory=True
         )
+        
         self.visualize_only = False
-        move_base = bt.MoveBase("movebase to pothole", self.safe_pose)
-        move = bt.Move("move to pothole", "combined", self.safe_pose)
-        move_forward = bt.Move("move onto pothole", "forward", goal_distance=self.pothole_diameter * 2.0)
-        move_reverse = bt.Move("move off pothole", "reverse", goal_distance=self.pothole_diameter * 2.0)
-        move_right = bt.Move("move right", "right", goal_distance=0.8)
-        move_left = bt.Move("move left", "left", goal_distance=1.2)
-        move_cw = bt.Move("move cw", "cw", goal_distance=np.deg2rad(180))
-        move_ccw = bt.Move("move ccw", "ccw", goal_distance=np.deg2rad(45))
 
-        self.move_to_pothole = py_trees.composites.Sequence(name="MoveToPothole", memory=True)
-        self.move_to_pothole.add_children([move_base, move])
+        self.init_move_to_pothole()
+        self.init_deposit()
+        self.init_sweeping()
 
-        self.dumping = py_trees.composites.Sequence(name="Dumping", memory=True)
-        self.dumping.add_children([move_forward, move_reverse])
-
-        self.root.add_children([self.move_to_pothole, self.dumping])
+        # self.root.add_children([self.sweep_1, self.sweep_2, self.sweep_3])
+        self.root.add_children([self.move_to_pothole, self.deposit, self.sweep_1])
 
         #  self.root.add_children(sequence)
 
         self.tree = py_trees.trees.BehaviourTree(self.root)
+     
 
-    #  def get_root(self) -> py_trees.composites.Selector:
-    #  return self.root
     def pothole_cb(self, msg: Pose):
+        # need some kind of error catching if goal not published!
         self.pothole_goal: Pose = msg
 
     def odom_cb(self, msg: Odometry):
@@ -79,6 +73,98 @@ class PotholeBT:
             self.pothole_diameter * 2.0,   
         )
         self.roller_up = True
+
+    def init_move_to_pothole(self):
+        mb_to_pothole = bt.MoveBase("movebase to pothole", self.safe_pose)
+        move_to_pothole = bt.Move("move to pothole", "combined", self.safe_pose)
+        at_safe_pos = bt.RobotAtPose("At safe pose?", self.safe_pose)
+
+        self.at_safe = py_trees.composites.Selector(name="PrePotholePose", memory=True)
+        self.at_safe.add_children([at_safe_pos, move_to_pothole])
+        self.move_to_pothole = py_trees.composites.Sequence(name="MoveToPothole", memory=True)
+        self.move_to_pothole.add_children([mb_to_pothole, self.at_safe])
+
+    def init_deposit(self):
+
+        forward_deposit = bt.Move("move onto pothole", "forward", goal_distance=self.pothole_diameter * 2.0)
+        open_hatch = bt.TriggerComponent("open hatch", "hatch", "open")
+        reverse_deposit = bt.Move("move off pothole", "reverse", goal_distance=self.pothole_diameter * 2.0)
+        close_hatch = bt.TriggerComponent("close hatch", "hatch", "close")
+        
+        is_hatch_closed = bt.HatchUp("Is hatch closed?")
+        is_hatch_open = py_trees.decorators.Inverter(is_hatch_closed, name="Is hatch open?")
+
+        open_hatch_sel = py_trees.Selector(name="OpenHatch", memory=True)
+        open_hatch_sel.add_children([is_hatch_open, open_hatch])
+        close_hatch_sel = py_trees.Selector(name="CloseHatch", memory=True)
+        close_hatch_sel.add_children([is_hatch_closed, close_hatch])
+
+        self.deposit = py_trees.composites.Sequence(name="Deposit", memory=True)
+        self.deposit.add_children([forward_deposit, open_hatch_sel, close_hatch_sel, reverse_deposit])
+
+    def init_sweeping(self):
+
+        sweep_1, sweep_2, sweep_3 = self.calculate_sweeps(self.safe_pose, self.pothole_goal, self.pothole_diameter)
+
+        move_sweep_1 = bt.Move("move to sweep 1", "combined", sweep_1)
+        move_sweep_2 = bt.Move("move to sweep 2", "combined", sweep_2)
+        move_sweep_3 = bt.Move("move to sweep 3", "combined", sweep_3)
+
+        at_sweep_1 = bt.RobotAtPose("Ready for sweep 1?", sweep_1)
+        at_sweep_2 = bt.RobotAtPose("Ready for sweep 2?", sweep_2)
+        at_sweep_3 = bt.RobotAtPose("Ready for sweep 3?", sweep_3)
+
+        forward_sweep = bt.Move("sweep forward", "forward", goal_distance=self.pothole_diameter)
+        backward_sweep = bt.Move("sweep backward", "reverse", goal_distance=self.pothole_diameter)
+
+        raise_roller = bt.TriggerComponent("raise roller", "roller", "raise")
+        lower_roller = bt.TriggerComponent("lower roller", "roller", "lower")
+
+        is_roller_up = bt.RollerUp("Is roller up?")
+        is_roller_down = py_trees.decorators.Inverter(is_roller_up, "Is roller down?")
+
+        raise_sel = py_trees.composites.Selector(name="RaiseRoller", memory=True)
+        raise_sel.add_children([is_roller_up, raise_roller])
+
+        lower_sel = py_trees.composites.Selector(name="LowerRoller", memory=True)
+        lower_sel.add_children([is_roller_down, lower_roller])
+
+        sweep_1_sel = py_trees.composites.Selector(name="Sweep1Pos", memory=True)
+        sweep_1_sel.add_children([at_sweep_1, move_sweep_1])
+
+        sweep_2_sel = py_trees.composites.Selector(name="Sweep2Pos", memory=True)
+        sweep_2_sel.add_children([at_sweep_2, move_sweep_2])
+        
+        sweep_3_sel = py_trees.composites.Selector(name="Sweep3Pos", memory=True)
+        sweep_3_sel.add_children([at_sweep_3, move_sweep_3])
+
+        self.sweep_1 = py_trees.composites.Sequence(name="Sweep1", memory=True)
+        self.sweep_1.add_children([sweep_1_sel, lower_sel, forward_sweep, raise_sel, backward_sweep])
+
+        self.sweep_2 = py_trees.composites.Sequence(name="Sweep2", memory=True)
+        self.sweep_2.add_children([sweep_2_sel, lower_sel, forward_sweep, raise_sel, backward_sweep])
+
+        self.sweep_3 = py_trees.composites.Sequence(name="Sweep3", memory=True)
+        self.sweep_3.add_children([sweep_3_sel, lower_sel, forward_sweep, raise_sel, backward_sweep])
+
+
+    def calculate_sweeps(self, start: Pose, pothole: Pose, diameter: float) -> Tuple[Pose, Pose, Pose]:
+        """
+        finds 3 points along perpendicular line pose_a -> pose_b
+        distance from line to pothole is diameter
+        distance between points is diameter / 2
+ 
+        returns 3 starting sweep poses
+        """
+        sweep_1 = utils.find_parallel_pose(pothole, start, diameter, towards=True)
+        sweep_2 = utils.find_perpendicular_pose(sweep_1, pothole, diameter/2.0, towards=True)
+        sweep_3 = utils.find_perpendicular_pose(sweep_1, pothole, diameter/2.0, towards=False)
+
+        sweep_2.orientation = sweep_1.orientation
+        sweep_3.orientation = sweep_1.orientation
+
+        return sweep_1, sweep_2, sweep_3
+
         
     def visualize(self, bt_name: str):
         graph = nx.DiGraph(
@@ -127,9 +213,6 @@ def main():
     goal_pose.position.y = -1.0
     goal_pose.orientation.z = 1.0
 
-    forward_dist = 0.5
-    reverse_dist = 1.0
-    
     rospy.loginfo("starting")
     node = PotholeBT()
 
