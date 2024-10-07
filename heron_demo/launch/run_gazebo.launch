@@ -18,11 +18,13 @@
   <arg name="initial_pose_yaw" default="0" />
   <arg name="scan_topic" default="/front/scan" />
   <arg name="world_name" default="$(find heron_demo)/worlds/road.world"/>
+  <arg name="moveit" default="true"/>
   <arg name="z_axis_height" default="0.0" />
+  <arg name="moveit_planner" default="ompl"/>
 
   <!-- Load parameters -->
   <rosparam command="load" file="$(find heron_demo)/config/heron_demo.yaml" subst_value="true"/>
-
+  
   <!-- Teleops -->
   <arg name="joystick" default="true" />
   <arg name="keyboard" default="false" />
@@ -39,7 +41,9 @@
     <arg name="initial_pose_x" value="$(arg initial_pose_x)"/>
     <arg name="initial_pose_y" value="$(arg initial_pose_y)"/>
     <arg name="initial_pose_yaw" value="$(arg initial_pose_yaw)"/>
+    <arg name="moveit" value="$(arg moveit)"/>
     <arg name="z_axis_height" value="$(arg z_axis_height)"/>
+    <arg name="moveit_planner" default="$(arg moveit_planner)"/>
     <arg name="joystick" value="$(arg joystick)"/>
   </include>
 
