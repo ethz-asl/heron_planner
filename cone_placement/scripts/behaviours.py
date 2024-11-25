@@ -108,7 +108,7 @@ class TriggerComponent(pt.behaviour.Behaviour):
             return pt.common.Status.SUCCESS
         else:
             return pt.common.Status.FAILURE
-    
+ 
     def terminate(self, new_status):
         if new_status == pt.common.Status.INVALID:
             self._client.cancel_goal()

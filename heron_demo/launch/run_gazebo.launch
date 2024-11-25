@@ -20,10 +20,12 @@
   <arg name="world_name" default="$(find heron_demo)/worlds/road.world"/>
   <arg name="moveit" default="true"/>
   <arg name="z_axis_height" default="0.0" />
-  <arg name="moveit_planner" default="ompl"/>
+  <!-- <arg name="moveit_planner" default="ompl"/> -->
+  <arg name="moveit_planner" default="pilz_industrial_motion_planner"/>
 
   <!-- Load parameters -->
   <rosparam command="load" file="$(find heron_demo)/config/heron_demo.yaml" subst_value="true"/>
+  <param name="/move_group/planning_plugin" value="pilz_industrial_motion_planner"/>
   
   <!-- Teleops -->
   <arg name="joystick" default="true" />
