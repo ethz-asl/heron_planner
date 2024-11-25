@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(heron_demo)
+project(heron_planner)
 
 add_compile_options(-std=c++17)
 

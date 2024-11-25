@@ -3,7 +3,7 @@
 
 from typing import Any
 
-from mobile_manip_demo.behaviors import RSequence
+from behaviours import RSequence
 import py_trees as pt
 import pydot
 
@@ -32,11 +32,21 @@ def __generate_dot_tree(root: Any, graph: pydot.Dot, include_status: bool):
 
     if isinstance(root, RSequence) or isinstance(root, pt.composites.Sequence):
         node_instance = pydot.Node(
-            node, label="→", shape="square", margin="0.1", width="0", height="0"
+            node,
+            label="→",
+            shape="square",
+            margin="0.1",
+            width="0",
+            height="0",
         )
     elif isinstance(root, pt.composites.Selector):
         node_instance = pydot.Node(
-            node, label="?", shape="square", margin="0.1", width="0", height="0"
+            node,
+            label="?",
+            shape="square",
+            margin="0.1",
+            width="0",
+            height="0",
         )
     elif isinstance(root, pt.behaviour.Behaviour):
         if node[-1] == "!":

@@ -6,9 +6,13 @@ import numpy as np
 #  import scipy as sc
 from scipy.spatial.transform import Rotation
 
-from geometry_msgs.msg import Pose
+from std_msgs.msg import Time
+from geometry_msgs.msg import Pose, PoseStamped
 from actionlib_msgs.msg import GoalStatus
 
+
+def array_from_pose_stamped(pose_stamped: PoseStamped) -> np.array:
+    return array_from_pose(pose_stamped.pose)
 
 def array_from_pose(pose: Pose) -> np.array:
     array = np.array(
@@ -24,6 +28,49 @@ def array_from_pose(pose: Pose) -> np.array:
     )
     return array
 
+def pose_from_array(position: np.ndarray, orientation: np.ndarray = [0, 0, 0, 1]) -> Pose:
+
+    pose = Pose()
+    if len(position) >= 2:
+        pose.position.x = position[0]
+        pose.position.y = position[1]
+        if len(position) == 2:
+            pose.position.z = 0.0
+        else:
+            pose.position.z = position[2]
+    
+    pose.orientation.x = orientation[0]
+    pose.orientation.y = orientation[1]
+    pose.orientation.z = orientation[2]
+    pose.orientation.w = orientation[3]
+
+    return pose
+
+def pose_stamped_from_array(
+        point: np.ndarray, 
+        quat: np.ndarray, 
+        frame: str
+    ) -> PoseStamped:
+
+    pose = PoseStamped()
+    pose.pose.position.x = point[0]
+    pose.pose.position.y = point[1]
+    if np.shape(point)[0] == 2:
+        pose.pose.position.z = 0
+    elif np.shape(point)[0] == 3:
+        pose.pose.position.z = point[2]
+    else:
+        raise IndexError
+    
+    pose.pose.orientation.x = quat[0]
+    pose.pose.orientation.y = quat[1]
+    pose.pose.orientation.z = quat[2]
+    pose.pose.orientation.w = quat[3]
+
+    pose.header.frame_id = frame
+    pose.header.stamp = rospy.Time.now()
+
+    return pose
 
 def wrap_angle(
     angle: float, min_angle: float = -np.pi, max_angle: float = np.pi
@@ -102,7 +149,8 @@ def empty_pose() -> Pose:
     pose.position.z = 0.0
     pose.orientation.w = 1.0
     return pose
-    
+
+
 def find_midpoint(point_a: list, point_b: list) -> list:
 
     midpoint = [
@@ -192,6 +240,8 @@ def pose_from_point(point: list, orientation: list = [0, 0, 0, 1]) -> Pose:
     pose = Pose()
     pose.position.x = point[0]
     pose.position.y = point[1]
+    if len(point) > 2:
+        pose.position.z = point[2]
     
     pose.orientation.x = orientation[0]
     pose.orientation.y = orientation[1]

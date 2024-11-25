@@ -17,14 +17,14 @@
   <arg name="initial_pose_y" default="0" />
   <arg name="initial_pose_yaw" default="0" />
   <arg name="scan_topic" default="/front/scan" />
-  <arg name="world_name" default="$(find heron_demo)/worlds/road.world"/>
+  <arg name="world_name" default="$(find heron_planner)/worlds/road.world"/>
   <arg name="moveit" default="true"/>
   <arg name="z_axis_height" default="0.0" />
   <!-- <arg name="moveit_planner" default="ompl"/> -->
   <arg name="moveit_planner" default="pilz_industrial_motion_planner"/>
 
   <!-- Load parameters -->
-  <rosparam command="load" file="$(find heron_demo)/config/heron_demo.yaml" subst_value="true"/>
+  <rosparam command="load" file="$(find heron_planner)/config/heron_demo.yaml" subst_value="true"/>
   <param name="/move_group/planning_plugin" value="pilz_industrial_motion_planner"/>
   
   <!-- Teleops -->

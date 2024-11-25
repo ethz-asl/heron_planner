@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<package format="2">
+    <name>robot_interface</name>
+    <version>0.1.0</version>
+    <description>robot interface for both Giraffe and UGV</description>
+
+    <maintainer email="harrisl@ethz.ch">Lucy Harris</maintainer>
+
+    <license>TODO</license>
+    <url></url>
+
+    <buildtool_depend>catkin</buildtool_depend>
+
+    <depend>rospy</depend>
+    <depend>geometry_msgs</depend>
+    <depend>sensor_msgs</depend>
+    <depend>std_msgs</depend>
+
+</package>

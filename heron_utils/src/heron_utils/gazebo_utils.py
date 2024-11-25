@@ -9,7 +9,12 @@ from geometry_msgs.msg import Pose
 from gazebo_ros_link_attacher.srv import Attach, AttachRequest
 
 """
-Here make a list of functions that can move objects around in gazebo
+functions for gazebo
+
+the attach_model and dettach_model require:
+https://github.com/pal-robotics/gazebo_ros_link_attacher
+
+make sure the plugin "libgazebo_ros_link_attacher.so" is loaded in the world
 """
 
 def model_exists(model_name: str) -> bool:

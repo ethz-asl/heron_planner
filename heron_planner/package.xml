@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>heron_demo</name>
+  <name>heron_planner</name>
   <version>0.0.0</version>
   <description>High level planner for the Heron project</description>
 
@@ -21,7 +21,6 @@
   <depend>grasp_demo</depend>
   <depend>nav_demo</depend>
   <depend>moma_utils</depend>
-  <depend>yumi_controllers</depend>
   <depend>map_server</depend>
   <depend>state_machine_tutorial</depend>
 

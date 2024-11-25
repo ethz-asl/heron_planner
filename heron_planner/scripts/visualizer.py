@@ -1,5 +1,36 @@
 """Class that renders the BT in a web browser and allows ticking the tree manually."""
 
+# Copyright (c) 2022, ABB
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with
+# or without modification, are permitted provided that
+# the following conditions are met:
+#
+#   * Redistributions of source code must retain the
+#     above copyright notice, this list of conditions
+#     and the following disclaimer.
+#   * Redistributions in binary form must reproduce the
+#     above copyright notice, this list of conditions
+#     and the following disclaimer in the documentation
+#     and/or other materials provided with the
+#     distribution.
+#   * Neither the name of ABB nor the names of its
+#     contributors may be used to endorse or promote
+#     products derived from this software without
+#     specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+# THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 import os
 import shutil
 import tempfile
@@ -8,18 +39,21 @@ import webbrowser
 import sys
 import platform
 
-from heron_planner.bt_rendering import dot_graph
+from bt_rendering import dot_graph
 import py_trees as pt
+
 
 class BTVisualizer:
     """Render the BT in a web browser and allows ticking the tree manually."""
-   
+
     if platform.system() == "Linux":
         CHROME_PATH = r"/usr/bin/google-chrome-stable"
     elif platform.system() == "Windows":
         CHROME_PATH = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
     else:
-        raise NotImplementedError("Platform type not implemented, cannot visualize BT")
+        raise NotImplementedError(
+            "Platform type not implemented, cannot visualize BT"
+        )
 
     DISPLAY_HTML = '<!DOCTYPE html>\
                         <html>\
@@ -49,7 +83,9 @@ class BTVisualizer:
         self.html_document = os.path.join(self.temp_dir, "behavior_tree.html")
         self.svg_document = os.path.join(self.temp_dir, "tree.svg")
 
-        dot_graph(self.tree, True).write_svg(self.svg_document, encoding="utf8")
+        dot_graph(self.tree, True).write_svg(
+            self.svg_document, encoding="utf8"
+        )
         with open(self.html_document, "w") as f:
             f.write(self.DISPLAY_HTML)
 
@@ -68,8 +104,8 @@ class BTVisualizer:
                 f = open(self.svg_document, encoding="utf8")
                 f.close()
                 shutil.rmtree(self.temp_dir)
-            except IOError:
-                pass
+            except IOError(f"Visualisation IOError when closing"):
+                f.close()
 
     def tick(self) -> pt.common.Status:
         """Tick the tree once and display its status."""
