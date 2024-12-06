@@ -11,6 +11,7 @@ import numpy as np
 import py_trees
 
 from geometry_msgs.msg import Pose
+from std_srvs.srv import Trigger, TriggerRequest, TriggerResponse
 
 
 def post_tick_handler(snapshot_visitor, behavior_tree):
@@ -32,11 +33,12 @@ class TaskBT:
         # TODO add this
         # rospy.get_param("~goal_pose")
         #  self.root = bt.RSequence(name="Sequence")
+        self.visualize_only = False
+        self.is_running = False
 
         self.root = py_trees.composites.Sequence(
             name="MoveSequence", memory=True
         )
-        self.visualize_only = False
         move_base = bt.MoveBase("move_base to goal", goal_pose)
         move = bt.Move("move to goal", "combined", goal_pose)
         move_forward = bt.Move("move forward", "forward", goal_distance=0.5)
@@ -54,12 +56,39 @@ class TaskBT:
 
         self.root.add_children([self.move_to_goal, self.move_around])
 
-        #  self.root.add_children(sequence)
-
         self.tree = py_trees.trees.BehaviourTree(self.root)
 
-    #  def get_root(self) -> py_trees.composites.Selector:
-    #  return self.root
+        # Service Servers for starting and stopping
+        self.start_service = rospy.Service("start_bt", Trigger, self.start_bt)
+        self.stop_service = rospy.Service("stop_bt", Trigger, self.stop_bt)
+
+    def start_bt(self, req: TriggerRequest): 
+        """"""
+        if self.is_running:
+            return TriggerResponse(
+                success=False, message="BT is already running"
+            )
+        self.is_running = True
+        rospy.loginfo("Starting the BT...")
+        visualizer = vis.BTVisualizer(self.tree)
+
+        self.tree.add_post_tick_handler(visualizer.update_graph)
+        self.timer = rospy.Timer(rospy.Duration(0.1), self.tick_bt)
+        return TriggerResponse(success=True, message="BT started")
+    
+
+    def stop_bt(self, req: TriggerRequest): 
+        """"""
+        if not self.is_running:
+            return TriggerResponse(
+                success=False, message="BT is not running"
+            )
+        self.is_running = False
+        rospy.loginfo("Stopping the BT...")
+        # rospy.Time(rospy.Duration(0.1), self.tick_bt)
+        self.timer.shutdown()
+        return TriggerResponse(success=True, message="BT stopped")
+    
 
     def visualize(self, bt_name: str):
         """Compute the number of nodes and transition in a BT and save it as figure."""
@@ -71,36 +100,15 @@ class TaskBT:
         )
         print(f"{bt_name}, {graph}")
 
-    def run(self):
-        """The BT execution is visualized in the terminal."""
-        self.tree.visitors.append(py_trees.visitors.DebugVisitor())
-        snapshot_visitor = py_trees.visitors.SnapshotVisitor()
-        self.tree.visitors.append(snapshot_visitor)
-        self.tree.add_post_tick_handler(
-            functools.partial(post_tick_handler, snapshot_visitor)
-        )
-        self.tree.setup(timeout=15)
+    def tick_bt(self, event):
+        """"""
+        if not self.is_running:
+            return
 
-        while not rospy.is_shutdown():
-            rospy.Rate(3).sleep()
-            self.tree.tick()
-            if self.tree.root.status == py_trees.common.Status.SUCCESS:
-                rospy.loginfo("Goal reached successfully")
-                break
-
-    def run_online(self):
-        """The BT execution is visualized in a Chrome page that opens upon execution."""
-        visualizer = vis.BTVisualizer(self.tree)
-
-        self.tree.add_post_tick_handler(visualizer.update_graph)
-        while not rospy.is_shutdown():
-            rospy.Rate(3).sleep()
-            # visulizer.tick()
-            self.tree.tick()
-            if self.tree.root.status == py_trees.common.Status.SUCCESS:
-                rospy.loginfo("Goal reached successfully")
-                break
-
+        self.tree.tick()
+        if self.tree.root.status == py_trees.common.Status.SUCCESS:
+            rospy.loginfo("Goal reached successfully")
+            self.is_running = False
 
 def main():
     rospy.init_node("move_bt")
@@ -116,12 +124,7 @@ def main():
     rospy.loginfo("Sending goal to robot")
     node = TaskBT(goal_pose)
 
-    try:
-        node.visualize("move")
-        if not node.visualize_only:
-            node.run_online()
-    except rospy.ROSInterruptException as e:
-        print(e)
+    rospy.spin()
 
 
 if __name__ == "__main__":
