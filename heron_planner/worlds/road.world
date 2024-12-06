@@ -87,7 +87,7 @@
         <collision name='collision'>
           <geometry>
             <mesh>
-              <scale>10 10 10</scale>
+              <scale>5 5 5</scale>
               <uri>model://construction_cone/meshes/construction_cone.dae</uri>
             </mesh>
           </geometry>
@@ -112,7 +112,7 @@
         <visual name='visual'>
           <geometry>
             <mesh>
-              <scale>10 10 10</scale>
+              <scale>5 5 5</scale>
               <uri>model://construction_cone/meshes/construction_cone.dae</uri>
             </mesh>
           </geometry>
@@ -176,7 +176,7 @@
         <collision name='collision'>
           <geometry>
             <mesh>
-              <scale>10 10 10</scale>
+              <scale>5 5 5</scale>
               <uri>model://construction_cone/meshes/construction_cone.dae</uri>
             </mesh>
           </geometry>
@@ -197,7 +197,7 @@
         <visual name='visual'>
           <geometry>
             <mesh>
-              <scale>10 10 10</scale>
+              <scale>5 5 5</scale>
               <uri>model://construction_cone/meshes/construction_cone.dae</uri>
             </mesh>
           </geometry>
@@ -225,7 +225,7 @@
         <collision name='collision'>
           <geometry>
             <mesh>
-              <scale>10 10 10</scale>
+              <scale>5 5 5</scale>
               <uri>model://construction_cone/meshes/construction_cone.dae</uri>
             </mesh>
           </geometry>
@@ -246,7 +246,7 @@
         <visual name='visual'>
           <geometry>
             <mesh>
-              <scale>10 10 10</scale>
+              <scale>5 5 5</scale>
               <uri>model://construction_cone/meshes/construction_cone.dae</uri>
             </mesh>
           </geometry>
@@ -274,7 +274,7 @@
         <collision name='collision'>
           <geometry>
             <mesh>
-              <scale>10 10 10</scale>
+              <scale>5 5 5</scale>
               <uri>model://construction_cone/meshes/construction_cone.dae</uri>
             </mesh>
           </geometry>
@@ -295,7 +295,7 @@
         <visual name='visual'>
           <geometry>
             <mesh>
-              <scale>10 10 10</scale>
+              <scale>5 5 5</scale>
               <uri>model://construction_cone/meshes/construction_cone.dae</uri>
             </mesh>
           </geometry>
@@ -323,7 +323,7 @@
         <collision name='collision'>
           <geometry>
             <mesh>
-              <scale>10 10 10</scale>
+              <scale>5 5 5</scale>
               <uri>model://construction_cone/meshes/construction_cone.dae</uri>
             </mesh>
           </geometry>
@@ -344,7 +344,7 @@
         <visual name='visual'>
           <geometry>
             <mesh>
-              <scale>10 10 10</scale>
+              <scale>5 5 5</scale>
               <uri>model://construction_cone/meshes/construction_cone.dae</uri>
             </mesh>
           </geometry>
@@ -372,7 +372,7 @@
         <collision name='collision'>
           <geometry>
             <mesh>
-              <scale>10 10 10</scale>
+              <scale>5 5 5</scale>
               <uri>model://construction_cone/meshes/construction_cone.dae</uri>
             </mesh>
           </geometry>
@@ -393,7 +393,7 @@
         <visual name='visual'>
           <geometry>
             <mesh>
-              <scale>10 10 10</scale>
+              <scale>5 5 5</scale>
               <uri>model://construction_cone/meshes/construction_cone.dae</uri>
             </mesh>
           </geometry>
