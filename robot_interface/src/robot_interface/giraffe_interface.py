@@ -621,7 +621,7 @@ class GiraffeComponents:
 
     def init_gazebo_models(self):
         pkg = rospkg.RosPack()
-        pkg_path = pkg.get_path("heron_demo")
+        pkg_path = pkg.get_path("heron_planner")
 
         model_mesh_path = os.path.join(pkg_path + "/meshes")
         gazebo_model_path = os.getenv("GAZEBO_MODEL_PATH", "")

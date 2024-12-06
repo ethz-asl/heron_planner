@@ -33,11 +33,8 @@ class UgvMove(Move):
         self,
         goal_pose: Pose,
         feedback_pub: Callable[[Pose], None],
+        srv_name: str = "/command_manager/command",
         timeout: rospy.Rate = 1.0,
-        tol_lin: float = 0.05,
-        tol_ang: float = 5.0 * np.pi / 180.0,
-        max_lin_vel: float = 0.2,
-        max_ang_vel: float = 0.2,
     ) -> None:
         super().__init__(goal_pose)
         self.timeout = rospy.Rate(timeout)
@@ -70,6 +67,62 @@ class UgvMove(Move):
                 return False
 
         return False
+
+    def move(self) -> bool:
+        """
+        move the robot towards the goal using local frame
+        """
+        if self.at_goal_x() and self.at_goal_y() and self.at_goal_yaw():
+            return True
+
+        while (
+            not self.at_goal_x()
+            or not self.at_goal_y()
+            or not self.at_goal_yaw()
+        ):
+            self.feedback_pub(self.current_pose)
+            #TODO send srv call here
+            twist_msg = self.compute_twist()
+            self.twist_pub.publish(twist_msg)
+            self.timeout.sleep()
+
+        self.twist_pub.publish(self.compute_empty_twist())  # stop if at goal
+
+        return self.at_goal_x() and self.at_goal_y() and self.at_goal_yaw()
+
+
+    def at_goal_x(self) -> bool:
+        goal_x = self.goal_pose.position.x
+        current_x = self.current_pose.position.x
+
+        # rospy.logwarn(f"X[current, goal] ({current_x:.2f}, {goal_x:.2f}) [m,m]")
+
+        return abs(goal_x - current_x) < self.tol_lin
+
+    def at_goal_y(self) -> bool:
+        goal_y = self.goal_pose.position.y
+        current_y = self.current_pose.position.y
+
+        # rospy.logwarn(f"Y[current, goal] ({current_y:.2f}, {goal_y:.2f}) [m,m]")
+
+        return abs(goal_y - current_y) < self.tol_lin
+
+    def at_goal_yaw(self) -> bool:
+        goal_quat = utils.array_from_pose(self.goal_pose)[3:]
+        goal_yaw = utils.angle_from_quaternion(goal_quat)
+        goal_yaw = utils.wrap_angle(goal_yaw)
+
+        current_quat = utils.array_from_pose(self.current_pose)[3:]
+        current_yaw = utils.angle_from_quaternion(current_quat)
+        current_yaw = utils.wrap_angle(current_yaw)
+
+        # rospy.logwarn(
+        #     f"Yaw[current, goal] ({current_yaw:.2f}, {goal_yaw:.2f}) [rad,rad]"
+        # )
+
+        yaw_diff = utils.wrap_angle(goal_yaw - current_yaw)
+
+        return abs(yaw_diff) < self.tol_ang
 
     def compute_twist(self) -> Twist:
         twist_msg = Twist()
@@ -120,60 +173,6 @@ class UgvMove(Move):
         )
 
         return twist_msg
-
-    def move(self) -> bool:
-        """
-        move the robot towards the goal using local frame
-        """
-        if self.at_goal_x() and self.at_goal_y() and self.at_goal_yaw():
-            return True
-
-        while (
-            not self.at_goal_x()
-            or not self.at_goal_y()
-            or not self.at_goal_yaw()
-        ):
-            self.feedback_pub(self.current_pose)
-            #TODO send srv call here
-            self.timeout.sleep()
-
-        self.twist_pub.publish(self.compute_empty_twist())  # stop if at goal
-
-        return self.at_goal_x() and self.at_goal_y() and self.at_goal_yaw()
-
-    def at_goal_x(self) -> bool:
-        goal_x = self.goal_pose.position.x
-        current_x = self.current_pose.position.x
-
-        # rospy.logwarn(f"X[current, goal] ({current_x:.2f}, {goal_x:.2f}) [m,m]")
-
-        return abs(goal_x - current_x) < self.tol_lin
-
-    def at_goal_y(self) -> bool:
-        goal_y = self.goal_pose.position.y
-        current_y = self.current_pose.position.y
-
-        # rospy.logwarn(f"Y[current, goal] ({current_y:.2f}, {goal_y:.2f}) [m,m]")
-
-        return abs(goal_y - current_y) < self.tol_lin
-
-    def at_goal_yaw(self) -> bool:
-        goal_quat = utils.array_from_pose(self.goal_pose)[3:]
-        goal_yaw = utils.angle_from_quaternion(goal_quat)
-        goal_yaw = utils.wrap_angle(goal_yaw)
-
-        current_quat = utils.array_from_pose(self.current_pose)[3:]
-        current_yaw = utils.angle_from_quaternion(current_quat)
-        current_yaw = utils.wrap_angle(current_yaw)
-
-        # rospy.logwarn(
-        #     f"Yaw[current, goal] ({current_yaw:.2f}, {goal_yaw:.2f}) [rad,rad]"
-        # )
-
-        yaw_diff = utils.wrap_angle(goal_yaw - current_yaw)
-
-        return abs(yaw_diff) < self.tol_ang
-
 
 class UgvMoveX(Move):
     def __init__(
