@@ -1,10 +1,18 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.1)
 project(heron_planner)
 
-add_compile_options(-std=c++17)
-
-find_package(catkin REQUIRED COMPONENTS genmsg actionlib_msgs geometry_msgs std_msgs)
+find_package(catkin REQUIRED)
 
 catkin_python_setup()
 
-catkin_package()
+catkin_package(
+  CATKIN_DEPENDS
+  rospy
+  std_msgs
+  geometry_msgs
+  sensor_msgs
+)
+
+include_directories(
+  ${catkin_INCLUDE_DIRS}
+)

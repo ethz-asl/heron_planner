@@ -10,19 +10,12 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
+  <depend>rospy</depend>
   <depend>std_msgs</depend>
   <depend>actionlib</depend>
   <depend>actionlib_msgs</depend>
-  <depend>roscpp</depend>
   <depend>geometry_msgs</depend>
   <depend>sensor_msgs</depend>
-  <depend>vpp_msgs</depend>
-
-  <depend>grasp_demo</depend>
-  <depend>nav_demo</depend>
-  <depend>moma_utils</depend>
-  <depend>map_server</depend>
-  <depend>state_machine_tutorial</depend>
 
   <export>
   </export>

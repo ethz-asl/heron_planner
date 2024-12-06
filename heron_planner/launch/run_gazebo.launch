@@ -32,8 +32,8 @@
   <arg name="keyboard" default="false" />
 
   <!-- LAUNCH ACTIONSHERE -->
-  <node pkg="moma_actions" name="move" type="move_action_server.py" output="screen"/>
-  <node pkg="moma_actions" name="components" type="trigger_action_server.py" output="screen"/>
+  <node pkg="heron_actions" name="move" type="move_action_server.py" output="screen"/>
+  <node pkg="heron_actions" name="components" type="trigger_action_server.py" output="screen"/>
 
   <!-- launch giraffe with navigation! -->
   <include file="$(find moma_gazebo)/launch/giraffe_nav.launch">
