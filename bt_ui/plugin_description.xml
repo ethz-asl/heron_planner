@@ -1,0 +1,7 @@
+<library path="libbt_ui">
+    <class name="bt_ui/BTPanel" type="bt_ui::BTPanel" base_class_type="rviz::Panel">
+        <description>
+            A description of the BTPanel plugin.
+        </description>
+    </class>
+</library>
