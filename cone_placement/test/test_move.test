@@ -1,3 +1,0 @@
-<launch>
-  <test test-name="test_move" pkg="cone_placement" type="test_move.py" />
-</launch>
