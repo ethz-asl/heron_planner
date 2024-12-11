@@ -23,6 +23,25 @@ import heron_utils.gazebo_utils as gazebo_utils
 import heron_utils.transform_utils as utils
 
 
+class MoveArm(pt.behaviour.Behaviour):
+    def __init__(self, name="", *args, **kwargs):
+        super().__init__(name, *args, **kwargs)
+    
+    def initialise(self):
+        return super().initialise()
+    
+    def update(self):
+        return super().update()
+    
+    def terminate(self, new_status):
+        return super().terminate(new_status)
+    
+class ArmAtPose(pt.behaviour.Behaviour):
+    def __init__(self, name="", *args, **kwargs):
+        super().__init__(name, *args, **kwargs)
+
+        
+
 class MoveBase(pt.behaviour.Behaviour):
     """
     send goal to move_base action

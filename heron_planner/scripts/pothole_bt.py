@@ -28,11 +28,51 @@ def post_tick_handler(snapshot_visitor, behavior_tree):
 
 
 class PotholeBT:
-    def __init__(self, goal_pose: Pose):
+    def __init__(self, pothole_gps):
 
-        # TODO add this
-        # rospy.get_param("~goal_pose")
-        #  self.root = bt.RSequence(name="Sequence")
+        # starting point, robot is near defect, have GPS of pothole
+        # 
+        # start inspection node -> srv call (go to pose in moveit)
+        # find_pothole req to iccs_pothole_node
+        # cont. if no pothole found
+        # 
+        # if pothole is found -> res CoM & surface area
+        #
+        # compute TF frame for pothole CoM in odom frame
+        # 
+        # send srv req to offset node for pothole res offset distance
+        # send docking node srv req to docking_node, res done
+        #
+        # send cleaning req to command_manager/cleaning, res done
+        # send docking req to docking_node res done
+        # 
+        # send surface_area req to deposite node res deposit seq (str)
+        # send deposit seq req to command_manager/deposit res done
+        # 
+        # send docking req to docking node res done
+        # 
+        # wait for input from pilot GUI (topic or ROS param?)
+        # execute roller sequence
+        # monitor roller up or down
+        # wait for pilot ok
+        # 
+        # send docking req to docking node res done
+        #
+        # send validation req for pothole
+        # move arm, capture pic res image
+        # 
+        # send image to kafka
+        # 
+        # BEHAVIOURS
+        # - inspection behaviour [MoveTo.action] #TODO define inspection poses
+        # - docking beahviour [Dock.action] send goal_id (frame)
+        # - req offset behaviour [offset_node tbd (res goal_id)]
+        # - srv req behaviour//command_manager behaviour res success
+        # - roller seq behaviour 
+        # - validation behaviour
+        # - kafka status behaviour
+        # - kafka image behaviour 
+
         self.visualize_only = False
         self.is_running = False
 
@@ -122,7 +162,7 @@ def main():
     reverse_dist = 1.0
     
     rospy.loginfo("Sending goal to robot")
-    node = TaskBT(goal_pose)
+    node = PotholeBT(goal_pose)
 
     rospy.spin()
 
