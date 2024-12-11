@@ -2,7 +2,7 @@
 
 import rospy
 import actionlib
-from heron_msgs.msg import TriggerAction, TriggerGoal
+from heron_actions.msg import TriggerAction, TriggerGoal
 
 from std_srvs.srv import Trigger, TriggerResponse
 from geometry_msgs.msg import Pose, PoseStamped

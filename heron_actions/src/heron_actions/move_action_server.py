@@ -2,7 +2,7 @@
 
 import rospy
 import actionlib
-from heron_msgs.msg import MoveAction, MoveGoal, MoveFeedback
+from heron_actions.msg import MoveAction, MoveGoal, MoveFeedback
 
 from geometry_msgs.msg import Pose, PoseStamped
 

@@ -11,6 +11,21 @@ find_package(catkin REQUIRED COMPONENTS
 
 catkin_python_setup()
 
+add_action_files(
+  FILES
+  Move.action
+  Trigger.action
+)
+
+generate_messages(
+  DEPENDENCIES
+  actionlib_msgs
+  geometry_msgs
+  sensor_msgs
+  std_msgs
+)
+
+
 catkin_package(
   CATKIN_DEPENDS
   rospy

@@ -2,7 +2,7 @@
 
 import rospy
 import actionlib
-from moma_actions.msg import TriggerGoal, TriggerAction
+from heron_actions.msg import TriggerGoal, TriggerAction
 
 from geometry_msgs.msg import Pose
 from actionlib_msgs.msg import GoalStatus

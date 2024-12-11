@@ -1,7 +1,0 @@
-# Define the goal
-geometry_msgs/PoseStamped target_grasp_pose
----
-# Define the result
-bool success
----
-# Define the feedback
