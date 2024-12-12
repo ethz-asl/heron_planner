@@ -26,6 +26,7 @@ import heron_utils.transform_utils as utils
 class MoveArm(pt.behaviour.Behaviour):
     def __init__(self, name="", *args, **kwargs):
         super().__init__(name, *args, **kwargs)
+        self._client = MoveToClient()
     
     def initialise(self):
         return super().initialise()
@@ -40,7 +41,7 @@ class ArmAtPose(pt.behaviour.Behaviour):
     def __init__(self, name="", *args, **kwargs):
         super().__init__(name, *args, **kwargs)
 
-        
+
 
 class MoveBase(pt.behaviour.Behaviour):
     """

@@ -28,7 +28,7 @@ def post_tick_handler(snapshot_visitor, behavior_tree):
 
 
 class PotholeBT:
-    def __init__(self, pothole_gps):
+    def __init__(self):
 
         # starting point, robot is near defect, have GPS of pothole
         # 
@@ -153,16 +153,7 @@ class PotholeBT:
 def main():
     rospy.init_node("pothole_bt")
 
-    goal_pose = Pose()
-    goal_pose.position.x = 2.0
-    goal_pose.position.y = -1.0
-    goal_pose.orientation.z = 1.0
-
-    forward_dist = 0.5
-    reverse_dist = 1.0
-    
-    rospy.loginfo("Sending goal to robot")
-    node = PotholeBT(goal_pose)
+    node = PotholeBT()
 
     rospy.spin()
 
