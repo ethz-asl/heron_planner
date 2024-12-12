@@ -256,9 +256,12 @@ class LowerRoller(pt.behaviour.Behaviour):
 
     def update(self) -> pt.common.Status:
         if not self._srv_setup or not self._srv_called:
+            rospy.loginfo(f"Failed: {self._srv_setup} and {self._srv_called}")
             return pt.common.Status.FAILURE
-        if self._res and hasattr(self._res, "success") and self._res.success:
+        if self._res and self._res.ret.success:
+            rospy.loginfo("Success")
             return pt.common.Status.SUCCESS
+        rospy.loginfo("Dunno what's happening, failure.")
         return pt.common.Status.FAILURE
 
 class Blow(pt.behaviour.Behaviour):

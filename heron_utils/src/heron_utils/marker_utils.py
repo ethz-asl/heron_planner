@@ -10,8 +10,8 @@ from visualization_msgs.msg import Marker, MarkerArray
 import scipy.spatial.transform
 import numpy as np
 
-from moma_utils.transform import Transform
-from moma_utils.ros import conversions
+from heron_utils.transform import Transform
+from heron_utils.ros import conversions
 
 
 def pose2Transform(pose: Pose) -> Transform:

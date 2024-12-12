@@ -53,13 +53,13 @@ class IntegrationTestBT:
         wait_10s_ros = bt.ROSWait("Wait 10s", 10)
 
         self.roller = py_trees.composites.Sequence(name="RollerSequence", memory=True)
-        self.roller.add_children([lower_roller, wait_10s_ros, lift_roller, wait_10s_ros])
+        self.roller.add_children([lower_roller, wait_10s_ros, lift_roller])
 
-        self.blow_seq = py_trees.composites.Sequence(name="BlowSeq", memory=True)
-        self.blow_seq.add_children([activate_blower, wait_10s_ros, move_forward_5cm, wait_10s_ros])
+        # self.blow_seq = py_trees.composites.Sequence(name="BlowSeq", memory=True)
+        # self.blow_seq.add_children([activate_blower, wait_10s_ros, move_forward_5cm, wait_10s_ros])
 
-        self.wait = py_trees.composites.Sequence(name="wait", memory=True)
-        self.wait.add_children([wait_10s_ros, lower_roller])
+        # self.wait = py_trees.composites.Sequence(name="wait", memory=True)
+        # self.wait.add_children([wait_10s_ros, lower_roller])
 
         self.root.add_children([self.roller])
 
@@ -119,6 +119,8 @@ class IntegrationTestBT:
 
 def main():
     rospy.init_node("integration_test_bt")
+    py_trees.logging.level = py_trees.logging.Level.DEBUG
+
 
     node = IntegrationTestBT()
 
