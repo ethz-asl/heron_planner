@@ -13,10 +13,11 @@ class ROSWait(pt.behaviour.Behaviour):
         self._wait_time = wait_time
         
     def initialise(self):
-        self._rate = rospy.Rate()
+        self._rate = rospy.Rate(1.0 / self._wait_time)
 
     def update(self) -> pt.common.Status:
-        self._rate.sleep(self._wait_time)
+        rospy.loginfo(f"Sleeping for {self._wait_time} seconds ...")
+        self._rate.sleep()
         return pt.common.Status.SUCCESS
 
 
@@ -74,10 +75,14 @@ class Move(pt.behaviour.Behaviour):
             rospy.logerr(f"Service {self._srv_name} setup failed: {err}")
         
     def initialise(self):
+        self._srv_setup = False
         self._srv_called = False
         self._res = None
 
-        self.setup()
+        self._srv_setup = self.setup()
+        if not self._srv_setup:
+            rospy.logwarn(f"Service {self._srv_name} failed")
+            return
 
         try:
             rospy.loginfo(f"Sending command {self._req}")
@@ -88,7 +93,7 @@ class Move(pt.behaviour.Behaviour):
             self._srv_called = False
 
     def update(self) -> pt.common.Status:
-            if not self._srv_called:
+            if not self._srv_setup or not self._srv_called:
                 return pt.common.Status.FAILURE
             if self._res and hasattr(self._res, "success") and self._res.success:
                 return pt.common.Status.SUCCESS
@@ -111,11 +116,15 @@ class Turn(pt.behaviour.Behaviour):
             rospy.logerr(f"Service {self._srv_name} setup failed: {err}")
         
     def initialise(self):
+        self._srv_setup = False
         self._srv_called = False
         self._res = None
 
-        self.setup()
+        self._srv_setup = self.setup()
 
+        if not self._srv_setup:
+            rospy.logwarn(f"Service {self._srv_name} failed")
+            return
         try:
             rospy.loginfo(f"Sending command {self._req}")
             self._res = self._client(self._req)
@@ -125,7 +134,7 @@ class Turn(pt.behaviour.Behaviour):
             self._srv_called = False
 
     def update(self) -> pt.common.Status:
-        if not self._srv_called:
+        if not self._srv_setup or not self._srv_called:
             return pt.common.Status.FAILURE
         if self._res and hasattr(self._res, "success") and self._res.success:
             return pt.common.Status.SUCCESS
@@ -147,10 +156,15 @@ class OpenDeposit(pt.behaviour.Behaviour):
             rospy.logerr(f"Service {self._srv_name} setup failed: {err}")
         
     def initialise(self):
+        self._srv_setup = False
         self._srv_called = False
         self._res = None
 
-        self.setup()
+        self._srv_setup = self.setup()
+
+        if not self._srv_setup:
+            rospy.logwarn(f"Service {self._srv_name} failed")
+            return
 
         try:
             rospy.loginfo(f"Sending command {self._req}")
@@ -161,7 +175,7 @@ class OpenDeposit(pt.behaviour.Behaviour):
             self._srv_called = False
 
     def update(self) -> pt.common.Status:
-        if not self._srv_called:
+        if not self._srv_setup or not self._srv_called:
             return pt.common.Status.FAILURE
         if self._res and hasattr(self._res, "success") and self._res.success:
             return pt.common.Status.SUCCESS
@@ -262,10 +276,15 @@ class Blow(pt.behaviour.Behaviour):
             rospy.logerr(f"Service {self._srv_name} setup failed: {err}")
         
     def initialise(self):
+        self._srv_setup = False
         self._srv_called = False
         self._res = None
 
-        self.setup()
+        self._srv_setup = self.setup()
+
+        if not self._srv_setup:
+            rospy.logwarn(f"Service {self._srv_name} failed")
+            return
 
         try:
             rospy.loginfo(f"Sending command {self._req}")

@@ -53,10 +53,13 @@ class IntegrationTestBT:
         wait_10s_ros = bt.ROSWait("Wait 10s", 10)
 
         self.roller = py_trees.composites.Sequence(name="RollerSequence", memory=True)
-        self.roller.add_children([lower_roller, wait_10s_ros, lift_roller])
+        self.roller.add_children([lower_roller, wait_10s_ros, lift_roller, wait_10s_ros])
 
         self.blow_seq = py_trees.composites.Sequence(name="BlowSeq", memory=True)
         self.blow_seq.add_children([activate_blower, wait_10s_ros, move_forward_5cm, wait_10s_ros])
+
+        self.wait = py_trees.composites.Sequence(name="wait", memory=True)
+        self.wait.add_children([wait_10s_ros, lower_roller])
 
         self.root.add_children([self.roller])
 
@@ -111,7 +114,7 @@ class IntegrationTestBT:
 
         self.tree.tick()
         if self.tree.root.status == py_trees.common.Status.SUCCESS:
-            rospy.loginfo("Goal reached successfully")
+            rospy.loginfo("BT finished successfully")
             self.is_running = False
 
 def main():
