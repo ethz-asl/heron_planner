@@ -6,7 +6,7 @@ from heron_actions.msg import MoveAction, MoveGoal, MoveFeedback
 
 from geometry_msgs.msg import Pose, PoseStamped
 
-from robot_interface.giraffe_interface import GiraffeMove, GiraffeMoveX, GiraffeMoveY, GiraffeTurnYaw
+from dummy_interface.giraffe_interface import GiraffeMove, GiraffeMoveX, GiraffeMoveY, GiraffeTurnYaw
 
 
 class MoveServer(object):

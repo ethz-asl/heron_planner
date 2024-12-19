@@ -14,7 +14,7 @@ from nav_msgs.msg import Odometry
 from gazebo_msgs.msg import ModelStates
 from std_srvs.srv import Trigger
 
-from robot_interface.base_robot_interface import (
+from dummy_interface.base_robot_interface import (
     Move,
     AtPose,
     ParamClient,

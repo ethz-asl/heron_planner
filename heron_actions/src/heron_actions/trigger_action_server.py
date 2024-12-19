@@ -8,7 +8,7 @@ from std_srvs.srv import Trigger, TriggerResponse
 from geometry_msgs.msg import Pose, PoseStamped
 from actionlib_msgs.msg import GoalStatus
 
-from robot_interface.giraffe_interface import GiraffeComponents
+from dummy_interface.giraffe_interface import GiraffeComponents
 
 
 class TriggerComponentServer(object):

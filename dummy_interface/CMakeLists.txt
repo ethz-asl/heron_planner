@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1)
-project(robot_interface)
+project(dummy_interface)
 
 find_package(catkin REQUIRED)
 

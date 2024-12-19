@@ -7,13 +7,13 @@ import numpy as np
 
 from geometry_msgs.msg import Pose, PoseStamped
 
-from robot_interface.giraffe_interface import (
+from dummy_interface.giraffe_interface import (
     GiraffeAtPose,
     GiraffeTopicClient,
     GiraffeParamClient,
     GiraffeComponentStatus,
 )
-from robot_interface.panda_interface import PandaArmClient, PandaGripperClient
+from dummy_interface.panda_interface import PandaArmClient, PandaGripperClient
 
 from heron_actions.move_action_client import MoveClient
 from heron_actions.move_base_action_client import MoveBaseClient
