@@ -45,8 +45,8 @@ class IntegrationTestBT:
         open_deposit_2 = bt.OpenDeposit("Open deposit 2", "2")
         open_deposit_3 = bt.OpenDeposit("Open deposit 3", "3")
 
-        move_forward_5cm = bt.Move("Move forward 5cm", "X 0.05", "Y 0.0")
-        move_right_5cm = bt.Move("Move left 5cm", "X 0.0", "Y 0.05")
+        move_forward_5cm = bt.Move("Move forward 5cm", "0.05", "0.0")
+        move_right_5cm = bt.Move("Move left 5cm", "0.0", "0.05")
         turn_a_bit = bt.Turn("Turn 0.3 rad", "0.3")
 
         wait_5s = bt.Wait("Wait 5s", "5")
@@ -55,13 +55,13 @@ class IntegrationTestBT:
         self.roller = py_trees.composites.Sequence(name="RollerSequence", memory=True)
         self.roller.add_children([lower_roller, wait_10s_ros, lift_roller])
 
-        # self.blow_seq = py_trees.composites.Sequence(name="BlowSeq", memory=True)
-        # self.blow_seq.add_children([activate_blower, wait_10s_ros, move_forward_5cm, wait_10s_ros])
+        self.blow_seq = py_trees.composites.Sequence(name="BlowSeq", memory=True)
+        self.blow_seq.add_children([activate_blower, wait_10s_ros, move_forward_5cm, wait_10s_ros])
 
         # self.wait = py_trees.composites.Sequence(name="wait", memory=True)
         # self.wait.add_children([wait_10s_ros, lower_roller])
 
-        self.root.add_children([self.roller])
+        self.root.add_children([self.roller, self.blow_seq])
 
         self.tree = py_trees.trees.BehaviourTree(self.root)
 
@@ -77,9 +77,9 @@ class IntegrationTestBT:
             )
         self.is_running = True
         rospy.loginfo("Starting the BT...")
-        # visualizer = vis.BTVisualizer(self.tree)
+        visualizer = vis.BTVisualizer(self.tree)
 
-        # self.tree.add_post_tick_handler(visualizer.update_graph)
+        self.tree.add_post_tick_handler(visualizer.update_graph)
         self.timer = rospy.Timer(rospy.Duration(0.1), self.tick_bt)
         return TriggerResponse(success=True, message="BT started")
     
@@ -99,7 +99,7 @@ class IntegrationTestBT:
 
     def visualize(self, bt_name: str):
         """Compute the number of nodes and transition in a BT and save it as figure."""
-        # py_trees.display.render_dot_tree(self.tree.root, name=bt_name)
+        py_trees.display.render_dot_tree(self.tree.root, name=bt_name)
         graph = nx.DiGraph(
             nx.drawing.nx_pydot.from_pydot(
                 py_trees.display.generate_pydot_graph(self.tree.root, 1)

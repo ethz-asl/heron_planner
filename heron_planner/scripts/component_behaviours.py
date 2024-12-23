@@ -54,11 +54,22 @@ class Wait(pt.behaviour.Behaviour):
             self._srv_called = False
 
     def update(self) -> pt.common.Status:
-            if not self._srv_setup or not self._srv_called:
-                return pt.common.Status.FAILURE
-            if self._res and hasattr(self._res, "success") and self._res.success:
-                return pt.common.Status.SUCCESS
+        
+        try:
+            rospy.loginfo(f"Sending command {self._req}")
+            self._res = self._client(self._req)
+            self._srv_called = True
+        except rospy.ServiceException as err:
+            rospy.logerr(f"Service {self._srv_name} failed : {err}")
+            self._srv_called = False
+
+        if not self._srv_setup or not self._srv_called:
+            rospy.loginfo(f"Failed: {self._srv_setup} and {self._srv_called}")
             return pt.common.Status.FAILURE
+        if self._res and self._res.ret.success:
+            rospy.loginfo("Success")
+            return pt.common.Status.SUCCESS
+        return pt.common.Status.FAILURE
 
 class Move(pt.behaviour.Behaviour):
     def __init__(self, name: str, x_dir: str, y_dir: str) -> None:
@@ -93,11 +104,22 @@ class Move(pt.behaviour.Behaviour):
             self._srv_called = False
 
     def update(self) -> pt.common.Status:
-            if not self._srv_setup or not self._srv_called:
-                return pt.common.Status.FAILURE
-            if self._res and hasattr(self._res, "success") and self._res.success:
-                return pt.common.Status.SUCCESS
+        
+        try:
+            rospy.loginfo(f"Sending command {self._req}")
+            self._res = self._client(self._req)
+            self._srv_called = True
+        except rospy.ServiceException as err:
+            rospy.logerr(f"Service {self._srv_name} failed : {err}")
+            self._srv_called = False
+
+        if not self._srv_setup or not self._srv_called:
+            rospy.loginfo(f"Failed: {self._srv_setup} and {self._srv_called}")
             return pt.common.Status.FAILURE
+        if self._res and self._res.ret.success:
+            rospy.loginfo("Success")
+            return pt.common.Status.SUCCESS
+        return pt.common.Status.FAILURE
 
 
 
@@ -134,9 +156,20 @@ class Turn(pt.behaviour.Behaviour):
             self._srv_called = False
 
     def update(self) -> pt.common.Status:
+        
+        try:
+            rospy.loginfo(f"Sending command {self._req}")
+            self._res = self._client(self._req)
+            self._srv_called = True
+        except rospy.ServiceException as err:
+            rospy.logerr(f"Service {self._srv_name} failed : {err}")
+            self._srv_called = False
+
         if not self._srv_setup or not self._srv_called:
+            rospy.loginfo(f"Failed: {self._srv_setup} and {self._srv_called}")
             return pt.common.Status.FAILURE
-        if self._res and hasattr(self._res, "success") and self._res.success:
+        if self._res and self._res.ret.success:
+            rospy.loginfo("Success")
             return pt.common.Status.SUCCESS
         return pt.common.Status.FAILURE
 
@@ -175,9 +208,20 @@ class OpenDeposit(pt.behaviour.Behaviour):
             self._srv_called = False
 
     def update(self) -> pt.common.Status:
+        
+        try:
+            rospy.loginfo(f"Sending command {self._req}")
+            self._res = self._client(self._req)
+            self._srv_called = True
+        except rospy.ServiceException as err:
+            rospy.logerr(f"Service {self._srv_name} failed : {err}")
+            self._srv_called = False
+
         if not self._srv_setup or not self._srv_called:
+            rospy.loginfo(f"Failed: {self._srv_setup} and {self._srv_called}")
             return pt.common.Status.FAILURE
-        if self._res and hasattr(self._res, "success") and self._res.success:
+        if self._res and self._res.ret.success:
+            rospy.loginfo("Success")
             return pt.common.Status.SUCCESS
         return pt.common.Status.FAILURE
 
@@ -215,9 +259,20 @@ class LiftRoller(pt.behaviour.Behaviour):
             self._srv_called = False
 
     def update(self) -> pt.common.Status:
+        
+        try:
+            rospy.loginfo(f"Sending command {self._req}")
+            self._res = self._client(self._req)
+            self._srv_called = True
+        except rospy.ServiceException as err:
+            rospy.logerr(f"Service {self._srv_name} failed : {err}")
+            self._srv_called = False
+
         if not self._srv_setup or not self._srv_called:
+            rospy.loginfo(f"Failed: {self._srv_setup} and {self._srv_called}")
             return pt.common.Status.FAILURE
-        if self._res and hasattr(self._res, "success") and self._res.success:
+        if self._res and self._res.ret.success:
+            rospy.loginfo("Success")
             return pt.common.Status.SUCCESS
         return pt.common.Status.FAILURE
 
@@ -299,10 +354,21 @@ class Blow(pt.behaviour.Behaviour):
             self._srv_called = False
 
     def update(self) -> pt.common.Status:
-        if not self._srv_called:
+        
+        try:
+            rospy.loginfo(f"Sending command {self._req}")
+            self._res = self._client(self._req)
+            self._srv_called = True
+        except rospy.ServiceException as err:
+            rospy.logerr(f"Service {self._srv_name} failed : {err}")
+            self._srv_called = False
+
+        if not self._srv_setup or not self._srv_called:
+            rospy.loginfo(f"Failed: {self._srv_setup} and {self._srv_called}")
             return pt.common.Status.FAILURE
-        if self._res  and self._res.ret.success:
-                return pt.common.Status.SUCCESS
+        if self._res and self._res.ret.success:
+            rospy.loginfo("Success")
+            return pt.common.Status.SUCCESS
         return pt.common.Status.FAILURE
  
 

@@ -3,7 +3,7 @@
 
 from typing import Any
 
-from behaviours import RSequence
+# from behaviours import RSequence
 import py_trees as pt
 import pydot
 
@@ -30,7 +30,8 @@ def __generate_dot_tree(root: Any, graph: pydot.Dot, include_status: bool):
 
     node_instance = None
 
-    if isinstance(root, RSequence) or isinstance(root, pt.composites.Sequence):
+    # if isinstance(root, RSequence) or isinstance(root, pt.composites.Sequence):
+    if isinstance(root, pt.composites.Sequence):
         node_instance = pydot.Node(
             node,
             label="→",
