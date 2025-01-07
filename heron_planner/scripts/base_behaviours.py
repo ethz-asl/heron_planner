@@ -6,18 +6,28 @@ from typing import List, Any
 import numpy as np
 
 from robot_simple_command_manager_msgs.srv import SetCommandString
+from heron_msgs.srv import ChangeRobotMode, ChangeRobotModeRequest, ChangeRobotModeResponse
 
-from std_msgs.msg import Empty
-
-
-class Cancel(pt.behaviour.Behaviour):
-    """need to send this before sending a new cmd, new cmds do not overwrite old"""
-
-    def __init__(self, name: str) -> None:
+class ROSWait(pt.behaviour.Behaviour):
+    def __init__(self, name: str, wait_time: float) -> None:
         super().__init__(name)
-        self._srv_name = "/robot/command_manager/cancel"
-        self._req = Empty()
+        self._wait_time = wait_time
+        
+    def initialise(self):
+        self._rate = rospy.Rate(1.0 / self._wait_time)
 
+    def update(self) -> pt.common.Status:
+        rospy.loginfo(f"Sleeping for {self._wait_time} seconds ...")
+        self._rate.sleep()
+        return pt.common.Status.SUCCESS
+
+
+class Wait(pt.behaviour.Behaviour):
+    def __init__(self, name: str, wait_time: str) -> None:
+        super().__init__(name)
+        self._srv_name = "/robot/command_manager/command"
+        self._req = "WAIT " + wait_time
+        
     def setup(self, timeout: float = 2.0) -> bool:
         try:
             self._client = rospy.ServiceProxy(self._srv_name, SetCommandString)
@@ -25,14 +35,13 @@ class Cancel(pt.behaviour.Behaviour):
             return True
         except rospy.ROSException as err:
             rospy.logerr(f"Service {self._srv_name} setup failed: {err}")
-
+        
     def initialise(self):
         self._srv_setup = False
         self._srv_called = False
         self._res = None
 
         self._srv_setup = self.setup()
-
         if not self._srv_setup:
             rospy.logwarn(f"Service {self._srv_name} failed")
             return
@@ -55,13 +64,12 @@ class Cancel(pt.behaviour.Behaviour):
             return pt.common.Status.SUCCESS
         return pt.common.Status.FAILURE
 
-
-class OpenDeposit(pt.behaviour.Behaviour):
-    def __init__(self, name: str, deposit_num: str) -> None:
+class Move(pt.behaviour.Behaviour):
+    def __init__(self, name: str, x_dir: str, y_dir: str) -> None:
         super().__init__(name)
-        self._srv_name = "/robot/command_sequencer/command"
-        self._req = "DEPOSIT_" + deposit_num
-
+        self._srv_name = "/robot/command_manager/command"
+        self._req = "MOVE " + x_dir + " " + y_dir
+        
     def setup(self, timeout: float = 2.0) -> bool:
         try:
             self._client = rospy.ServiceProxy(self._srv_name, SetCommandString)
@@ -69,51 +77,7 @@ class OpenDeposit(pt.behaviour.Behaviour):
             return True
         except rospy.ROSException as err:
             rospy.logerr(f"Service {self._srv_name} setup failed: {err}")
-
-    def initialise(self):
-        self._srv_setup = False
-        self._srv_called = False
-        self._res = None
-
-        self._srv_setup = self.setup()
-
-        if not self._srv_setup:
-            rospy.logwarn(f"Service {self._srv_name} failed")
-            return
-
-        try:
-            rospy.loginfo(f"Sending command {self._req}")
-            self._res = self._client(self._req)
-            self._srv_called = True
-        except rospy.ServiceException as err:
-            rospy.logerr(f"Service {self._srv_name} failed : {err}")
-            self._srv_called = False
-
-    def update(self) -> pt.common.Status:
-
-        if not self._srv_setup or not self._srv_called:
-            rospy.loginfo(f"Failed: {self._srv_setup} and {self._srv_called}")
-            return pt.common.Status.FAILURE
-        if self._res and self._res.ret.success:
-            rospy.loginfo("Success")
-            return pt.common.Status.SUCCESS
-        return pt.common.Status.FAILURE
-
-
-class LiftRoller(pt.behaviour.Behaviour):
-    def __init__(self, name: str) -> None:
-        super().__init__(name)
-        self._srv_name = "/robot/command_sequencer/command"
-        self._req = "LIFT_ROLLER"
-
-    def setup(self, timeout: float = 2.0) -> bool:
-        try:
-            self._client = rospy.ServiceProxy(self._srv_name, SetCommandString)
-            rospy.wait_for_service(self._srv_name, timeout=timeout)
-            return True
-        except rospy.ROSException as err:
-            rospy.logerr(f"Service {self._srv_name} setup failed: {err}")
-
+        
     def initialise(self):
         self._srv_setup = False
         self._srv_called = False
@@ -143,12 +107,13 @@ class LiftRoller(pt.behaviour.Behaviour):
         return pt.common.Status.FAILURE
 
 
-class LowerRoller(pt.behaviour.Behaviour):
-    def __init__(self, name: str) -> None:
-        super().__init__(name)
-        self._srv_name = "/robot/command_sequencer/command"
-        self._req = "LOWER_ROLLER"
 
+class Turn(pt.behaviour.Behaviour):
+    def __init__(self, name: str, angle: str) -> None:
+        super().__init__(name)
+        self._srv_name = "/robot/command_manager/command"
+        self._req = "TURN " + angle
+        
     def setup(self, timeout: float = 2.0) -> bool:
         try:
             self._client = rospy.ServiceProxy(self._srv_name, SetCommandString)
@@ -156,16 +121,24 @@ class LowerRoller(pt.behaviour.Behaviour):
             return True
         except rospy.ROSException as err:
             rospy.logerr(f"Service {self._srv_name} setup failed: {err}")
-
+        
     def initialise(self):
         self._srv_setup = False
         self._srv_called = False
         self._res = None
 
         self._srv_setup = self.setup()
+
         if not self._srv_setup:
             rospy.logwarn(f"Service {self._srv_name} failed")
             return
+        try:
+            rospy.loginfo(f"Sending command {self._req}")
+            self._res = self._client(self._req)
+            self._srv_called = True
+        except rospy.ServiceException as err:
+            rospy.logerr(f"Service {self._srv_name} failed : {err}")
+            self._srv_called = False
 
     def update(self) -> pt.common.Status:
 
@@ -178,12 +151,12 @@ class LowerRoller(pt.behaviour.Behaviour):
         return pt.common.Status.FAILURE
 
 
-class Blow(pt.behaviour.Behaviour):
+class Dock(pt.behaviour.Behaviour):
     def __init__(self, name: str) -> None:
         super().__init__(name)
-        self._srv_name = "/robot/command_sequencer/command"
-        self._req = "BLOW"
-
+        self._srv_name = "/robot/command_manager/command"
+        self._req = "DOCK"
+        
     def setup(self, timeout: float = 2.0) -> bool:
         try:
             self._client = rospy.ServiceProxy(self._srv_name, SetCommandString)
@@ -191,7 +164,7 @@ class Blow(pt.behaviour.Behaviour):
             return True
         except rospy.ROSException as err:
             rospy.logerr(f"Service {self._srv_name} setup failed: {err}")
-
+        
     def initialise(self):
         self._srv_setup = False
         self._srv_called = False
@@ -199,6 +172,48 @@ class Blow(pt.behaviour.Behaviour):
 
         self._srv_setup = self.setup()
 
+        if not self._srv_setup:
+            rospy.logwarn(f"Service {self._srv_name} failed")
+            return
+        try:
+            rospy.loginfo(f"Sending command {self._req}")
+            self._res = self._client(self._req)
+            self._srv_called = True
+        except rospy.ServiceException as err:
+            rospy.logerr(f"Service {self._srv_name} failed : {err}")
+            self._srv_called = False
+
+    def update(self) -> pt.common.Status:
+        
+        if not self._srv_setup or not self._srv_called:
+            rospy.loginfo(f"Failed: {self._srv_setup} and {self._srv_called}")
+            return pt.common.Status.FAILURE
+        if self._res and self._res.ret.success:
+            rospy.loginfo("Success")
+            return pt.common.Status.SUCCESS
+        return pt.common.Status.FAILURE
+
+
+class ChangeRobotMode(pt.behaviour.Behaviour):
+    def __init__(self, name: str, change_req: str) -> None:
+        super().__init__(name)
+        self._srv_name = "/robot/change_mode"
+        self._req = ChangeRobotModeRequest(mode=change_req)
+        self._res = ChangeRobotModeResponse()
+        
+    def setup(self, timeout: float = 2.0) -> bool:
+        try:
+            self._client = rospy.ServiceProxy(self._srv_name, ChangeRobotMode)
+            rospy.wait_for_service(self._srv_name, timeout=timeout)
+            return True
+        except rospy.ROSException as err:
+            rospy.logerr(f"Service {self._srv_name} setup failed: {err}")
+        
+    def initialise(self):
+        self._srv_setup = False
+        self._srv_called = False
+
+        self._srv_setup = self.setup()
         if not self._srv_setup:
             rospy.logwarn(f"Service {self._srv_name} failed")
             return
@@ -216,7 +231,7 @@ class Blow(pt.behaviour.Behaviour):
         if not self._srv_setup or not self._srv_called:
             rospy.loginfo(f"Failed: {self._srv_setup} and {self._srv_called}")
             return pt.common.Status.FAILURE
-        if self._res and self._res.ret.success:
-            rospy.loginfo("Success")
+        if self._res and self._res.success:
+            rospy.loginfo(f"Success: {self._res.msg}")
             return pt.common.Status.SUCCESS
         return pt.common.Status.FAILURE
