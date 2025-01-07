@@ -240,10 +240,32 @@ class UgvDummyInterface:
                     message="Invalid SET_DO command parameters",
                     code=3,
                 )
+        
+        elif primary_command == "WAIT":
+            if len(command_parts) != 2:
+                return self.generate_cmd_res(
+                    success=False, 
+                    message="Invalid WAIT command format", 
+                    code=2
+                )
+            try:
+                wait_time = float(command_parts[1])
+                rospy.loginfo(f"Waiting for {wait_time} [s]")
+                message = f"Waiting for {wait_time} [s]"
+                rospy.sleep(wait_time)
+                return self.generate_cmd_res(
+                    success=True, message=message, code=0
+                )
+            except ValueError:
+                return self.generate_cmd_res(
+                    success=False,
+                    message="Invalid WAIT command parameter",
+                    code=3,
+                )
 
         else:
             # command not recognised
-            return self.generate_res(
+            return self.generate_cmd_res(
                 success=False,
                 message=f"Unknown command: {primary_command}",
                 code=4,
@@ -317,7 +339,7 @@ class UgvDummyInterface:
 
         res = MoveToResult(success=True, message=f"Moved to {goal.to}")
         feedback.state = "Completed"
-        self.move_to_srv.set_succeed(res)
+        self.move_to_srv.set_succeeded(res)
         rospy.loginfo(f"MoveTo completed {res}")
 
     def handle_move_to_pose(self, goal: MoveToPoseGoal):
@@ -328,7 +350,7 @@ class UgvDummyInterface:
 
         res = MoveToPoseResult(success=True, message=f"Moved to {goal.pose}")
         feedback.state = "Completed"
-        self.move_to_pose_srv.set_succeed(res)
+        self.move_to_pose_srv.set_succeeded(res)
         rospy.loginfo(f"MoveToPose completed {res}")
 
     def handle_pickup_from(self, goal: PickupFromGoal):
@@ -340,7 +362,7 @@ class UgvDummyInterface:
 
         res = PickupFromResult(success=True, message=f"Moved to {goal}")
         feedback.state = "Completed"
-        self.pickup_from_srv.set_succeed(res)
+        self.pickup_from_srv.set_succeeded(res)
         rospy.loginfo(f"PickUpFrom completed {res}")
 
     def handle_place_on(self, goal: PlaceOnGoal):
@@ -351,7 +373,7 @@ class UgvDummyInterface:
 
         res = PlaceOnResult(success=True, message=f"Moved to {goal}")
         feedback.state = "Completed"
-        self.place_on_srv.set_succeed(res)
+        self.place_on_srv.set_succeeded(res)
         rospy.loginfo(f"PlaceOn completed {res}")
 
 
