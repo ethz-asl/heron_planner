@@ -110,7 +110,7 @@ class PotholeBT:
             )
         self.is_running = True
         rospy.loginfo("Starting the BT...")
-        visualizer = vis.BTVisualizer(self.tree)
+        visualizer = vis.BTVisualiser(self.tree)
 
         self.tree.add_post_tick_handler(visualizer.update_graph)
         self.timer = rospy.Timer(rospy.Duration(0.1), self.tick_bt)
