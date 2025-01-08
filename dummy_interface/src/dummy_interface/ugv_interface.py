@@ -262,6 +262,29 @@ class UgvDummyInterface:
                     message="Invalid WAIT command parameter",
                     code=3,
                 )
+        elif primary_command == "GOTO_GPS":
+            if len(command_parts) != 4:
+                return self.generate_cmd_res(
+                    success=False, message="Invalid MOVE command format", code=2
+                )
+            try:
+                x = float(command_parts[1])
+                y = float(command_parts[2])
+                yaw = float(command_parts[3])
+
+                rospy.loginfo(f"Moving robot {x, y} [m] in (X, Y), in {yaw} [rad] direction")
+                rospy.sleep(3.0)
+                message = f"Robot successfully moved"
+                return self.generate_cmd_res(
+                    success=True, message=message, code=0
+                )
+            except ValueError:
+                return self.generate_cmd_res(
+                    success=False,
+                    message="Invalid MOVE command parameters",
+                    code=3,
+                )
+
 
         else:
             # command not recognised
@@ -333,7 +356,7 @@ class UgvDummyInterface:
     
     def handle_move_to(self, goal: MoveToGoal):
         rospy.loginfo(f"MoveTo recieved: {goal.to}")
-        feedback = MoveToFeedback(state="Moving to target location")
+        feedback = MoveToFeedback(state=f"Moving to target location")
         self.move_to_srv.publish_feedback(feedback)
         rospy.sleep(3.0)
 
@@ -355,23 +378,23 @@ class UgvDummyInterface:
 
     def handle_pickup_from(self, goal: PickupFromGoal):
 
-        rospy.loginfo(f"MoveTo recieved: {goal}")
+        rospy.loginfo(f"MoveTo recieved: {goal.location}")
         feedback = PickupFromFeedback(state="Moving to target location")
         self.pickup_from_srv.publish_feedback(feedback)
         rospy.sleep(3.0)
 
-        res = PickupFromResult(success=True, message=f"Moved to {goal}")
+        res = PickupFromResult(success=True, message=f"Moved to {goal.location}")
         feedback.state = "Completed"
         self.pickup_from_srv.set_succeeded(res)
         rospy.loginfo(f"PickUpFrom completed {res}")
 
     def handle_place_on(self, goal: PlaceOnGoal):
-        rospy.loginfo(f"MoveTo recieved: {goal}")
+        rospy.loginfo(f"MoveTo recieved: {goal.location}")
         feedback = PlaceOnFeedback(state="Moving to target location")
         self.place_on_srv.publish_feedback(feedback)
         rospy.sleep(3.0)
 
-        res = PlaceOnResult(success=True, message=f"Moved to {goal}")
+        res = PlaceOnResult(success=True, message=f"Moved to {goal.location}")
         feedback.state = "Completed"
         self.place_on_srv.set_succeeded(res)
         rospy.loginfo(f"PlaceOn completed {res}")

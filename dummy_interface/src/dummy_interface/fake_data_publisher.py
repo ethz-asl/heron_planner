@@ -3,7 +3,8 @@
 import rospy
 from robotnik_msgs.msg import BatteryStatus, State
 from sensor_msgs.msg import NavSatFix, Image
-from std_msgs.msg import Header
+from std_msgs.msg import String, Header
+from geometry_msgs.msg import PoseStamped
 import random
 import numpy as np
 from cv_bridge import CvBridge
@@ -24,6 +25,16 @@ class FakeDataPublisher:
             "/robot/robot_local_control/RobotStatusComponent/state",
             State,
             queue_size=10,
+        )
+        self.ee_pose_pub = rospy.Publisher(
+            "/robot/arm/ee_pose", 
+            PoseStamped,
+            queue_size=10
+        )
+        self.ee_pose_name_pub = rospy.Publisher(
+            "/robot/arm/ee_pose_name", 
+            String,
+            queue_size=10
         )
         self.arm_camera_pub = rospy.Publisher(
             "/robot/arm_camera/front_rgbd_camera/rgb/image_raw",
@@ -73,6 +84,16 @@ class FakeDataPublisher:
         self.gps_pub.publish(gps_msg)
         rospy.loginfo(f"Published fake GPS data: {gps_msg}")
 
+    def publish_consistent_gps_data(self):
+        """Publishes faked GPS coordinates."""
+        gps_msg = NavSatFix()
+        gps_msg.header = Header(stamp=rospy.Time.now(), frame_id="base_link")
+        gps_msg.latitude = 35 # Random latitude
+        gps_msg.longitude = -125  # Random longitude
+        gps_msg.altitude = 0  # Altitude in meters
+        self.gps_pub.publish(gps_msg)
+        rospy.loginfo(f"Published fake GPS data: {gps_msg}")
+
     def publish_robot_status(self):
         """Publishes faked robot status."""
         state_msg = State()
@@ -95,6 +116,26 @@ class FakeDataPublisher:
         self.status_pub.publish(state_msg)
         rospy.loginfo(f"Published fake robot status: {state_msg}")
 
+    def publish_ee_pose(self):
+        """Publishes fake """
+
+        pose_msg = PoseStamped()
+        pose_msg.header = Header(stamp=rospy.Time.now(), frame_id="base_link")
+        pose_msg.pose.position.x = 0.0
+        pose_msg.pose.position.y = 0.0
+        pose_msg.pose.position.z = 0.0
+        pose_msg.pose.orientation.w = 0.0
+
+        self.ee_pose_pub.publish(pose_msg)
+
+    def publish_ee_pose_name(self):
+        """Publishes fake """
+
+        name_msg = String()
+        name_msg.data = "NONE"
+
+        self.ee_pose_name_pub.publish(name_msg)
+
     def publish_camera_image(self, pub):
         """Publishes a faked camera image."""
         # Create a random image
@@ -110,8 +151,11 @@ class FakeDataPublisher:
         rate = rospy.Rate(0.1)  # Publish at 0.1 Hz
         while not rospy.is_shutdown():
             self.publish_battery_status()
-            self.publish_gps_data()
+            # self.publish_gps_data()
+            self.publish_consistent_gps_data()
             self.publish_robot_status()
+            self.publish_ee_pose()
+            self.publish_ee_pose_name()
             self.publish_camera_image(self.arm_camera_pub)
             self.publish_camera_image(self.body_camera_pub)
             rate.sleep()

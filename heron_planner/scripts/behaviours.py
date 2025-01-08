@@ -7,15 +7,15 @@ import numpy as np
 
 from geometry_msgs.msg import Pose, PoseStamped
 
-from dummy_interface.giraffe_interface import (
+from moma_actions.giraffe_interface import (
     GiraffeAtPose,
     GiraffeTopicClient,
     GiraffeParamClient,
     GiraffeComponentStatus,
 )
-from dummy_interface.panda_interface import PandaArmClient, PandaGripperClient
+# from dummy_interface.panda_interface import PandaArmClient, PandaGripperClient
 
-from heron_actions.move_action_client import MoveClient
+from moma_actions.move_action_client import MoveClient
 from heron_actions.move_base_action_client import MoveBaseClient
 from heron_actions.trigger_action_client import TriggerComponentClient
 
@@ -23,23 +23,23 @@ import heron_utils.gazebo_utils as gazebo_utils
 import heron_utils.transform_utils as utils
 
 
-class MoveArm(pt.behaviour.Behaviour):
-    def __init__(self, name="", *args, **kwargs):
-        super().__init__(name, *args, **kwargs)
-        self._client = MoveToClient()
+# class MoveArm(pt.behaviour.Behaviour):
+#     def __init__(self, name="", *args, **kwargs):
+#         super().__init__(name, *args, **kwargs)
+#         self._client = MoveToClient()
     
-    def initialise(self):
-        return super().initialise()
+#     def initialise(self):
+#         return super().initialise()
     
-    def update(self):
-        return super().update()
+#     def update(self):
+#         return super().update()
     
-    def terminate(self, new_status):
-        return super().terminate(new_status)
+#     def terminate(self, new_status):
+#         return super().terminate(new_status)
     
-class ArmAtPose(pt.behaviour.Behaviour):
-    def __init__(self, name="", *args, **kwargs):
-        super().__init__(name, *args, **kwargs)
+# class ArmAtPose(pt.behaviour.Behaviour):
+#     def __init__(self, name="", *args, **kwargs):
+#         super().__init__(name, *args, **kwargs)
 
 
 
@@ -151,34 +151,34 @@ class TriggerComponent(pt.behaviour.Behaviour):
             self._client.cancel_goal()
 
 
-class MoveArm(pt.behaviour.Behaviour):
-    def __init__(self, name: str, goal_pose: Pose):
-        super().__init__(name)
-        self._client = PandaArmClient()
-        self._goal_pose = goal_pose
+# class MoveArm(pt.behaviour.Behaviour):
+#     def __init__(self, name: str, goal_pose: Pose):
+#         super().__init__(name)
+#         self._client = PandaArmClient()
+#         self._goal_pose = goal_pose
 
-    def initialise(self):
-        self._client.goto(self._goal_pose)
+#     def initialise(self):
+#         self._client.goto(self._goal_pose)
 
-    def update(self):
-        # status = self._client.
-        return super().update()
+#     def update(self):
+#         # status = self._client.
+#         return super().update()
 
-    def terminate(self, new_status):
-        return super().terminate(new_status)
+#     def terminate(self, new_status):
+#         return super().terminate(new_status)
 
 
-class GraspObject(pt.behaviour.Behaviour):
-    def __init__(self, name: str, goal_pose: Pose):
-        super().__init__(name)
-        self._client = GraspExecutionAction()
-        self._goal_pose = goal_pose
+# class GraspObject(pt.behaviour.Behaviour):
+#     def __init__(self, name: str, goal_pose: Pose):
+#         super().__init__(name)
+#         self._client = GraspExecutionAction()
+#         self._goal_pose = goal_pose
 
-    def initialise(self):
-        pass
+#     def initialise(self):
+#         pass
 
-    def update(self):
-        pass
+#     def update(self):
+#         pass
 
 
 class RobotAtPose(pt.behaviour.Behaviour):
