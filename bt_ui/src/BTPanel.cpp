@@ -1,68 +1,109 @@
-#include <QPainter>
-#include <QLineEdit>
-#include <QVBoxLayout>
-#include <QHBoxLayout>
-#include <QLabel>
-#include <QTimer>
-
-#include <vector>
-#include <string>
+#include "bt_ui/BTPanel.h"
 
 #include <ros/names.h>
+#include <std_msgs/Float32.h>
+#include <std_msgs/String.h>
 #include <std_srvs/Empty.h>
 #include <std_srvs/SetBool.h>
 #include <std_srvs/Trigger.h>
-#include <std_msgs/String.h>
-#include <std_msgs/Float32.h>
 
-#include "bt_ui/BTPanel.h"
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QLineEdit>
+#include <QPainter>
+#include <QTimer>
+#include <QVBoxLayout>
+#include <string>
+#include <vector>
 
-namespace bt_ui
-{
-    BTPanel::BTPanel(QWidget *parent)
-        : rviz::Panel(parent), start_button_(new QPushButton("Start BT")), stop_button_(new QPushButton("Stop BT"))
-    {
-        auto *layout = new QVBoxLayout;
-        layout->addWidget(start_button_);
-        layout->addWidget(stop_button_);
-        setLayout(layout);
+namespace bt_ui {
+BTPanel::BTPanel(QWidget *parent)
+    : rviz::Panel(parent),
+      start_button_(new QPushButton("Start BT")),
+      pause_button_(new QPushButton("Pause BT")),
+      stop_button_(new QPushButton("Stop BT")) {
+  auto *layout = new QVBoxLayout;
+  layout->addWidget(start_button_);
+  layout->addWidget(pause_button_);
+  layout->addWidget(stop_button_);
+  setLayout(layout);
 
-        connect(start_button_, SIGNAL(clicked()), this, SLOT(onStartButtonClicked()));
-        connect(stop_button_, SIGNAL(clicked()), this, SLOT(onStopButtonClicked()));
-    }
+  connect(start_button_, SIGNAL(clicked()), this, SLOT(onStartButtonClicked()));
+  connect(pause_button_, SIGNAL(clicked()), this, SLOT(onPauseButtonClicked()));
+  connect(stop_button_, SIGNAL(clicked()), this, SLOT(onStopButtonClicked()));
+}
 
-    void BTPanel::save(rviz::Config config) const
-    {
-        rviz::Panel::save(config); // Ensure the base class's save method is called
-    }
+void BTPanel::save(rviz::Config config) const {
+  rviz::Panel::save(config);  // Ensure the base class's save method is called
+}
 
-    void BTPanel::load(const rviz::Config &config)
-    {
-        rviz::Panel::load(config); // Ensure the base class's load method is called
-    }
+void BTPanel::load(const rviz::Config &config) {
+  rviz::Panel::load(config);  // Ensure the base class's load method is called
+}
 
-    void BTPanel::onStartButtonClicked()
-    {
-        ros::NodeHandle nh;
-        ros::ServiceClient start_bt_client = nh.serviceClient<std_srvs::Trigger>("/start_bt");
-        std_srvs::Trigger srv;
-        if (!start_bt_client.call(srv))
-        {
-            ROS_WARN("Failed to call service /start_bt");
-        }
-    }
+void BTPanel::onStartButtonClicked() {
+  ros::NodeHandle nh;
+  ros::ServiceClient start_bt_client =
+      nh.serviceClient<std_srvs::Trigger>("/start_bt");
+  std_srvs::Trigger srv;
 
-    void BTPanel::onStopButtonClicked()
-    {
-        ros::NodeHandle nh;
-        ros::ServiceClient stop_bt_client = nh.serviceClient<std_srvs::Trigger>("/stop_bt");
-        std_srvs::Trigger srv;
-        if (!stop_bt_client.call(srv))
-        {
-            ROS_WARN("Failed to call service /stop_bt");
-        }
-    }
-} // namespace bt_ui
+  is_started_ = !is_started_;
+
+  if (is_started_) {
+    start_button_->setText("BT Started");
+    start_button_->setStyleSheet("background-color: green; color: black;");
+  } else {
+    start_button_->setText("Start BT");
+    start_button_->setStyleSheet("");
+  }
+
+  if (!start_bt_client.call(srv)) {
+    ROS_WARN("Failed to call service /start_bt");
+  }
+}
+
+void BTPanel::onPauseButtonClicked() {
+  ros::NodeHandle nh;
+  ros::ServiceClient pause_bt_client =
+      nh.serviceClient<std_srvs::Trigger>("/pause_bt");
+  std_srvs::Trigger srv;
+
+  is_paused_ = !is_paused_;
+
+  if (is_paused_) {
+    pause_button_->setText("Continue BT");
+    pause_button_->setStyleSheet("background-color: orange; color: black;");
+  } else {
+    pause_button_->setText("Pause BT");
+    pause_button_->setStyleSheet("");
+  }
+
+  if (!pause_bt_client.call(srv)) {
+    ROS_WARN("Failed to call service /pause_bt");
+  }
+}
+
+void BTPanel::onStopButtonClicked() {
+  ros::NodeHandle nh;
+  ros::ServiceClient stop_bt_client =
+      nh.serviceClient<std_srvs::Trigger>("/stop_bt");
+  std_srvs::Trigger srv;
+
+  is_stopped_ = !is_stopped_;
+
+  if (is_stopped_) {
+    stop_button_->setText("BT Stopped");
+    stop_button_->setStyleSheet("background-color: red; color: black;");
+  } else {
+    stop_button_->setText("Stop BT");
+    stop_button_->setStyleSheet("");
+  }
+
+  if (!stop_bt_client.call(srv)) {
+    ROS_WARN("Failed to call service /stop_bt");
+  }
+}
+}  // namespace bt_ui
 
 #include <pluginlib/class_list_macros.h>
 PLUGINLIB_EXPORT_CLASS(bt_ui::BTPanel, rviz::Panel)
