@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 
-import visualizer as vis
-import bt_rendering as render
-import component_behaviours as comp_bt
-import base_behaviours as base_bt
-import arm_behaviours as arm_bt
-import simple_flask_server
+import heron_planner.utils.bt_rendering as render
+import heron_planner.behaviours.component_behaviours as comp_bt
+import heron_planner.behaviours.base_behaviours as base_bt
+import heron_planner.behaviours.arm_behaviours as arm_bt
+import heron_planner.utils.simple_flask_server as flask_server
 import threading
 import requests
 import functools
@@ -67,7 +66,7 @@ class FlaskTestBT:
 
         rospy.loginfo("starting flask server...")
         self.vis_thread = threading.Thread(
-            target=simple_flask_server.start_flask_server, args=(self.tree,)
+            target=flask_server.start_flask_server, args=(self.tree,)
         )
         self.vis_thread.daemon = True
         self.vis_thread.start()

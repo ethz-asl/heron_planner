@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import rospy
-import bt_rendering as render
+import heron_planner.utils.bt_rendering as render
 from flask import Flask, Response
 from std_msgs.msg import String
 
