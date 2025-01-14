@@ -70,12 +70,10 @@ class ICCSDummyInterface:
         self, req: FindPotholeRequest
     ) -> FindPotholeResponse:
         """"""
-        cv_img = self.cv_bridge.imgmsg_to_cv2(
-            req.image_rgb, desired_encoding="passthrough"
-        )
-        rospy.loginfo(cv_img.shape)
 
-        success = True
+        rospy.logwarn(f"req: {req}")
+        success = random.choice([True, False])
+        rospy.logwarn(f"found pothole? {success}")
 
         center_of_mass = PoseStamped()
         center_of_mass.pose.position.x = 0
@@ -84,6 +82,8 @@ class ICCSDummyInterface:
         center_of_mass.pose.orientation.w = 0
 
         surface_area = random.uniform(0.08, 0.2)
+
+        rospy.sleep(5.0)
 
         return self.generate_pothole_res(success, center_of_mass, surface_area)
 
@@ -94,7 +94,7 @@ class ICCSDummyInterface:
         )
         rospy.loginfo(cv_img.shape)
 
-        success = True
+        success = random.choice([True, False])
         
         start_point = PointStamped()
         start_point.point.x = 0
@@ -117,7 +117,7 @@ class ICCSDummyInterface:
         )
         rospy.loginfo(cv_img.shape)
 
-        success = True
+        success = random.choice([True, False])
         
         start_point = PointStamped()
         start_point.point.x = 0
@@ -128,6 +128,7 @@ class ICCSDummyInterface:
         end_point.point.x = 1.0
         end_point.point.y = 1.0
         end_point.point.z = 0
+
 
         return self.generate_lane_edge_res(success, start_point, end_point)
 
