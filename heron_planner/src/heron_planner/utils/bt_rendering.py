@@ -49,6 +49,16 @@ def __generate_dot_tree(root: Any, graph: pydot.Dot, include_status: bool):
             width="0",
             height="0",
         )
+    elif isinstance(root, pt.decorators.Decorator):
+        node_instance = pydot.Node(
+            node,
+            label="δ",
+            shape="diamond",
+            margin="0.1",
+            width="0",
+            height="0",
+        )
+
     elif isinstance(root, pt.behaviour.Behaviour):
         if node[-1] == "!":
             node_instance = pydot.Node(node, label=name, shape="box")
@@ -78,7 +88,7 @@ def __generate_dot_tree(root: Any, graph: pydot.Dot, include_status: bool):
 
         graph.add_node(node_instance)
 
-    if isinstance(root, pt.composites.Composite):
+    if isinstance(root, (pt.composites.Composite, pt.decorators.Decorator)):
         for i, child in enumerate(root.children):
             child_node = __generate_dot_tree(child, graph, include_status)
             edge = pydot.Edge(node, child_node)

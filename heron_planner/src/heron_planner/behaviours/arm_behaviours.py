@@ -49,13 +49,24 @@ class ArmAt(pt.behaviour.Behaviour):
             rospy.loginfo("Success, at GPS location")
             return pt.common.Status.SUCCESS
         return pt.common.Status.FAILURE
+    
+class ArmAtDynamic(ArmAt):
+    def __init__(self, name : str, get_pose_name: callable) -> None:
+        super().__init__(name, pose_name=None)
+        self.get_pose_name = get_pose_name
+
+    def initialise(self):
+        self.goal_pose_name = self.get_pose_name()
+        rospy.loginfo(f"Dynamic goal pose name set to: {self.goal_pose_name}")
+        super().initialise()
 
 
 class MoveTo(pt.behaviour.Behaviour):
     def __init__(self, name: str, pose_name: str) -> None:
         super().__init__(name)
         self._node_name = "/robot/arm/move_to"
-        self._goal = MoveToGoal(to=pose_name)
+        self._goal_pose_name = pose_name
+        self._goal = None
         self._client = None
         self._result = None
         self._feedback_recieved = None
@@ -79,12 +90,16 @@ class MoveTo(pt.behaviour.Behaviour):
             rospy.logwarn(f"Action {self._node_name} is not initialised")
             return
 
+        self._goal = MoveToGoal(to=self._goal_pose_name)
         rospy.loginfo(f"Sending goal to {self._node_name} :{self._goal}")
         self._client.send_goal(self._goal, feedback_cb=self.feedback_cb)
         self._feedback_recieved = False
         self._result = None
 
     def update(self) -> pt.common.Status:
+
+        rospy.logwarn(f"pose name: {self._goal_pose_name}")
+
         if not self._client:
             rospy.logwarn("Action client is not initialized.")
             return pt.common.Status.FAILURE
@@ -112,6 +127,15 @@ class MoveTo(pt.behaviour.Behaviour):
         rospy.loginfo(f"Feedback: {feedback}")
         self._feedback_recieved = True
         
+class MoveToDynamic(MoveTo):
+    def __init__(self, name : str, get_pose_name: callable) -> None:
+        super().__init__(name, pose_name=None)
+        self.get_pose_name = get_pose_name
+
+    def initialise(self):
+        self._goal_pose_name = self.get_pose_name()
+        rospy.loginfo(f"Dynamic goal pose name set to: {self._goal_pose_name}")
+        super().initialise()
 
 class ArmAtPose(pt.behaviour.Behaviour):    
     def __init__(self, name: str, pose: PoseStamped) -> None:
