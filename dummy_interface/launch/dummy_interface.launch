@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+
+<launch>
+
+    <node pkg="dummy_interface" type="ugv_interface.py" name="ugv_interface"/>
+    <node pkg="dummy_interface" type="iccs_interface.py" name="iccs_interface"/>
+
+</launch>
