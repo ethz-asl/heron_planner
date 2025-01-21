@@ -68,9 +68,7 @@ class SearchForPothole(pt.behaviour.Behaviour):
         self._thread.start()
 
     def _call_srv(self):
-        rospy.logerr("entered call_srv")
         try:
-            rospy.logerr("Calling FindPothole srv...")
             self._res = self._client(self._req)
             self._res_recieved = True
         except rospy.ServiceException as err:
@@ -79,7 +77,6 @@ class SearchForPothole(pt.behaviour.Behaviour):
             self._res_recieved = False
 
     def update(self) -> pt.common.Status:
-        rospy.logerr(f"has res been recieved? {self._res_recieved}")
 
         if not self._res_recieved:
             return pt.common.Status.RUNNING
