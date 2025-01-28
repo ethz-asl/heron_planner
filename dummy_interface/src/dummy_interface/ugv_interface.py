@@ -1,20 +1,13 @@
 #!/usr/bin/env python
 
 from __future__ import annotations  # for type hinting
-from typing import Callable
 
-import os
 import rospy
-import rospkg
-import numpy as np
 import actionlib
 
-from std_msgs.msg import String, Bool
-from geometry_msgs.msg import Pose, PoseWithCovarianceStamped, Twist
-from nav_msgs.msg import Odometry
-from gazebo_msgs.msg import ModelStates
-from std_srvs.srv import Trigger
-from sensor_msgs.msg import Image
+from geometry_msgs.msg import PoseStamped
+
+import heron_utils as utils
 
 from robot_simple_command_manager_msgs.srv import (
     SetCommandString,
@@ -25,6 +18,12 @@ from heron_msgs.srv import (
     ChangeRobotMode,
     ChangeRobotModeRequest,
     ChangeRobotModeResponse,
+    GetDepositSeq,
+    GetDepositSeqRequest,
+    GetDepositSeqResponse,
+    FindOffset,
+    FindOffsetRequest,
+    FindOffsetResponse,
 )
 from heron_msgs.msg import (
     MoveToAction,
@@ -82,6 +81,16 @@ class UgvDummyInterface:
             ChangeRobotMode,
             self.handle_change_mode,
         )
+        self.get_deposit_srv = rospy.Service(
+            "/robot/get_deposit_sequence",
+            GetDepositSeq,
+            self.handle_deposit_seq,
+        )
+        self.find_offset_srv = rospy.Service(
+            "/robot/find_offset",
+            FindOffset,
+            self.handle_find_offset,
+        )
 
         # actions
         self.move_to_srv = actionlib.SimpleActionServer(
@@ -108,7 +117,7 @@ class UgvDummyInterface:
             execute_cb=self.handle_place_on,
             auto_start=False,
         )
-        
+
         # start actions
         self.move_to_srv.start()
         self.move_to_pose_srv.start()
@@ -240,13 +249,11 @@ class UgvDummyInterface:
                     message="Invalid SET_DO command parameters",
                     code=3,
                 )
-        
+
         elif primary_command == "WAIT":
             if len(command_parts) != 2:
                 return self.generate_cmd_res(
-                    success=False, 
-                    message="Invalid WAIT command format", 
-                    code=2
+                    success=False, message="Invalid WAIT command format", code=2
                 )
             try:
                 wait_time = float(command_parts[1])
@@ -272,7 +279,9 @@ class UgvDummyInterface:
                 y = float(command_parts[2])
                 yaw = float(command_parts[3])
 
-                rospy.loginfo(f"Moving robot {x, y} [m] in (X, Y), in {yaw} [rad] direction")
+                rospy.loginfo(
+                    f"Moving robot {x, y} [m] in (X, Y), in {yaw} [rad] direction"
+                )
                 rospy.sleep(3.0)
                 message = f"Robot successfully moved"
                 return self.generate_cmd_res(
@@ -284,7 +293,6 @@ class UgvDummyInterface:
                     message="Invalid MOVE command parameters",
                     code=3,
                 )
-
 
         else:
             # command not recognised
@@ -353,7 +361,76 @@ class UgvDummyInterface:
         res.ret.message = message
         res.ret.code = code
         return res
-    
+
+    def handle_deposit_seq(
+        self, req: GetDepositSeqRequest
+    ) -> GetDepositSeqResponse:
+        # dummy deposit sizes
+        min_pothole = 0.08
+        max_pothole = 0.2
+        small_pothole = 0.12
+        large_pothole = 0.15
+
+        res = GetDepositSeqResponse()
+
+        if (  # pothole too big or too small
+            req.surface_area_m < min_pothole or req.surface_area_m > max_pothole
+        ):
+            rospy.logwarn(
+                f"Pothole must be between [{min_pothole, max_pothole}] [m^2]"
+            )
+            rospy.logwarn(
+                f"Detected surface area is [{req.surface_area_m}] [m^2]"
+            )
+            res.deposit_sequence = "ERROR"
+        elif (  # pothole small size
+            req.surface_area_m >= min_pothole
+            and req.surface_area_m < small_pothole
+        ):
+            res.deposit_sequence = "DEPOSIT_1"
+        elif (  # pothole medium size
+            req.surface_area_m >= small_pothole
+            and req.surface_area_m < large_pothole
+        ):
+            res.deposit_sequence = "DEPOSIT_2"
+        elif (  # pothole large size
+            req.surface_area_m >= large_pothole
+            and req.surface_area_m <= max_pothole
+        ):
+            res.deposit_sequence = "DEPOSIT_3"
+
+        return res
+
+    def handle_find_offset(self, req: FindOffsetRequest) -> FindOffsetResponse:
+
+        res = FindOffsetResponse()
+
+        if req.defect_type == "POTHOLE":
+            res.offset_pose = utils.find_offset_pose(
+                req.defect_pose, offset=1, towards=True
+            )
+        elif req.defect_type == "CRACKS":
+            res.offset_pose = utils.find_offset_pose(
+                req.defect_pose, offset=0.7, towards=False
+            )
+        elif req.defect_type == "ROAD_MARKINGS":
+            res.offset_pose = utils.find_offset_pose(
+                req.defect_pose, offset=0.5, towards=False
+            )
+        elif req.defect_type == "CONE_PLACE":
+            res.offset_pose = utils.find_offset_pose(
+                req.defect_pose, offset=0.7, towards=False
+            )
+        elif req.defect_type == "CONE_PICKUP":
+            res.offset_pose = utils.find_offset_pose(
+                req.defect_pose, offset=0.7, towards=False
+            )
+        else:
+            rospy.logwarn(f"Invalid defect type {req.defect_type}.")
+            res.offset_pose = None
+
+        return res
+
     def handle_move_to(self, goal: MoveToGoal):
         rospy.loginfo(f"MoveTo recieved: {goal.to}")
         feedback = MoveToFeedback(state=f"Moving to target location")
@@ -383,7 +460,9 @@ class UgvDummyInterface:
         self.pickup_from_srv.publish_feedback(feedback)
         rospy.sleep(3.0)
 
-        res = PickupFromResult(success=True, message=f"Moved to {goal.location}")
+        res = PickupFromResult(
+            success=True, message=f"Moved to {goal.location}"
+        )
         feedback.state = "Completed"
         self.pickup_from_srv.set_succeeded(res)
         rospy.loginfo(f"PickUpFrom completed {res}")
@@ -398,7 +477,6 @@ class UgvDummyInterface:
         feedback.state = "Completed"
         self.place_on_srv.set_succeeded(res)
         rospy.loginfo(f"PlaceOn completed {res}")
-
 
     def run(self) -> None:
         rospy.spin()

@@ -81,7 +81,7 @@ class ICCSDummyInterface:
         center_of_mass.pose.position.z = 0
         center_of_mass.pose.orientation.w = 0
 
-        surface_area = random.uniform(0.08, 0.2)
+        surface_area = random.uniform(0.06, 0.22)
 
         rospy.sleep(5.0)
 

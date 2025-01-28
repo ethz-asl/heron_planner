@@ -4,7 +4,7 @@ import rospy
 from robotnik_msgs.msg import BatteryStatus, State
 from sensor_msgs.msg import NavSatFix, Image, NavSatStatus
 from std_msgs.msg import String, Header
-from geometry_msgs.msg import PoseStamped, TransformStamped
+from geometry_msgs.msg import Pose, PoseStamped, TransformStamped
 import tf2_ros
 import tf_conversions
 import random
@@ -22,6 +22,9 @@ class FakeDataPublisher:
         )
         self.gps_pub = rospy.Publisher(
             "/robot/gps/fix", NavSatFix, queue_size=10
+        )
+        self.pothole_start = rospy.Publisher(
+            "/robot/pothole_start", PoseStamped, queue_size=10
         )
         self.status_pub = rospy.Publisher(
             "/robot/robot_local_control/RobotStatusComponent/state",
@@ -213,6 +216,20 @@ class FakeDataPublisher:
 
         rospy.loginfo("Publsihed fake transforms")
 
+    def publish_poses(self):
+        """
+        publish some pose postiions for the robot
+        """
+        start_pose = PoseStamped()
+        start_pose.header.stamp=rospy.Time.now()
+        start_pose.header.frame_id="odom"
+        start_pose.pose.position.x = 0.5
+        start_pose.pose.position.y = 0.5
+        start_pose.pose.position.z = 0.0
+        start_pose.pose.orientation.w = 1
+
+        self.pothole_start.publish(start_pose)
+
     def run(self):
         rate = rospy.Rate(0.1)  # Publish at 0.1 Hz
         while not rospy.is_shutdown():
@@ -222,6 +239,7 @@ class FakeDataPublisher:
             self.publish_robot_status()
             self.publish_hlp_state()
             self.publish_transforms()
+            self.publish_poses()
             # self.publish_ee_pose()
             # self.publish_ee_pose_name()
             # self.publish_camera_image(self.arm_camera_pub)
