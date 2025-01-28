@@ -5,6 +5,7 @@ from robotnik_msgs.msg import BatteryStatus, State
 from sensor_msgs.msg import NavSatFix, Image, NavSatStatus
 from std_msgs.msg import String, Header
 from geometry_msgs.msg import Pose, PoseStamped, TransformStamped
+from nav_msgs.msg import Odometry
 import tf2_ros
 import tf_conversions
 import random
@@ -22,6 +23,9 @@ class FakeDataPublisher:
         )
         self.gps_pub = rospy.Publisher(
             "/robot/gps/fix", NavSatFix, queue_size=10
+        )
+        self.odom_pub = rospy.Publisher(
+            "/robot/odom", Odometry, queue_size=10
         )
         self.pothole_start = rospy.Publisher(
             "/robot/pothole_start", PoseStamped, queue_size=10
@@ -138,6 +142,19 @@ class FakeDataPublisher:
         self.gps_pub.publish(gps_msg)
         rospy.loginfo(f"Published fake GPS data: {gps_msg}")
 
+    def publish_consistent_odom(self):
+        """Publishes faked GPS coordinates."""
+        odom_msg = Odometry()
+        odom_msg.header = Header(stamp=rospy.Time.now(), frame_id="base_link")
+        odom_msg.pose.position.x = 10.005
+        odom_msg.pose.position.y = 5.001
+        odom_msg.pose.position.z = 0.0
+        odom_msg.pose.orientation.z = 0.707
+        odom_msg.pose.orientation.w = 0.707
+        self.odom_pub.publish(odom_msg)
+        rospy.loginfo(f"Published fake GPS data: {odom_msg}")
+
+
     def publish_robot_status(self):
         """Publishes faked robot status."""
         state_msg = State()
@@ -168,7 +185,7 @@ class FakeDataPublisher:
         pose_msg.pose.position.x = 0.0
         pose_msg.pose.position.y = 0.0
         pose_msg.pose.position.z = 0.0
-        pose_msg.pose.orientation.w = 0.0
+        pose_msg.pose.orientation.w = 1.0
 
         self.ee_pose_pub.publish(pose_msg)
 

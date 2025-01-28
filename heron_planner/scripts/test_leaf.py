@@ -13,35 +13,31 @@ from geometry_msgs.msg import PoseStamped
 from heron_msgs.msg import MoveToActionGoal
 from robot_simple_command_manager_msgs.msg import CommandString
 from robot_simple_command_manager_msgs.srv import (
-    SetCommandString, 
-    SetCommandStringRequest, 
-    SetCommandStringResponse
+    SetCommandString,
+    SetCommandStringRequest,
+    SetCommandStringResponse,
 )
 
 ################################################################################
 ############################### Leaf definitions ###############################
 ################################################################################
 
+
 class _CommandManager(rt.leaves_ros.ServiceLeaf):
     def __init__(self, *args, **kwargs):
         """Base class for sending commands to the command_manager"""
         super(_CommandManager, self).__init__(
-            service_name='/robot/command_manager/command',
-            service_class=SetCommandString,
-            *args,
-            **kwargs
+            service_name="/robot/command_manager/command", *args, **kwargs
         )
+
 
 class _CommandSequencer(rt.leaves_ros.ServiceLeaf):
     def __init__(self, *args, **kwargs):
         """Base class for sending commands to the command_sequencer"""
         super(_CommandSequencer, self).__init__(
-            service_name='/robot/command_sequencer/command',
-            sevice_class=SetCommandString,
-            *args,
-            **kwargs
+            service_name="/robot/command_sequencer/command", *args, **kwargs
         )
-    
+
 
 # utility to format CommandString
 class CommandFormatter(rt.leaves.Leaf):
@@ -61,14 +57,13 @@ class CommandFormatter(rt.leaves.Leaf):
     def get_key(key: str) -> str:
         return CommandFormatter._key_mapping.get(key, None)
 
+
 class SetKey(rt.leaves.Leaf):
     """want to set initial keys here"""
+
     def __init__(self, pop_position=0, *args, **kwargs):
-        super(PopFromList, self).__init__( 
-            "Pop from list", 
-            result_fn=self._pop_item, 
-            *args, 
-            **kwargs
+        super(PopFromList, self).__init__(
+            "Pop from list", result_fn=self._pop_item, *args, **kwargs
         )
         self.pop_position = pop_position
 
@@ -83,15 +78,15 @@ class SetKey(rt.leaves.Leaf):
         return item
 
 
-
 class MoveTo(rt.leaves_ros.ActionLeaf):
     def __init__(self, *args, **kwargs) -> None:
         super(MoveTo, self).__init__(
             name="Move arm to named position",
             action_namespace="/robot/arm/move_to",
             *args,
-            **kwargs
+            **kwargs,
         )
+
 
 class ArmAt(rt.leaves_ros.SubscriberLeaf):
     def __init__(self, *args, **kwargs) -> None:
@@ -101,8 +96,9 @@ class ArmAt(rt.leaves_ros.SubscriberLeaf):
             topic_class=String,
             debug=rt.debugging.DebugMode.INSTANT_FAILURE,
             *args,
-            **kwargs
+            **kwargs,
         )
+
 
 class GoToGPS(_CommandManager):
     def __init__(self, *args, **kwargs) -> None:
@@ -111,11 +107,11 @@ class GoToGPS(_CommandManager):
             load=True,
             load_fn=self._load_fn,
             *args,
-            **kwargs
+            **kwargs,
         )
-    
-    def _load_fn(self):
-        data = self._default_load_fn(autogenerate=False)
+
+    def _load_fn(self) -> str:
+        data = self._default_load_fn(auto_generate=False)
 
         if isinstance(data, PoseStamped):
             pose_arr = utils.array_from_pose(data.pose)
@@ -126,72 +122,64 @@ class GoToGPS(_CommandManager):
             raise ValueError
 
 
-
 class AtPose(rt.leaves_ros.SubscriberLeaf):
-    def __init__(self, *args, **kwargs) -> None:
-        super(ArmAt, self).__init__(
+    def __init__(self, key: str, tol: float = 0.01, *args, **kwargs) -> None:
+        super(AtPose, self).__init__(
             name="Base at Pose?",
             topic_name="/robot/odom",
             topic_class=Odometry,
+            result_fn=self._result_fn,
             debug=rt.debugging.DebugMode.INSTANT_FAILURE,
             *args,
-            **kwargs
+            **kwargs,
         )
+        self.key = key
+        self.tol = tol
 
-class GetCurrentPose(rt.leaves_ros.SubscriberLeaf):
-    def __init__(self, *args, **kwargs) -> None:
-        super(GetCurrentPose, self).__init__(
-            name="Get current base pose",
-            topic_name="/robot/odom",
-            topic_class=Odometry,
-            *args,
-            **kwargs
-        )
-    
-    def initialise(self) -> None:
-        self.req_ = SetCommandStringRequest(
-            command=CommandFormatter.format_goto_gps(self.pose_)
-        )
+    def _result_fn(self) -> bool:
+        odom = self._default_result_fn()
+        pose = rt.data_management.get_key(self.key)
+
+        if isinstance(odom, Odometry) and isinstance(pose, PoseStamped):
+            at_pose = utils.at_pose(odom.pose, pose.pose, self.tol)
+            return at_pose
+        else:
+            rospy.logerr(f"Subscriber or key not valid types")
+            raise ValueError
 
 
 class LiftRoller(_CommandSequencer):
     CMD = CommandString(command="LIFT_ROLLER")
+
     def __init__(self, *args, **kwargs) -> None:
         super(LiftRoller, self).__init__(
-            name="Lift Roller",
-            load_value=LiftRoller.CMD,
-            *args,
-            **kwargs
+            name="Lift Roller", load_value=LiftRoller.CMD, *args, **kwargs
         )
+
 
 class LowerRoller(_CommandSequencer):
     CMD = CommandString(command="LOWER_ROLLER")
+
     def __init__(self, *args, **kwargs) -> None:
         super(LowerRoller, self).__init__(
-            name="Lower Roller",
-            load_value=LowerRoller.CMD,
-            *args,
-            **kwargs
+            name="Lower Roller", load_value=LowerRoller.CMD, *args, **kwargs
         )
+
 
 class Blow(_CommandSequencer):
     CMD = CommandString(command="BLOW")
+
     def __init__(self, *args, **kwargs) -> None:
         super(Blow, self).__init__(
-            name="Blow",
-            load_value=Blow.CMD,
-            *args,
-            **kwargs
+            name="Blow", load_value=Blow.CMD, *args, **kwargs
         )
+
 
 class PopFromList(rt.leaves.Leaf):
 
     def __init__(self, pop_position=0, *args, **kwargs):
-        super(PopFromList, self).__init__( 
-            "Pop from list", 
-            result_fn=self._pop_item, 
-            *args, 
-            **kwargs
+        super(PopFromList, self).__init__(
+            "Pop from list", result_fn=self._pop_item, *args, **kwargs
         )
         self.pop_position = pop_position
 
@@ -210,10 +198,7 @@ class Print(rt.leaves.Leaf):
 
     def __init__(self, *args, **kwargs):
         super(Print, self).__init__(
-            "Print",
-            result_fn=self._print,
-            *args,
-            **kwargs
+            "Print", result_fn=self._print, *args, **kwargs
         )
 
     def _print(self):
@@ -225,10 +210,7 @@ class PrintObjects(rt.leaves.Leaf):
 
     def __init__(self, *args, **kwargs):
         super(PrintObjects, self).__init__(
-            name="Print Objects", 
-            result_fn=self._print_objects, 
-            *args, 
-            **kwargs
+            name="Print Objects", result_fn=self._print_objects, *args, **kwargs
         )
 
     def _print_objects(self):
@@ -236,13 +218,15 @@ class PrintObjects(rt.leaves.Leaf):
             print("The detector found no objects!")
         else:
             print(
-                "The detector found %d objects at the following coordinates:" %
-                len(self.loaded_data))
+                "The detector found %d objects at the following coordinates:"
+                % len(self.loaded_data)
+            )
             for o in self.loaded_data:
                 print(
                     "\t'%s' of pixel dimensions %dx%d @ top left coordinates:"
-                    " (%d,%d)" %
-                    (o.class_label, o.width, o.height, o.x_left, o.y_top))
+                    " (%d,%d)"
+                    % (o.class_label, o.width, o.height, o.x_left, o.y_top)
+                )
 
         return True
 
@@ -251,17 +235,21 @@ class WaitForEnterKey(rt.leaves.Leaf):
 
     def __init__(self, *args, **kwargs):
         super(WaitForEnterKey, self).__init__(
-            name="Wait for Enter Key", 
-            result_fn=self._wait_for_enter, 
-            *args, 
-            **kwargs
+            name="Wait for Enter Key",
+            result_fn=self._wait_for_enter,
+            *args,
+            **kwargs,
         )
 
     def _wait_for_enter(self):
         # NOTE: this is blocking within a leaf ... typically BAD
-        input(self.loaded_data if self.
-              loaded_data else "Press enter to continue: ")
+        input(
+            self.loaded_data
+            if self.loaded_data
+            else "Press enter to continue: "
+        )
         return True
+
 
 class SaveData(rt.leaves.Leaf):
     def __init__(self, data, *args, **kwargs):
@@ -274,24 +262,26 @@ class SaveData(rt.leaves.Leaf):
         )
 
 
-
 ################################################################################
 ############################## Branch definitions ##############################
 ################################################################################
 
+
 class ArmToHome(pt.composites.Selector):
-    CMD = 'HOME'
+    CMD = "HOME"
+
     def __init__(self, *args, **kwargs) -> None:
         super(ArmToHome, self).__init__(
-            name="HomeSel", 
-            children=[ArmAt(load_value='HOME'), MoveTo(load_value='HOME')]
+            name="HomeSel",
+            children=[ArmAt(load_value="HOME"), MoveTo(load_value="HOME")],
         )
+
 
 class BaseToStart(pt.composites.Selector):
     def __init__(self, *args, **kwargs) -> None:
         super(BaseToStart, self).__init__(
             name="BaseToStartSel",
-            children=[AtPose(load_key='start'), GoToGPS(load_key='start_gps')]
+            children=[AtPose(key="start"), GoToGPS(load_key="start_gps")],
         )
 
 
@@ -304,9 +294,9 @@ def object_list_from_response(leaf, response):
     return leaf._default_save_fn(response.objects)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     rospy.init_node("test_ros_trees")
-    
+
     # Example Pose for GoToGPS
     target_pose = PoseStamped()
     target_pose.pose.position.x = 10.0
@@ -315,26 +305,26 @@ if __name__ == '__main__':
     target_pose.pose.orientation.w = 0.707
 
     # Create a simple behavior tree
-    root = pt.composites.Sequence(name="Root Sequence")
-    save_start = SaveData(target_pose, save_key='start')
-    goto_gps = GoToGPS()
+    # root = pt.composites.Sequence(name="Root Sequence")
 
-    # Add the GoToGPS leaf to the tree
-    root.add_child(goto_gps)
+    save_start = SaveData(target_pose, save_key="start")
 
-    # Display the tree structure
-    pt.display.render_dot_tree(root)
+    # # Add the GoToGPS leaf to the tree
+    # root.add_child(save_start)
+
+    # # Display the tree structure
+    # pt.display.render_dot_tree(root)
 
     rt.trees.BehaviourTree(
         "Test ros_trees",
-        children=[
-            pt.composites.Sequence(
-                name="Started?", 
-                children=[ArmToHome(), BaseToStart()]
-            ),
-            WaitForEnterKey(
-                load_value="All bottles binned! Press enter to restart ... "
-            )
-        ]
+        pt.composites.Sequence(
+            name="Test seq",
+            children=[
+                WaitForEnterKey(load_value="Press enter to start ... "),
+                pt.composites.Sequence(
+                    name="Started?",
+                    children=[save_start, ArmToHome(), BaseToStart()],
+                ),
+            ],
+        ),
     ).run()
-    

@@ -8,7 +8,7 @@ from scipy.spatial.transform import Rotation
 
 from std_msgs.msg import Time
 from sensor_msgs.msg import NavSatFix
-from geometry_msgs.msg import Pose, PoseStamped
+from geometry_msgs.msg import Pose, PoseStamped, Quaternion
 from actionlib_msgs.msg import GoalStatus
 
 
@@ -252,6 +252,40 @@ def find_perpendicular_pose(
     return pose_from_point(new_point, new_quat)
 
 
+def find_offset_from_pose(
+    pose: PoseStamped, offset_dist: float, towards: bool
+) -> PoseStamped:
+    """
+    calculate offset pose facing towards the pose
+
+    towards -> facing towards or parallel?
+    """
+
+    pose_arr = array_from_pose(pose.pose)
+    pos = pose_arr[:2]
+
+    # position
+    dir = pos / np.linalg.norm(pos)
+    offset_pos = pos + dir * offset_dist  # dir vector from frame origin -> pose
+
+    offset_pose = PoseStamped()
+    offset_pose.header = pose.header
+    offset_pose.pose.position.x = offset_pos[0]
+    offset_pose.pose.position.y = offset_pos[1]
+    offset_pose.pose.position.z = offset_pos[2]
+
+    # orientation
+    if towards:  # facing pose
+        yaw = np.arctan2(dir[1], dir[0])  # xy plane
+    else:  # parallel to pose
+        yaw = np.arctan2(dir[0], -dir[1])
+
+    quat = quaternion_from_angle(yaw)
+    offset_pose.pose.orientation = Quaternion(*quat)
+
+    return offset_pose
+
+
 def pose_from_point(point: list, orientation: list = [0, 0, 0, 1]) -> Pose:
     pose = Pose()
     pose.position.x = point[0]
@@ -279,14 +313,13 @@ def quaternion_from_pose(pose: Pose) -> list:
         pose.orientation.w,
     ]
 
-def at_pose(pose1: Pose, pose2: Pose, tol: float = 0.01) -> bool:
-   disp_xy, disp_th = displacement_from_pose(pose1, pose2)
-   return disp_xy < tol and disp_th < tol 
 
-def displacement_from_pose(
-        pose1: Pose, 
-        pose2: Pose
-    ) -> list:
+def at_pose(pose1: Pose, pose2: Pose, tol: float = 0.01) -> bool:
+    disp_xy, disp_th = displacement_from_pose(pose1, pose2)
+    return disp_xy < tol and disp_th < tol
+
+
+def displacement_from_pose(pose1: Pose, pose2: Pose) -> list:
     """Get distance between target and current pose [m, deg]"""
     if isinstance(pose1, Pose):
         pose1 = array_from_pose(pose1)
@@ -304,9 +337,7 @@ def displacement_from_pose(
     pose2_th = angle_from_quaternion(pose2[3:], "yaw")
     pose2_th = wrap_angle(pose2_th)
 
-    disp_xy = round(
-        np.linalg.norm(pose2_xy - pose1_xy) - 0.5, 3
-    )
+    disp_xy = round(np.linalg.norm(pose2_xy - pose1_xy) - 0.5, 3)
     delta_th = pose1_th - pose2_th
 
     disp_th = round(delta_th, 3)
@@ -317,6 +348,7 @@ def displacement_from_pose(
     )
 
     return [disp_xy, disp_th]
+
 
 def at_gps(
     gps1: NavSatFix,
