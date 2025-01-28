@@ -11,7 +11,6 @@ catkin_package(
   std_msgs
   geometry_msgs
   sensor_msgs
-  # heron_msgs
 )
 
 include_directories(

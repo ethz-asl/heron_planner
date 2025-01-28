@@ -17,7 +17,7 @@ def index():
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Behavior Tree</title>
+        <title>Behaviour Tree</title>
         <script>
         function refreshIt(element) {
             setTimeout(function () {

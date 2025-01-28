@@ -2,15 +2,19 @@
 
 <launch>
     <arg name="dummy_interface" default="true" />
+    <arg name="fake_data" default="true" /> 
     <arg name="flask" default="true" />
     <arg name="rviz" default="true" />
     <arg name="rviz_file" default="$(find bt_ui)/config/panel.rviz" />
 
     <include if="$(arg dummy_interface)" 
-        file="$(find dummy_interface)/launch/dummy_interface.launch"/>
+        file="$(find dummy_interface)/launch/dummy_interface.launch">
+        <arg name="fake_data" value="$(arg fake_data)"/>
+    </include>
     
     <node if="$(arg flask)" pkg="heron_planner" type="flask_server.py" name="flask_server"/>
-    <node pkg="heron_planner" type="pothole_inspection_bt.py" name="pothole_inspection_bt"/>
+    <!-- <node pkg="heron_planner" type="pothole_inspection_bt.py" name="pothole_inspection_bt"/> -->
+    <node pkg="heron_planner" type="pothole_bt.py" name="pothole_bt"/>
 
     <node if="$(arg rviz)" name="$(anon rviz)" pkg="rviz" type="rviz"
         respawn="false" args="-d $(arg rviz_file)" output="screen">
