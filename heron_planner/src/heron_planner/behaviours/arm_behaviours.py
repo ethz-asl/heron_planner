@@ -43,10 +43,10 @@ class ArmAt(pt.behaviour.Behaviour):
     def update(self) -> pt.common.Status:
 
         if not self.at_pose:
-            rospy.loginfo(f"Failed: not at GPS location")
+            rospy.loginfo(f"Failed: arm not at location")
             return pt.common.Status.FAILURE
         elif self.at_pose:
-            rospy.loginfo("Success, at GPS location")
+            rospy.loginfo("Success, arm at location")
             return pt.common.Status.SUCCESS
         return pt.common.Status.FAILURE
     

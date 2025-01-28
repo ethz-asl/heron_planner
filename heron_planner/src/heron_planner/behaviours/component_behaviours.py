@@ -55,6 +55,52 @@ class Cancel(pt.behaviour.Behaviour):
             return pt.common.Status.SUCCESS
         return pt.common.Status.FAILURE
 
+class GetDepositSequence(pt.behaviour.Behaviour):
+    def __init__(self, name: str, surface_area: float) -> None:
+        super().__init__(name)
+        self._srv_name = "/robot/get_deposit"
+        self._req = None
+        self.surface_area = surface_area
+
+    def setup(self, timeout: float = 2.0) -> bool:
+        try:
+            self._client = rospy.ServiceProxy(self._srv_name, SetCommandString)
+            rospy.wait_for_service(self._srv_name, timeout=timeout)
+            return True
+        except rospy.ROSException as err:
+            rospy.logerr(f"Service {self._srv_name} setup failed: {err}")
+
+    def initialise(self):
+        self._srv_setup = False
+        self._srv_called = False
+        self._res = None
+
+        self._srv_setup = self.setup()
+
+        self._req.surface_area_m = self.surface_area
+
+        if not self._srv_setup:
+            rospy.logwarn(f"Service {self._srv_name} failed")
+            return
+
+        try:
+            rospy.loginfo(f"Sending command {self._req}")
+            self._res = self._client(self._req)
+            self._srv_called = True
+        except rospy.ServiceException as err:
+            rospy.logerr(f"Service {self._srv_name} failed : {err}")
+            self._srv_called = False
+
+    def update(self) -> pt.common.Status:
+
+        if not self._srv_setup or not self._srv_called:
+            rospy.loginfo(f"Failed: {self._srv_setup} and {self._srv_called}")
+            return pt.common.Status.FAILURE
+        if self._res:
+            rospy.loginfo("Success")
+            return pt.common.Status.SUCCESS
+        return pt.common.Status.FAILURE
+
 
 class OpenDeposit(pt.behaviour.Behaviour):
     def __init__(self, name: str, deposit_num: str) -> None:
