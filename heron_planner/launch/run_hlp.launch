@@ -14,7 +14,7 @@
     
     <node if="$(arg flask)" pkg="heron_planner" type="flask_server.py" name="flask_server"/>
     <!-- <node pkg="heron_planner" type="pothole_inspection_bt.py" name="pothole_inspection_bt"/> -->
-    <node pkg="heron_planner" type="pothole_bt.py" name="pothole_bt"/>
+    <node pkg="heron_planner" type="pothole_leaves.py" name="pothole_leaves"/>
 
     <node if="$(arg rviz)" name="$(anon rviz)" pkg="rviz" type="rviz"
         respawn="false" args="-d $(arg rviz_file)" output="screen">

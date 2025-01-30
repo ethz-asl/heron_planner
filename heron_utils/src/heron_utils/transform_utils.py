@@ -316,25 +316,25 @@ def quaternion_from_pose(pose: Pose) -> list:
 
 def at_pose(pose1: Pose, pose2: Pose, tol: float = 0.01) -> bool:
     disp_xy, disp_th = displacement_from_pose(pose1, pose2)
-    return disp_xy < tol and disp_th < tol
+    return abs(disp_xy) < tol and abs(disp_th) < tol
 
 
-def displacement_from_pose(pose1: Pose, pose2: Pose) -> list:
+def displacement_from_pose(
+    pose1: Pose, pose2: Pose, printing: bool = False
+) -> list:
     """Get distance between target and current pose [m, deg]"""
     if isinstance(pose1, Pose):
-        pose1 = array_from_pose(pose1)
-        pose1 = array_from_pose(pose1)
+        pose1_arr = array_from_pose(pose1)
 
-    pose1_xy = pose1[:2]
-    pose1_th = angle_from_quaternion(pose1[3:], "yaw")
+    pose1_xy = pose1_arr[:2]
+    pose1_th = angle_from_quaternion(pose1_arr[3:], "yaw")
     pose1_th = wrap_angle(pose1_th)
 
     if isinstance(pose2, Pose):
-        pose1 = array_from_pose(pose1)
-        pose1 = array_from_pose(pose1)
+        pose2_arr = array_from_pose(pose2)
 
-    pose2_xy = pose2[:2]
-    pose2_th = angle_from_quaternion(pose2[3:], "yaw")
+    pose2_xy = pose2_arr[:2]
+    pose2_th = angle_from_quaternion(pose2_arr[3:], "yaw")
     pose2_th = wrap_angle(pose2_th)
 
     disp_xy = round(np.linalg.norm(pose2_xy - pose1_xy) - 0.5, 3)
@@ -343,9 +343,10 @@ def displacement_from_pose(pose1: Pose, pose2: Pose) -> list:
     disp_th = round(delta_th, 3)
     disp_th = wrap_angle(disp_th)  # wrapping around [-180,180]
 
-    rospy.logwarn(
-        f"Robot at distance {abs(disp_xy):.2f}[m] and {abs(disp_th):.2f}[rad] from target"
-    )
+    if printing:
+        rospy.logwarn(
+            f"{abs(disp_xy):.2f}[m] and {abs(disp_th):.2f}[rad] from target"
+        )
 
     return [disp_xy, disp_th]
 

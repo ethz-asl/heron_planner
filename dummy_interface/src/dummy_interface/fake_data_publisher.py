@@ -55,7 +55,7 @@ class FakeDataPublisher:
             Image,
             queue_size=10,
         )
-        self.hlp_state_pub = rospy.Publisher("/hlp/state", String, queue_size=10)
+        # self.hlp_state_pub = rospy.Publisher("/hlp/state", String, queue_size=10)
 
         # create transforms for TF
         self.tf_broadcaster = tf2_ros.TransformBroadcaster()
@@ -65,7 +65,6 @@ class FakeDataPublisher:
             self.create_transform("base_link", "base_camera_link", 0.2, 0.0, 0.5),
             self.create_transform("base_camera_link", "arm_camera_link", 0.1, 0.0, 0.2),
         ]
-
 
         self.bridge = CvBridge()
 
@@ -146,13 +145,13 @@ class FakeDataPublisher:
         """Publishes faked GPS coordinates."""
         odom_msg = Odometry()
         odom_msg.header = Header(stamp=rospy.Time.now(), frame_id="base_link")
-        odom_msg.pose.position.x = 10.005
-        odom_msg.pose.position.y = 5.001
-        odom_msg.pose.position.z = 0.0
-        odom_msg.pose.orientation.z = 0.707
-        odom_msg.pose.orientation.w = 0.707
+        odom_msg.pose.pose.position.x = 10.005
+        odom_msg.pose.pose.position.y = 5.001
+        odom_msg.pose.pose.position.z = 0.0
+        odom_msg.pose.pose.orientation.z = 0.707
+        odom_msg.pose.pose.orientation.w = 0.707
         self.odom_pub.publish(odom_msg)
-        rospy.loginfo(f"Published fake GPS data: {odom_msg}")
+        rospy.loginfo(f"Published fake odom data")
 
 
     def publish_robot_status(self):
@@ -193,9 +192,10 @@ class FakeDataPublisher:
         """Publishes fake """
 
         name_msg = String()
-        name_msg.data = "NONE"
+        name_msg.data = "HOME"
 
         self.ee_pose_name_pub.publish(name_msg)
+        rospy.loginfo("Published fake name")
 
     def publish_camera_image(self, pub):
         """Publishes a faked camera image."""
@@ -246,19 +246,21 @@ class FakeDataPublisher:
         start_pose.pose.orientation.w = 1
 
         self.pothole_start.publish(start_pose)
+        rospy.loginfo("Published fake poses")
 
     def run(self):
-        rate = rospy.Rate(0.1)  # Publish at 0.1 Hz
+        rate = rospy.Rate(0.2)  # Publish at 0.1 Hz
         while not rospy.is_shutdown():
-            self.publish_battery_status()
-            self.publish_gps_data()
-            # self.publish_consistent_gps_data()
-            self.publish_robot_status()
-            self.publish_hlp_state()
+            # self.publish_battery_status()
+            # self.publish_gps_data()
+            self.publish_consistent_gps_data()
+            self.publish_consistent_odom()
+            # self.publish_robot_status()
+            # self.publish_hlp_state()
             self.publish_transforms()
             self.publish_poses()
             # self.publish_ee_pose()
-            # self.publish_ee_pose_name()
+            self.publish_ee_pose_name()
             # self.publish_camera_image(self.arm_camera_pub)
             # self.publish_camera_image(self.body_camera_pub)
             rate.sleep()
