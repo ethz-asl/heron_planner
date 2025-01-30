@@ -44,7 +44,7 @@ void BTPanel::load(const rviz::Config &config) {
 void BTPanel::onStartButtonClicked() {
   ros::NodeHandle nh;
   ros::ServiceClient start_bt_client =
-      nh.serviceClient<std_srvs::Trigger>("/start_bt");
+      nh.serviceClient<std_srvs::Trigger>("/hlp/start");
   std_srvs::Trigger srv;
 
   is_started_ = !is_started_;
@@ -58,14 +58,14 @@ void BTPanel::onStartButtonClicked() {
   }
 
   if (!start_bt_client.call(srv)) {
-    ROS_WARN("Failed to call service /start_bt");
+    ROS_WARN("Failed to call service /hlp/start");
   }
 }
 
 void BTPanel::onPauseButtonClicked() {
   ros::NodeHandle nh;
   ros::ServiceClient pause_bt_client =
-      nh.serviceClient<std_srvs::Trigger>("/pause_bt");
+      nh.serviceClient<std_srvs::Trigger>("/hlp/pause");
   std_srvs::Trigger srv;
 
   is_paused_ = !is_paused_;
@@ -79,14 +79,14 @@ void BTPanel::onPauseButtonClicked() {
   }
 
   if (!pause_bt_client.call(srv)) {
-    ROS_WARN("Failed to call service /pause_bt");
+    ROS_WARN("Failed to call service /hlp/pause");
   }
 }
 
 void BTPanel::onStopButtonClicked() {
   ros::NodeHandle nh;
   ros::ServiceClient stop_bt_client =
-      nh.serviceClient<std_srvs::Trigger>("/stop_bt");
+      nh.serviceClient<std_srvs::Trigger>("/hlp/stop");
   std_srvs::Trigger srv;
 
   is_stopped_ = !is_stopped_;
@@ -100,7 +100,7 @@ void BTPanel::onStopButtonClicked() {
   }
 
   if (!stop_bt_client.call(srv)) {
-    ROS_WARN("Failed to call service /stop_bt");
+    ROS_WARN("Failed to call service /hlp/stop");
   }
 }
 }  // namespace bt_ui
