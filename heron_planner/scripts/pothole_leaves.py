@@ -2,6 +2,7 @@
 
 import heron_planner.behaviours.base_behaviours as base
 import heron_planner.behaviours.arm_behaviours as arm
+import heron_planner.behaviours.queue_behaviours as queue
 import heron_planner.behaviours.leaf_behaviours as leaf
 import heron_planner.utils.simple_flask_server as flask_server
 import heron_planner.utils.bt_runner as bt_runner
@@ -46,11 +47,15 @@ class PotholeBT:
         ####################################################################
         # saving data to blackboard
         ####################################################################
-        save_start = leaf.SaveData(data=self.pothole_start, save_key="start")
-        save_inspections = leaf.SaveData(data=self.inspection_names, save_key="inspections")
+        pt.Blackboard().set("start", self.pothole_start)
+        pt.Blackboard().set("inspections", self.inspection_names)
+        pt.Blackboard().set("arm_cam_ns", self.arm_cam_ns)
+        pt.Blackboard().set("body_cam_ns", self.body_cam_ns)
+        # save_start = leaf.SaveData(task_name="Save start",data=self.pothole_start, save_key="start")
+        # save_inspections = leaf.SaveData(task_name="Save insepctions", data=self.inspection_names, save_key="inspections")
 
         ####################################################################
-        # inialtial positions
+        # initial positions
         ####################################################################
         # arm home position
         at_home = leaf.ArmAt(task_name="Arm at home?", pose_name="HOME")
@@ -78,7 +83,7 @@ class PotholeBT:
 
         init_seq = pt.composites.Sequence(
             name="Before inspection",
-            children=[save_start, home_sel, pothole_sel],
+            children=[home_sel, pothole_sel],
             memory=True,
         )
 
@@ -93,24 +98,39 @@ class PotholeBT:
             task_name="Get inspection", load_key="inspections", save_key="inspection"
         )
         at_inspection = leaf.ArmAt(
-            task_name="Arm at inspection?", pose_name="inspection"
+            task_name=f"Arm at inspection?", pose_name="inspection"
         )
         arm_to_inspection = leaf.MoveTo(
-            task_name="Move arm to inspection.", load_key="inspection"
+            task_name=f"Move arm to inspection.", load_key="inspection"
         )
-        inspection_sel = pt.composites.Selector(
+        inspect_sel = pt.composites.Selector(
             name="InspectionSelector",
             children=[at_inspection, arm_to_inspection],
             memory=True
         )
         
         #TODO add load current photo
+        load_arm_img = leaf.GetSynchedImages(task_name="Load wrist image", load_key="arm_cam_ns")
+        
         #TODO add srv call to find pothole
 
+        inspect_location = pt.composites.Sequence(
+            name="Search Inpsection Location",
+            memory=False,
+            children=[get_inspection, inspect_sel]
+        )
+        
+        retry_inspection = queue.RetryUntilSuccessful(
+            child=inspect_location,
+            max_attempts=len(self.inspection_names),
+            name="Retry Inspection Locations"
+        )
+        no_pothole_found = pt.behaviours.Failure(name="No pothole found")
+        inspection_loop.add_children([retry_inspection, no_pothole_found])
 
         wait_for_enter = leaf.WaitForEnterKey()
 
-        root.add_children([init_seq, wait_for_enter])
+        root.add_children([init_seq, inspection_loop, wait_for_enter])
 
         return root
         # return rt.trees.BehaviourTree("TestingLeaves", root)
@@ -170,6 +190,9 @@ class PotholeBT:
             "INSPECTION4",
             "INSPECTION5",
         ]
+
+        self.body_cam_ns = "/robot/base_camera/front_rgbd_camera/"
+        self.arm_cam_ns = "/robot/arm_camera/front_rgbd_camera/"
 
     def load_subscribers(self) -> None:
         pass

@@ -139,6 +139,15 @@ class Blow(_CommandSequencer):
             name="Blow", load_value=Blow.CMD, *args, **kwargs
         )
 
+class GetSynchedImages(rt.leaves_ros.ServiceLeaf):
+    def __init__(self, task_name='', *args, **kwargs):
+        super(GetSynchedImages, self).__init__(
+            name=task_name if task_name else "Get synched images",
+            service_name="/hlp/get_synched_images", 
+            *args, 
+            **kwargs
+        )
+
 
 class PopFromList(rt.leaves.Leaf):
 
@@ -220,9 +229,9 @@ class WaitForEnterKey(rt.leaves.Leaf):
 
 
 class SaveData(rt.leaves.Leaf):
-    def __init__(self, data, *args, **kwargs):
+    def __init__(self, data, task_name='',*args, **kwargs):
         super(SaveData, self).__init__(
-            "Data generator",
+            name=task_name if task_name else "Data generator",
             load_value=data,
             save=True,
             *args,
