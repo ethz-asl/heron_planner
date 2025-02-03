@@ -49,7 +49,7 @@ class BehaviourTreeRunner(rt.trees.BehaviourTree):
             )
             return False
         
-        # run tree indefinitely
+        # run tree with or without enter
         if push_to_start:
             input(f"Press enter to start the {self.tree_name} tree.")
         else:
@@ -64,9 +64,19 @@ class BehaviourTreeRunner(rt.trees.BehaviourTree):
                     rospy.loginfo("BT Paused...")
                     self._pause_condition.wait()  # wait for resume
 
+            # tick tree
             t = timeit.default_timer()
             self.tick(None, None)
+            tree_status = self.root.status
+            rospy.logerr(f"tree status: {tree_status}")
             remaining = rate - (timeit.default_timer() - t)
+
+            # if tree reacehs terminal state exit
+            if tree_status in [pt.common.Status.SUCCESS, pt.common.Status.FAILURE]:
+                rospy.loginfo(f"{self.tree_name} finished with status: {tree_status}")
+                self.running = False # stop loop
+                break
+
             if remaining > 0:
                 try:
                     time.sleep(remaining)
