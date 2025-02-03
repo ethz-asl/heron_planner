@@ -71,8 +71,12 @@ class ICCSDummyInterface:
     ) -> FindPotholeResponse:
         """"""
 
-        rospy.logwarn(f"req: {req}")
-        success = random.choice([True, False])
+        if isinstance(req.image_rgb, Image) and isinstance(req.image_depth, Image) and isinstance(req.camera_info, CameraInfo):
+            rospy.loginfo(f"req types correct")
+        else:
+            rospy.logerr(f"req types incorrect")
+        # success = random.choice([True, False])
+        success = True # testing 
         rospy.logwarn(f"found pothole? {success}")
 
         center_of_mass = PoseStamped()

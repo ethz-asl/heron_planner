@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 
 import rospy
+import cv2
 import numpy as np
 from sensor_msgs.msg import Image, CameraInfo
 from cv_bridge import CvBridge
 
 class FakeCameraPublisher:
-    def __init__(self, camera_ns="/robot/body_camera/front_rgbd_camera"):
+    def __init__(self, camera_ns="/robot/arm_camera/front_rgbd_camera"):
         rospy.init_node("fake_camera_publisher")
         self.bridge = CvBridge()
         self.camera_ns = camera_ns.rstrip("/")  # Normalize namespace
@@ -20,6 +21,8 @@ class FakeCameraPublisher:
         self.rgb_pub = rospy.Publisher(self.rgb_topic, Image, queue_size=1)
         self.depth_pub = rospy.Publisher(self.depth_topic, Image, queue_size=1)
         self.info_pub = rospy.Publisher(self.info_topic, CameraInfo, queue_size=1)
+        
+        self.image_path = "/local/home/harrisl/Pictures/pug.png"
 
         rospy.loginfo(f"Publishing fake camera data on {self.camera_ns} topics...")
         self.publish_fake_data()
@@ -27,10 +30,14 @@ class FakeCameraPublisher:
     def publish_fake_data(self):
         rate = rospy.Rate(5)  # 5 Hz
         while not rospy.is_shutdown():
-            # Create a fake RGB image (blue rectangle)
-            rgb_img = np.zeros((480, 640, 3), dtype=np.uint8)
-            rgb_img[:, :, 2] = 255  # Blue color
 
+            rgb_img = cv2.imread(self.image_path)
+            if rgb_img is None:
+                rospy.logwarn(f"Failed to load img")
+                # Create a fake RGB image (blue rectangle)
+                rgb_img = np.zeros((480, 640, 3), dtype=np.uint8)
+                rgb_img[:, :, 2] = 255  # Blue color
+            
             # Create a fake depth image (grayscale gradient)
             depth_img = np.tile(np.linspace(0, 255, 640, dtype=np.uint8), (480, 1))
 
