@@ -28,6 +28,7 @@ class PotholeBT:
 
         self.load_parameters()
         self.load_subscribers()
+        self.bb = pt.Blackboard()
 
         self.root = self.build_root()
         self.tree = bt_runner.BehaviourTreeRunner("TestTree", self.root)
@@ -47,10 +48,10 @@ class PotholeBT:
         ####################################################################
         # saving data to blackboard
         ####################################################################
-        pt.Blackboard().set("start", self.pothole_start)
-        pt.Blackboard().set("inspections", self.inspection_names)
-        pt.Blackboard().set("arm_cam_ns", self.arm_cam_ns)
-        pt.Blackboard().set("body_cam_ns", self.body_cam_ns)
+        self.bb.set("start", self.pothole_start)
+        self.bb.set("inspections", self.inspection_names)
+        self.bb.set("arm_cam_ns", self.arm_cam_ns)
+        self.bb.set("body_cam_ns", self.body_cam_ns)
         # save_start = leaf.SaveData(task_name="Save start",data=self.pothole_start, save_key="start")
         # save_inspections = leaf.SaveData(task_name="Save insepctions", data=self.inspection_names, save_key="inspections")
 
@@ -95,60 +96,56 @@ class PotholeBT:
         )
 
         get_inspection = leaf.PopFromList(
-            task_name="Get inspection", load_key="inspections", save_key="inspection"
+            task_name="Get inspection",
+            load_key="inspections",
+            save_key="inspection",
         )
         at_inspection = leaf.ArmAt(
             task_name=f"Arm at inspection?", pose_name="inspection"
         )
         arm_to_inspection = leaf.MoveTo(
-            task_name=f"Move arm to inspection.", load_key="inspection"
+            task_name=f"Move arm inspection.", load_key="inspection"
         )
         inspect_sel = pt.composites.Selector(
             name="InspectionSelector",
             children=[at_inspection, arm_to_inspection],
-            memory=True
+            memory=True,
         )
-        
-        #TODO add load current photo
-        load_arm_img = leaf.GetSynchedImages(task_name="Load wrist image", load_key="arm_cam_ns")
-        
-        #TODO add srv call to find pothole
+
+        load_arm_img = leaf.GetSynchedImages(
+            task_name="Load wrist image", load_key="arm_cam_ns", image_key="pothole/rgb/before", save=True
+        )
+        find_pothole = leaf.FindPothole()
+
+        find_pothole_seq = pt.composites.Sequence(
+            name="FindPotholeSeq",
+            children=[load_arm_img, find_pothole],
+            memory=False,
+        )
 
         inspect_location = pt.composites.Sequence(
             name="Search Inpsection Location",
             memory=False,
-            children=[get_inspection, inspect_sel]
+            children=[get_inspection, inspect_sel, find_pothole_seq],
         )
-        
+
         retry_inspection = queue.RetryUntilSuccessful(
             child=inspect_location,
             max_attempts=len(self.inspection_names),
-            name="Retry Inspection Locations"
+            name="Retry Inspection Locations",
         )
         no_pothole_found = pt.behaviours.Failure(name="No pothole found")
         inspection_loop.add_children([retry_inspection, no_pothole_found])
 
+        ####################################################################
+        # if pothole found, send to kafka
+        ####################################################################
+        send_pothole_to_kafka = leaf.SendImageToKafka(task_name="Send pothole to Kafka", msg="Fake image for HLP testing", load_key="pothole/rgb/before")
         wait_for_enter = leaf.WaitForEnterKey()
 
-        root.add_children([init_seq, inspection_loop, wait_for_enter])
+        root.add_children([init_seq, inspection_loop, send_pothole_to_kafka, wait_for_enter])
 
         return root
-        # return rt.trees.BehaviourTree("TestingLeaves", root)
-
-        # self.tree = rt.trees.BehaviourTree(
-        #     "TestingLeaves",
-        #     pt.composites.Sequence(
-        #         name="InspectionSequence",
-        #         children=[
-        #            pt.composites.Sequence(
-        #                name="BeforeInspection",
-        #                children=[
-        #                    save_start, home_sel, pothole_sel
-        #                ]
-        #            )
-        #         ]
-        #     )
-        # )
 
     def start_flask_server(self) -> None:
         # to update svg
@@ -197,6 +194,12 @@ class PotholeBT:
     def load_subscribers(self) -> None:
         pass
 
+    def save_pothole_imgs(self, leaf):
+
+        if self.default_result_fn() is not None:
+            rt.data_management.set_value()
+            rt.data_management.set_value()
+
     def run_tree(self, hz: float = 30) -> None:
         """run tree in loop with pause support"""
         rate = rospy.Rate(hz)
@@ -218,10 +221,8 @@ class PotholeBT:
             rospy.loginfo("Starting the BT...")
             self.tree.start()
             return TriggerResponse(success=True, message="BT started")
-            
-        return TriggerResponse(
-            success=False, message="BT is already running."
-        )
+
+        return TriggerResponse(success=False, message="BT is already running.")
 
     def stop_bt(self, req) -> TriggerResponse:
         """stop and interrupt the BT"""
@@ -249,7 +250,7 @@ class PotholeBT:
         return TriggerResponse(
             success=False,
             message="BT is not running, cannot pause/continue",
-            )
+        )
 
     def update_state(self, tree, snapshot_visitor):
         state = String()
@@ -261,29 +262,6 @@ class PotholeBT:
 
         self.hlp_status_pub.publish(state)
 
-    def tick_bt(self, event):
-        """"""
-        # rospy.logwarn(f"Ticking BT: is_running={self.is_running}, is_paused={self.is_paused}")
-        if not self.is_running:
-            return
-
-        if self.is_paused:
-            rospy.loginfo_once("BT is paused. Waiting to continue...")
-            return
-
-        if self.tree.root.status == pt.common.Status.SUCCESS:
-            self.is_running = False
-            rospy.loginfo("BT finished successfully")
-            self.timer.shutdown()
-            self.tree.interrupt()
-        elif self.tree.root.status == pt.common.Status.FAILURE:
-            self.is_running = False
-            rospy.loginfo("BT terminated with failure")
-            self.timer.shutdown()
-            self.tree.interrupt()
-        else:
-            self.tree.tick()
-
     def post_tick_handler(self, snapshot_visitor, tree):
         self.update_state(tree, snapshot_visitor)
 
@@ -294,7 +272,6 @@ def main():
 
     node = PotholeBT()
     node.tree.visualise()
-    # node.tree.run(hz=30, push_to_start=True, log_level="WARN")
 
     rospy.spin()
 

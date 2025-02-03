@@ -41,15 +41,14 @@ class RetryUntilSuccessful(pt.decorators.Decorator):
         child_status = self.child.status
         
         if child_status == pt.common.Status.SUCCESS:
-            rospy.loginfo(f"Child succeeded")
             return pt.common.Status.SUCCESS
         elif child_status == pt.common.Status.FAILURE:
             self.current_attempt += 1
-            rospy.logerr(f"Retrying... Attempt ({self.current_attempt} / {self.max_attempts})")
+            rospy.logwarn(f"Retrying... Attempt ({self.current_attempt} / {self.max_attempts})")
             # self.child.stop(pt.common.Status.INVALID) # reset child
             return pt.common.Status.RUNNING
         else:
-            rospy.logerr(f"Retrying... waiting ({self.current_attempt} / {self.max_attempts})")
+            rospy.logwarn(f"Retrying... waiting ({self.current_attempt} / {self.max_attempts})")
             return pt.common.Status.RUNNING
         
 

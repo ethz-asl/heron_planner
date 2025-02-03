@@ -8,9 +8,11 @@ import heron_utils.transform_utils as utils
 
 from std_msgs.msg import String
 from nav_msgs.msg import Odometry
+from sensor_msgs.msg import Image
 from geometry_msgs.msg import PoseStamped
 
 from robot_simple_command_manager_msgs.msg import CommandString
+from heron_msgs.srv import SendImageToKafkaRequest
 
 ################################################################################
 ############################### Leaf definitions ###############################
@@ -33,9 +35,8 @@ class _CommandSequencer(rt.leaves_ros.ServiceLeaf):
         )
 
 
-
 class MoveTo(rt.leaves_ros.ActionLeaf):
-    def __init__(self, task_name='', *args, **kwargs) -> None:
+    def __init__(self, task_name="", *args, **kwargs) -> None:
         super(MoveTo, self).__init__(
             name=task_name if task_name else "Move arm to named position",
             action_namespace="/robot/arm/move_to",
@@ -45,7 +46,7 @@ class MoveTo(rt.leaves_ros.ActionLeaf):
 
 
 class ArmAt(rt.leaves_ros.SubscriberLeaf):
-    def __init__(self, pose_name: str, task_name='', *args, **kwargs) -> None:
+    def __init__(self, pose_name: str, task_name="", *args, **kwargs) -> None:
         super(ArmAt, self).__init__(
             name=task_name if task_name else "Arm at named position?",
             topic_name="/robot/arm/ee_pose_name",
@@ -59,14 +60,17 @@ class ArmAt(rt.leaves_ros.SubscriberLeaf):
 
     def _result_fn(self):
         if self._default_result_fn() is not None:
-            at_pose = (self.pose_name == self._default_result_fn().data)
-            rospy.loginfo(f"Is arm at [{self.pose_name}]? {at_pose}")
+            at_pose = self.pose_name == self._default_result_fn().data
+            name = rt.data_management.get_value(self.pose_name)
+            name = name if name else self.pose_name
+            rospy.loginfo(f"Is arm at [{name}]? {at_pose}")
             return at_pose
-        else: 
+        else:
             rospy.logwarn(f"subsriber msg not found")
 
+
 class GoToGPS(_CommandManager):
-    def __init__(self, task_name='', *args, **kwargs) -> None:
+    def __init__(self, task_name="", *args, **kwargs) -> None:
         super(GoToGPS, self).__init__(
             name=task_name if task_name else "Move base to GPS",
             load=True,
@@ -88,7 +92,9 @@ class GoToGPS(_CommandManager):
 
 
 class AtPose(rt.leaves_ros.SubscriberLeaf):
-    def __init__(self, pose_name: str, tol: float = 0.01, task_name='', *args, **kwargs) -> None:
+    def __init__(
+        self, pose_name: str, tol: float = 0.01, task_name="", *args, **kwargs
+    ) -> None:
         super(AtPose, self).__init__(
             name=task_name if task_name else "Base at Pose?",
             topic_name="/robot/odom",
@@ -139,24 +145,93 @@ class Blow(_CommandSequencer):
             name="Blow", load_value=Blow.CMD, *args, **kwargs
         )
 
+
 class GetSynchedImages(rt.leaves_ros.ServiceLeaf):
-    def __init__(self, task_name='', *args, **kwargs):
+    def __init__(
+        self,
+        task_name="",
+        image_key="img",
+        *args,
+        **kwargs,
+    ) -> None:
         super(GetSynchedImages, self).__init__(
             name=task_name if task_name else "Get synched images",
-            service_name="/hlp/get_synched_images", 
-            *args, 
+            service_name="/hlp/get_synched_images",
+            result_fn=self._result_fn,
+            *args,
+            **kwargs,
+        )
+        self.image_key = image_key
+
+    def _result_fn(self):
+        res = self._default_result_fn()
+        if isinstance(res.image_rgb, Image) and self.save:
+            rt.data_management.set_value(self.image_key, res.image_rgb)
+        return res
+
+
+class FindPothole(rt.leaves_ros.ServiceLeaf):
+    def __init__(self, task_name="", *args, **kwargs) -> None:
+        super(FindPothole, self).__init__(
+            name=task_name if task_name else "Find pothole",
+            service_name="/iccs/find_pothole",
+            result_fn=self._result_fn,
+            *args,
+            **kwargs,
+        )
+
+    def _result_fn(self):
+        res = self._default_result_fn()
+        rospy.logwarn(f"Found pothole? : {res.success}")
+        if not res.success:
+            return False
+
+        if isinstance(res.center_of_mass, PoseStamped) and isinstance(
+            res.surface_area_m, float
+        ):
+            rospy.logwarn(f"Pothole found")
+            rt.data_management.set_value("pothole/com", res.center_of_mass)
+            rt.data_management.set_value(
+                "pothole/surface_area", res.surface_area_m
+            )
+            return res.success
+        else:
+            rospy.logwarn(f"Response incorrect type.")
+
+class SendImageToKafka(rt.leaves_ros.ServiceLeaf):
+    def __init__(self, task_name="", msg="", *args, **kwargs):
+        super(SendImageToKafka, self).__init__(
+            name=task_name if task_name else "Send photo to Kafka",
+            service_name="/kafka/publish_image",
+            load_fn=self._load_fn,
+            *args,
             **kwargs
         )
+        self.msg = msg
+
+    def _load_fn(self):
+        img = self._default_load_fn(auto_generate=False)
+        if isinstance(img, Image):
+            req = SendImageToKafkaRequest(
+                image=img,
+                message=self.msg
+            )
+            rospy.loginfo(f"send req : {req}")
+            return req
+        else:
+            rospy.logerr(f"Type {type(img)}: is incorrect")
+            raise ValueError
+
 
 
 class PopFromList(rt.leaves.Leaf):
 
-    def __init__(self, task_name='', pop_position=0, *args, **kwargs):
+    def __init__(self, task_name="", pop_position=0, *args, **kwargs):
         super(PopFromList, self).__init__(
-            name=task_name if task_name else "Pop from list", 
-            result_fn=self._pop_item, 
-            *args, 
-            **kwargs
+            name=task_name if task_name else "Pop from list",
+            result_fn=self._pop_item,
+            *args,
+            **kwargs,
         )
         self.pop_position = pop_position
 
@@ -164,6 +239,7 @@ class PopFromList(rt.leaves.Leaf):
         if not self.loaded_data:
             return None
         item = self.loaded_data.pop(self.pop_position)
+        rospy.logerr(f"Current list item: {item}")
         if self.load_key is not None:
             rt.data_management.set_value(self.load_key, self.loaded_data)
         else:
@@ -229,7 +305,7 @@ class WaitForEnterKey(rt.leaves.Leaf):
 
 
 class SaveData(rt.leaves.Leaf):
-    def __init__(self, data, task_name='',*args, **kwargs):
+    def __init__(self, data, task_name="", *args, **kwargs):
         super(SaveData, self).__init__(
             name=task_name if task_name else "Data generator",
             load_value=data,
@@ -251,8 +327,8 @@ class ArmToHome(pt.composites.Selector):
         super(ArmToHome, self).__init__(
             name="Send arm to home",
             children=[
-                ArmAt(task_name="Arm at home?", pose_name="HOME"), 
-                MoveTo(task_name="Move arm to home", load_value="HOME")
+                ArmAt(task_name="Arm at home?", pose_name="HOME"),
+                MoveTo(task_name="Move arm to home", load_value="HOME"),
             ],
         )
 
@@ -308,5 +384,4 @@ if __name__ == "__main__":
         ),
     )
     root.visualise()
-    root.run(hz=30, push_to_start=True, log_level='WARN')
-
+    root.run(hz=30, push_to_start=True, log_level="WARN")
