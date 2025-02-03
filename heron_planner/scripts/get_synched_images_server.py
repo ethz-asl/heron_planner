@@ -15,6 +15,8 @@ class SynchedImagesService:
     def __init__(self) -> None:
         rospy.init_node("get_synched_images_server")
 
+        self.timeout = 5.0
+
         # dict to store latest msgs
         self.latest_rgb = {}
         self.latest_depth = {}
@@ -60,9 +62,9 @@ class SynchedImagesService:
 
         # wait for data w/ timeout
         success = (
-            self.rgb_event.wait(2.0)
-            and self.depth_event.wait(2.0)
-            and self.info_event.wait(2.0)
+            self.rgb_event.wait(self.timeout)
+            and self.depth_event.wait(self.timeout)
+            and self.info_event.wait(self.timeout)
         )
 
         # unsub to topics
