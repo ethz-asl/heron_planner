@@ -17,14 +17,14 @@ class TransformFinder:
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
 
-        self.service = rospy.Service('transform_pose', TransformPose, self.handle_transform_req)
+        self.service = rospy.Service('hlp/transform_pose', TransformPose, self.handle_transform_req)
         rospy.loginfo("transform pose service is ready.")
 
     def handle_transform_req(self, req: TransformPoseRequest):
         try:
             target_frame = req.target_frame
             pose_in = req.pose_in
-            rospy.logwarn(f"current frame: {pose_in.header.frame_id}, target frame: {target_frame}")
+            rospy.loginfo(f"current frame: {pose_in.header.frame_id}, target frame: {target_frame}")
 
             # lookup transform from the input pose frame to the target frame
             transform = self.tf_buffer.lookup_transform(

@@ -55,6 +55,7 @@ class PotholeBT:
         # save_start = leaf.SaveData(task_name="Save start",data=self.pothole_start, save_key="start")
         # save_inspections = leaf.SaveData(task_name="Save insepctions", data=self.inspection_names, save_key="inspections")
 
+        wait_for_enter = leaf.WaitForEnterKey()
         ####################################################################
         # initial positions
         ####################################################################
@@ -112,14 +113,17 @@ class PotholeBT:
             memory=True,
         )
 
-        load_arm_img = leaf.GetSynchedImages(
-            task_name="Load wrist image", load_key="arm_cam_ns", image_key="pothole/rgb/before", save=True
+        load_arm_img_inspection = leaf.GetSynchedImages(
+            task_name="Load wrist image",
+            load_key="arm_cam_ns",
+            image_key="pothole/rgb/before",
+            save=True,
         )
-        find_pothole = leaf.FindPothole()
+        find_pothole = leaf.FindPothole(task_name="Find pothole at inspection")
 
         find_pothole_seq = pt.composites.Sequence(
             name="FindPotholeSeq",
-            children=[load_arm_img, find_pothole],
+            children=[load_arm_img_inspection, find_pothole],
             memory=False,
         )
 
@@ -140,10 +144,89 @@ class PotholeBT:
         ####################################################################
         # if pothole found, send to kafka
         ####################################################################
-        send_pothole_to_kafka = leaf.SendImageToKafka(task_name="Send pothole to Kafka", msg="Fake image for HLP testing", load_key="pothole/rgb/before")
-        wait_for_enter = leaf.WaitForEnterKey()
+        send_inspection_to_kafka = leaf.SendImageToKafka(
+            task_name="Send inspection to Kafka",
+            msg="Fake image for HLP testing",
+            load_key="pothole/rgb/before",
+        )
 
-        root.add_children([init_seq, inspection_loop, send_pothole_to_kafka, wait_for_enter])
+        ####################################################################
+        # find safe offset
+        ####################################################################
+        pothole_in_odom = leaf.TransformPose(
+            task_name="Transform pothole CoM to odom",
+            target_frame="odom",
+            load_key="/pothole/com",
+            save_key="/pothole/odom",
+        )
+        # TODO FIND_OFFSET SHOULD BE CHANGED, ASK RQ
+        find_offset = leaf.FindOffset(
+            task_name="Find pothole offset",
+            defect="POTHOLE",
+            broadcast=True,
+            broadcast_frame="pothole_offset",
+            load_key="/pothole/odom",
+            save_key="/pothole/offset",
+        )
+        ####################################################################
+        # dock to safe offset
+        ####################################################################
+        # TODO DOCK ACTION HERE
+        at_offset = leaf.AtPose(task_name="At offset?")
+        dock_to_offset = leaf.Dock(
+            task_name="Dock to offset", load_value="pothole_offset"
+        )
+        # dock_to_offset
+
+        offset_seq = pt.composites.Sequence(
+            name="OffsetSeq",
+            children=[pothole_in_odom, find_offset, dock_to_offset],  # add dock
+            memory=True,
+        )
+        ####################################################################
+        # get deposit sequence
+        ####################################################################
+
+        get_deposit_seq = leaf.GetDepositSeq(
+            task_name="Get deposit sequence", load_key="/pothole/surface_area"
+        )
+
+        pre_deposit_seq = pt.composites.Sequence(
+            name="Pre-deposit tasks",
+            children=[send_inspection_to_kafka, offset_seq, get_deposit_seq],
+        )
+
+        deposit_material = leaf.Deposit()
+
+        # https://github.com/RobotnikAutomation/robotnik_navigation_msgs/blob/master/action/Dock.action
+
+        # TODO GetDepositSeq -> load surface_area, save depositseq
+        # TODO command_sequencer deposit seq
+        # TODO pilot integration (bt_ui & service calls)
+
+        # TODO Roller sequence
+
+        # dock_to_offset again!
+        moveto_validation = leaf.MoveTo(
+            task_name="Move arm to validation", load_value="VALIDATION"
+        )
+
+        load_arm_img_validation = leaf.GetSynchedImages(
+            task_name="Load wrist image",
+            load_key="arm_cam_ns",
+            image_key="pothole/rgb/after",
+            save=True,
+        )
+        send_validation_to_kafka = leaf.SendImageToKafka(
+            task_name="Send validation to Kafka",
+            msg="Fake image for HLP testing",
+            load_key="pothole/rgb/after",
+        )
+
+
+        root.add_children(
+            [init_seq, inspection_loop, pre_deposit_seq, wait_for_enter]
+        )
 
         return root
 
@@ -215,7 +298,7 @@ class PotholeBT:
             # self.update_state()  # pub hlp state for flask server
             self.tree.run(hz=hz, push_to_start=True, log_level="WARN")
 
-    def start_bt(self, req) -> TriggerResponse:
+    def start_bt(self, req: TriggerRequest) -> TriggerResponse:
         """start the BT execution"""
         if not self.tree.is_running():
             rospy.loginfo("Starting the BT...")
@@ -224,7 +307,7 @@ class PotholeBT:
 
         return TriggerResponse(success=False, message="BT is already running.")
 
-    def stop_bt(self, req) -> TriggerResponse:
+    def stop_bt(self, req: TriggerRequest) -> TriggerResponse:
         """stop and interrupt the BT"""
 
         rospy.loginfo("Stopping the BT...")
@@ -236,7 +319,7 @@ class PotholeBT:
 
         return TriggerResponse(success=True, message="BT stopped")
 
-    def pause_bt(self, req) -> TriggerResponse:
+    def pause_bt(self, req: TriggerRequest) -> TriggerResponse:
         if self.tree.is_running():
             if self.tree.is_paused():
                 rospy.loginfo("Continuing the BT.")

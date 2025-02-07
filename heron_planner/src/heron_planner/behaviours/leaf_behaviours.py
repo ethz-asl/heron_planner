@@ -9,10 +9,15 @@ import heron_utils.transform_utils as utils
 from std_msgs.msg import String
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import Image
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, Pose2D, Twist
 
 from robot_simple_command_manager_msgs.msg import CommandString
-from heron_msgs.srv import SendImageToKafkaRequest
+from robotnik_navigation_msgs.msg import DockGoal
+from heron_msgs.srv import (
+    SendImageToKafkaRequest,
+    TransformPoseRequest,
+    FindOffsetRequest,
+)
 
 ################################################################################
 ############################### Leaf definitions ###############################
@@ -91,20 +96,77 @@ class GoToGPS(_CommandManager):
             raise ValueError
 
 
+class Dock(rt.leaves_ros.ActionLeaf):
+    def __init__(
+        self,
+        task_name="",
+        robot_dock_frame="odom",
+        dock_offset=None,
+        max_lin=0.2,
+        max_ang=0.1,
+        *args,
+        **kwargs,
+    ) -> None:
+        super(Dock, self).__init__(
+            name=task_name if task_name else "Dock base to TF frame",
+            action_namespace="/robot/base/dock",
+            load_fn=self._load_fn,
+            result_fn=self._result_fn,
+            * args,
+            **kwargs,
+        )
+        self.robot_dock_frame = robot_dock_frame
+        self.dock_offset = dock_offset if dock_offset else Pose2D(x=0, y=0)
+        self.max_vel = Twist()
+        self.max_vel.linear.x = max_lin
+        self.max_vel.linear.y = max_lin
+        self.max_vel.angular.z = max_ang
+
+    def _load_fn(self):
+        dock_frame = self._default_load_fn(auto_generate=False)
+        if isinstance(dock_frame, str):
+            req = DockGoal(
+                dock_frame=dock_frame,
+                robot_dock_frame=self.robot_dock_frame,
+                dock_offset=self.dock_offset,
+                maximum_velocity=self.max_vel
+            )
+            return req
+        else:
+            rospy.logerr(f"Type {type(dock_frame)}: is incorrect")
+            raise ValueError
+        
+    def _result_fn(self):
+        res = self._default_result_fn()
+        rospy.loginfo(f"Dock action: {res.description}")
+        return res.success
+
 class AtPose(rt.leaves_ros.SubscriberLeaf):
     def __init__(
-        self, pose_name: str, tol: float = 0.01, task_name="", *args, **kwargs
+        self,
+        pose_name: str = "",
+        tol: float = 0.01,
+        task_name="",
+        *args,
+        **kwargs,
     ) -> None:
         super(AtPose, self).__init__(
             name=task_name if task_name else "Base at Pose?",
             topic_name="/robot/odom",
             topic_class=Odometry,
+            load_fn=self._load_fn,
             result_fn=self._result_fn,
             *args,
             **kwargs,
         )
         self.pose_name = pose_name
         self.tol = tol
+
+    def _load_fn(self):
+        if self.pose_name:
+            self.pose = rt.data_management.get_value(self.pose_name)
+        else:
+            self.pose = self._default_load_fn()
 
     def _result_fn(self) -> bool:
         odom = self._default_result_fn()
@@ -143,6 +205,13 @@ class Blow(_CommandSequencer):
     def __init__(self, *args, **kwargs) -> None:
         super(Blow, self).__init__(
             name="Blow", load_value=Blow.CMD, *args, **kwargs
+        )
+
+
+class Deposit(_CommandSequencer):
+    def __init__(self, task_name="", *args, **kwargs) -> None:
+        super(Deposit, self).__init__(
+            name=task_name if task_name else "Deposit material", *args, **kwargs
         )
 
 
@@ -189,14 +258,15 @@ class FindPothole(rt.leaves_ros.ServiceLeaf):
         if isinstance(res.center_of_mass, PoseStamped) and isinstance(
             res.surface_area_m, float
         ):
-            rospy.logwarn(f"Pothole found")
-            rt.data_management.set_value("pothole/com", res.center_of_mass)
+            rospy.logwarn(f"Pothole found: {res}")
+            rt.data_management.set_value("/pothole/com", res.center_of_mass)
             rt.data_management.set_value(
-                "pothole/surface_area", res.surface_area_m
+                "/pothole/surface_area", res.surface_area_m
             )
             return res.success
         else:
             rospy.logwarn(f"Response incorrect type.")
+
 
 class SendImageToKafka(rt.leaves_ros.ServiceLeaf):
     def __init__(self, task_name="", msg="", *args, **kwargs):
@@ -205,23 +275,111 @@ class SendImageToKafka(rt.leaves_ros.ServiceLeaf):
             service_name="/kafka/publish_image",
             load_fn=self._load_fn,
             *args,
-            **kwargs
+            **kwargs,
         )
         self.msg = msg
 
     def _load_fn(self):
         img = self._default_load_fn(auto_generate=False)
         if isinstance(img, Image):
-            req = SendImageToKafkaRequest(
-                image=img,
-                message=self.msg
-            )
-            rospy.loginfo(f"send req : {req}")
+            req = SendImageToKafkaRequest(image=img, message=self.msg)
             return req
         else:
             rospy.logerr(f"Type {type(img)}: is incorrect")
             raise ValueError
 
+
+class TransformPose(rt.leaves_ros.ServiceLeaf):
+    def __init__(self, target_frame, task_name="", *args, **kwargs):
+        super(TransformPose, self).__init__(
+            name=task_name if task_name else "Transform pose",
+            service_name="/hlp/transform_pose",
+            load_fn=self._load_fn,
+            result_fn=self._result_fn,
+            *args,
+            **kwargs,
+        )
+        self.target_frame = target_frame
+
+    def _load_fn(self):
+        pose_in = self._default_load_fn(auto_generate=False)
+        if isinstance(pose_in, PoseStamped):
+            req = TransformPoseRequest(
+                pose_in=pose_in,
+                target_frame=self.target_frame,
+            )
+            rospy.loginfo(f"sending {req}")
+            return req
+        else:
+            rospy.logerr(f"Type {type(pose_in)}: is incorrect")
+            raise ValueError
+
+    def _result_fn(self):
+        res = self._default_result_fn()
+        if res.success:
+            pose_key = self.save_key if self.save_key else "pose_out"
+            rt.data_management.set_value(pose_key, res.pose_out)
+            return res.pose_out
+        rospy.logwarn(f"Transform failed.")
+        return res.success
+
+
+class FindOffset(rt.leaves_ros.ServiceLeaf):
+    def __init__(
+        self,
+        defect,
+        broadcast=True,
+        broadcast_frame="offset",
+        task_name="",
+        *args,
+        **kwargs,
+    ):
+        super(FindOffset, self).__init__(
+            name=task_name if task_name else "Find offset pose",
+            service_name="/robot/find_offset",
+            load_fn=self._load_fn,
+            result_fn=self._result_fn,
+            *args,
+            **kwargs,
+        )
+        self.defect = defect
+        self.broadcast = broadcast
+        self.broadcast_frame = broadcast_frame
+
+    def _load_fn(self):
+        pose = self._default_load_fn(auto_generate=False)
+        if isinstance(pose, PoseStamped):
+            req = FindOffsetRequest(
+                defect_pose=pose,
+                defect_type=self.defect,
+                broadcast_to_tf=self.broadcast,
+                broadcast_frame=self.broadcast_frame,
+            )
+            rospy.loginfo(f"sending {req}")
+            return req
+        else:
+            rospy.logerr(f"Type {type(pose)}: is incorrect")
+            raise ValueError
+
+    def _result_fn(self):
+        res = self._default_result_fn()
+        rospy.logerr(f"offset res: {res}")
+        if res.success:
+            pose_key = self.save_key if self.save_key else "offset_pose"
+            rt.data_management.set_value(pose_key, res.offset_pose)
+            return res.offset_pose
+        rospy.logwarn(f"Error finding offset")
+        return res.success
+
+
+class GetDepositSeq(rt.leaves_ros.ServiceLeaf):
+    def __init__(self, task_name="", *args, **kwargs):
+        super(GetDepositSeq, self).__init__(
+            name=task_name if task_name else "Find offset pose",
+            service_name="/robot/get_deposit_sequence",
+            *args,
+            **kwargs,
+        )
 
 
 class PopFromList(rt.leaves.Leaf):
