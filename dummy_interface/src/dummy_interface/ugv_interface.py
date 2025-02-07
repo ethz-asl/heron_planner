@@ -4,16 +4,18 @@ from __future__ import annotations  # for type hinting
 
 import rospy
 import actionlib
+import tf2_ros
 
 from geometry_msgs.msg import PoseStamped
 
-import heron_utils as utils
+import heron_utils.transform_utils as utils
 
 from robot_simple_command_manager_msgs.srv import (
     SetCommandString,
     SetCommandStringRequest,
     SetCommandStringResponse,
 )
+from robotnik_navigation_msgs.msg import DockAction, DockGoal, DockResult
 from heron_msgs.srv import (
     ChangeRobotMode,
     ChangeRobotModeRequest,
@@ -62,6 +64,8 @@ class UgvDummyInterface:
 
     def __init__(self) -> None:
         rospy.init_node("dummy_ugv_interface")
+
+        self.load_parameters()
 
         # services
         self.cmd_sequencer_srv = rospy.Service(
@@ -117,14 +121,31 @@ class UgvDummyInterface:
             execute_cb=self.handle_place_on,
             auto_start=False,
         )
+        self.dock_srv = actionlib.SimpleActionServer(
+            "/robot/base/dock",
+            DockAction,
+            execute_cb=self.handle_dock,
+            auto_start=False,
+        )
+
+        self.tf_buffer = tf2_ros.Buffer(rospy.Duration(5.0))  # Store 5 seconds of TF history
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
+        self.tf_broadcaster = tf2_ros.TransformBroadcaster()
+        self.cur_offset = None # offset transform to be broadcast
 
         # start actions
         self.move_to_srv.start()
         self.move_to_pose_srv.start()
         self.pickup_from_srv.start()
         self.place_on_srv.start()
+        self.dock_srv.start()
 
         rospy.loginfo("Dummy UGV interface services are ready.")
+        self.broadcast_timer = rospy.Timer(rospy.Duration(0.1), self.broadcast_tf)
+
+    def load_parameters(self) -> None:
+        self.map_frame = rospy.get_param("map_frame", "robot_map")
+
 
     def handle_cmd_sequencer(
         self, req: SetCommandStringRequest
@@ -404,30 +425,31 @@ class UgvDummyInterface:
     def handle_find_offset(self, req: FindOffsetRequest) -> FindOffsetResponse:
 
         res = FindOffsetResponse()
+        res.success = True
 
-        if req.defect_type == "POTHOLE":
-            res.offset_pose = utils.find_offset_pose(
-                req.defect_pose, offset=1, towards=True
-            )
-        elif req.defect_type == "CRACKS":
-            res.offset_pose = utils.find_offset_pose(
-                req.defect_pose, offset=0.7, towards=False
-            )
-        elif req.defect_type == "ROAD_MARKINGS":
-            res.offset_pose = utils.find_offset_pose(
-                req.defect_pose, offset=0.5, towards=False
-            )
-        elif req.defect_type == "CONE_PLACE":
-            res.offset_pose = utils.find_offset_pose(
-                req.defect_pose, offset=0.7, towards=False
-            )
-        elif req.defect_type == "CONE_PICKUP":
-            res.offset_pose = utils.find_offset_pose(
-                req.defect_pose, offset=0.7, towards=False
+        defect_offsets = {
+            "POTHOLE": 1.0,
+            "CRACKS": 0.7,
+            "ROAD_MARKINGS": 0.5,
+            "CONE_PLACE": 0.7,
+            "CONE_PICKUP": 0.7,
+        }
+
+        if req.defect_type in defect_offsets:
+            res.offset_pose = utils.find_offset_from_pose(
+                req.defect_pose, offset_dist=defect_offsets[req.defect_type], towards=False,
             )
         else:
-            rospy.logwarn(f"Invalid defect type {req.defect_type}.")
+            rospy.logwarn(f"Invalid defect type: {req.defect_type}")
             res.offset_pose = None
+            res.success = False
+
+
+        if req.broadcast_to_tf and res.success and res.offset_pose:
+            rospy.loginfo(f"Broadcasting to TF on frame: {req.broadcast_frame}")
+            self.cur_offset = utils.transform_from_pose_stamped(
+                res.offset_pose, req.broadcast_frame
+            )
 
         return res
 
@@ -477,6 +499,46 @@ class UgvDummyInterface:
         feedback.state = "Completed"
         self.place_on_srv.set_succeeded(res)
         rospy.loginfo(f"PlaceOn completed {res}")
+
+    def handle_dock(self, goal: DockGoal):
+        rospy.loginfo(f"Dock recieved goal: {goal.dock_frame}")
+
+        res = DockResult()
+        rospy.sleep(4)
+        if not self.frames_exist_tf(goal.dock_frame, goal.robot_dock_frame):
+            res.success = False
+            res.description = f"Docking failed, frames not in TF"
+            self.dock_srv.set_aborted(res)
+            return
+
+        res.success = True
+        res.description = f"Dock to {goal.dock_frame} completed successfully."
+        self.dock_srv.set_succeeded(res)
+
+    def frames_exist_tf(self, frame1, frame2):
+        try:
+            if self.tf_buffer.can_transform(
+                frame1, frame2, rospy.Time(0), rospy.Duration(1.0)
+            ): 
+                return True
+            else:
+                rospy.logwarn(
+                    f"Link between {frame1} and {frame2} not found in TF tree"
+                )
+                return False
+        except (
+            tf2_ros.LookupException,
+            tf2_ros.ConnectivityException,
+            tf2_ros.ExtrapolationException,
+        ) as err:
+            rospy.logerr(f"TF Error: {err}")
+            return False
+        
+    def broadcast_tf(self, event):
+        if self.cur_offset:
+            rospy.logerr_once(f"broadcasting to TF!")
+            self.cur_offset.header.stamp = rospy.Time.now()
+            self.tf_broadcaster.sendTransform(self.cur_offset)
 
     def run(self) -> None:
         rospy.spin()

@@ -80,12 +80,15 @@ class ICCSDummyInterface:
         rospy.logwarn(f"found pothole? {success}")
 
         center_of_mass = PoseStamped()
+        center_of_mass.header.stamp = rospy.Time.now()
+        center_of_mass.header.frame_id = "arm_camera_link"
         center_of_mass.pose.position.x = 0
         center_of_mass.pose.position.y = 0
         center_of_mass.pose.position.z = 0
         center_of_mass.pose.orientation.w = 0
 
-        surface_area = random.uniform(0.06, 0.22)
+        surface_area = random.uniform(0.08, 0.20)
+        rospy.logwarn(f"Surface area is : {surface_area}")
 
         rospy.sleep(5.0)
 
