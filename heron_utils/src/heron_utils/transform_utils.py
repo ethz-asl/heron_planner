@@ -8,7 +8,7 @@ from scipy.spatial.transform import Rotation
 
 from std_msgs.msg import Time
 from sensor_msgs.msg import NavSatFix
-from geometry_msgs.msg import Pose, PoseStamped, Quaternion
+from geometry_msgs.msg import Pose, PoseStamped, Quaternion, Transform, TransformStamped
 from actionlib_msgs.msg import GoalStatus
 
 
@@ -76,6 +76,23 @@ def pose_stamped_from_array(
 
     return pose
 
+def transform_from_pose_stamped(pose: PoseStamped, child_frame: str) -> TransformStamped:
+    """"""
+    if isinstance(pose, PoseStamped):
+        transform = TransformStamped()
+        transform.header.stamp = pose.header.stamp
+        transform.header.frame_id = pose.header.frame_id
+        transform.child_frame_id = child_frame
+
+        transform.transform.translation.x = pose.pose.position.x
+        transform.transform.translation.x = pose.pose.position.y
+        transform.transform.translation.x = pose.pose.position.z
+        transform.transform.rotation = pose.pose.orientation
+
+        return transform
+    else:
+        rospy.logerr(f"Pose should be of type PoseStamped: {type(pose)}")
+        raise ValueError
 
 def wrap_angle(
     angle: float, min_angle: float = -np.pi, max_angle: float = np.pi
@@ -253,7 +270,7 @@ def find_perpendicular_pose(
 
 
 def find_offset_from_pose(
-    pose: PoseStamped, offset_dist: float, towards: bool
+    pose: PoseStamped, offset_dist: float, towards: bool = True
 ) -> PoseStamped:
     """
     calculate offset pose facing towards the pose
@@ -262,7 +279,7 @@ def find_offset_from_pose(
     """
 
     pose_arr = array_from_pose(pose.pose)
-    pos = pose_arr[:2]
+    pos = pose_arr[:3]
 
     # position
     dir = pos / np.linalg.norm(pos)
