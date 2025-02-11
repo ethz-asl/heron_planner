@@ -3,6 +3,7 @@
 <launch>
     <arg name="dummy_interface" default="true" />
     <arg name="fake_data" default="true" /> 
+    <arg name="pub_to_kafka" default="true"/>
     <arg name="rviz" default="true" />
     <arg name="rviz_file" default="$(find heron_ui)/config/panel.rviz" />
 
@@ -10,6 +11,9 @@
         file="$(find dummy_interface)/launch/dummy_interface.launch">
         <arg name="fake_data" value="$(arg fake_data)"/>
     </include>
+
+    <node if="$(arg pub_to_kafka)"
+        pkg="ros_kafka_connector" type="kafka_image_publisher.py" name="kafka_image_publisher"/> 
     
     <node pkg="heron_planner" type="hlp_servers.py" name="hlp_servers"/>
 

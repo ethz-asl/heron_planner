@@ -27,11 +27,21 @@ This repo depends on packages:
 - [`ros_kafka_connector`](https://github.com/ethz-asl/ros-kafka-connector/tree/master)
 - [`ros_trees`](https://github.com/qcr/ros_trees)
 
-```bash
+Plus `robotnik_navigation_msgs`, `robotnik_msgs` from Robotnik.
 
+## Getting started
 
+To run the service servers:
 ```bash
-./install_dependencies.sh
+roslaunch heron_planner run_hlp_servers.launch
 ```
+
+Then in a new terminal run the behaviour tree:
+```bash
+rosrun heron_planner cone_place_bt.py
+```
+
+You can view a flask server on the webpage: http://127.0.0.1:5050/
+
 
 ## Installation with docker (WIP)
