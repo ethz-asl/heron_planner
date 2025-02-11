@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+
+<launch>
+    <arg name="fake_data" default="true"/>
+    <arg name="fake_images" default="true"/>
+
+    <node pkg="dummy_interface" type="ugv_interface.py" name="ugv_interface"/>
+    <node pkg="dummy_interface" type="iccs_interface.py" name="iccs_interface"/>
+    <node if="$(arg fake_data)" pkg="dummy_interface" 
+        type="fake_data_publisher.py" name="fake_data_publisher"/>
+    <node if="$(arg fake_images)" pkg="dummy_interface" 
+        type="fake_camera_publisher.py" name="fake_camera_publisher"/>
+
+</launch>

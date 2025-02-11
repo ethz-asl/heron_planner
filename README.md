@@ -1,70 +1,48 @@
-# Heron Planner
-Repository for the high-level planner for the automated [HERON](https://www.heron-h2020.eu/) project - which aims to develop an integrated system for the maintenance and repairs on roadworks. 
+# HERON High Level Planner
 
-## (not so) Quick start
+High level planner (HLP) for the [HERON](https://www.heron-h2020.eu/) project. This planner interfaces with the robot (UGV). the vision components (ICCS), and a Kafka server to recieve missions, plan, send commands for road maintanence tasks.
 
-> Note that all the instructions in this repository are tested on Ubuntu 20.04 wit ROS noetic.
+The HLP uses behaviour trees (BTs) to sequence through the mission.
 
-First create a catkin workspace, and a `src` folder, and clone the repository.
+
+## Packages
+
+- `heron_planner`: Main HLP packages with behaviour
+- `heron_ui`: RViz panel with buttons to send service calls to HLP.
+- `heron_utils`: Utilities for running tree, visulising tree, transforms.
+- `dummy_interface`: Python utilities commonly used within moma projects.
+
+## Installation
+
+Note that all instructions in this repository are tested on Ubuntu 20.04 with ROS-noetic.
+
+First, clone this repository into the `src` folder of a new or existing catkin workspace.
 
 ```bash
-mkdir -p ~/heron_ws/src
-cd ~/heron_ws/src
-
 git clone git@github.com:ethz-asl/heron_planner.git
 ```
 
-This repository is complimentary to the [moma](https://github.com/ethz-asl/moma) repository, which should be cloned into the `src` folder of the workspace alongside its submodules. 
+This repo depends on packages:
+- [`heron_msgs`](https://github.com/RobotnikAutomation/heron_msgs/tree/main)
+- [`ros_kafka_connector`](https://github.com/ethz-asl/ros-kafka-connector/tree/master)
+- [`ros_trees`](https://github.com/qcr/ros_trees)
 
+Plus `robotnik_navigation_msgs`, `robotnik_msgs` from Robotnik.
+
+## Getting started
+
+To run the service servers:
 ```bash
-git clone --recurse-submodules git@github.com:ethz-asl/moma.git
+roslaunch heron_planner run_hlp_servers.launch
 ```
 
-Install the general system dependencies of the `moma` repository (requires sudo rights).
+Then in a new terminal run the behaviour tree:
 ```bash
-./moma/install_dependencies.sh
+rosrun heron_planner cone_place_bt.py
 ```
 
-Checkout the `feature/panda-on-gmp` branch on the `moma` repository. Unless [this](https://github.com/ethz-asl/moma/pull/173) pull request has been approved, then you can stay on `master`. 
+You can view a flask server on the webpage: http://127.0.0.1:5050/
 
-If using the **giraffe** configuration (this is the base [GMP](https://github.com/ethz-asl/robolab_gmp/) and the Franka Panda arm), clone the GMP repository with its submodules.
-```bash
-git clone --recurse-submodules git@github.com:ethz-asl/robolab_gmp.git
-```
-> **note** the `robolab_gmp` repo is a whole catkin workspace and requires later refactor. 
 
-#### Building with Catkin
-Go to the project folder.
-
-```bash
-cd ~/heron_ws
-```
-
-Set catkin configuration for faster execution.
-```bash
-catkin config --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-```
-
-Then build **all project packages**.
-
-```bash
-catkin build
-```
-
-> **note** some of the packages in `robolab_gmp` produce some warnings, that can be ignored.
-
-Then source the workspace!
-```bash
-cd ~/heron_ws
-source devel/setup.bash
-```
-
-### Preliminary demo
-To see the giraffe in action against many cone hazards, run:
-```bash
-roslaunch heron_demo run_gazebo.launch
-```
-
-This should load RViz and Gazebo. In RViz, you can move the base using the pink 2D Nav Goal. The panda arm can be moved with the interactive markers or through the motion planning interface.
-
->Note, the project sources depend on several ROS packages. If errors occur related to missing packages during compilation and building, **install** the corresponding **prerequisites** via `sudo apt install <missing package>` or via the corresponding github repository.
+## Installation with docker (WIP)
+Coming soon!

@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>heron_planner</name>
+  <version>0.0.0</version>
+  <description>High level planner for the Heron project</description>
+
+  <maintainer email="harrisl@ethz.ch">Lucy Harris</maintainer>
+
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>rospy</depend>
+  <depend>std_msgs</depend>
+  <depend>actionlib</depend>
+  <depend>actionlib_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>sensor_msgs</depend>
+
+  <export>
+  </export>
+</package>
