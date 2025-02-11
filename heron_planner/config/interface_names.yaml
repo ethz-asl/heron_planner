@@ -1,0 +1,11 @@
+ugv:
+  cmd_manager_srv: "/robot/command_manager/command"
+  cmd_sequencer_srv: "/robot/command_sequencer/command"
+  move_to_action: "/robot/arm/move_to"
+  dock_action: "/robot/base/dock"
+  odom_topic: "/robot/odom"
+  find_offset_srv: "/robot/find_offset"
+  get_deposit_srv: "/robot/get_deposit_sequence"
+
+iccs:
+  find_pothole_srv: "/iccs/find_pothole"

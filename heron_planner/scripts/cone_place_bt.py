@@ -4,6 +4,7 @@ import heron_planner.behaviours.ugv_behaviours as ugv
 import heron_planner.behaviours.hlp_behaviours as hlp
 import heron_planner.behaviours.iccs_behaviours as iccs
 import heron_planner.behaviours.generic_behaviours as generic
+
 import heron_utils.simple_flask_server as flask_server
 import heron_utils.bt_runner as bt_runner
 import functools
@@ -19,7 +20,7 @@ from std_msgs.msg import String
 from std_srvs.srv import Trigger, TriggerRequest, TriggerResponse
 
 
-class PotholeBT:
+class ConePlaceBT:
     def __init__(self) -> None:
         self.visualize_only = False
         self.is_running = False
@@ -48,183 +49,47 @@ class PotholeBT:
         ####################################################################
         # saving data to blackboard
         ####################################################################
-        self.bb.set("start", self.pothole_start)
-        self.bb.set("inspections", self.inspection_names)
         self.bb.set("arm_cam_ns", self.arm_cam_ns)
         self.bb.set("body_cam_ns", self.body_cam_ns)
-        # save_start = leaf.SaveData(task_name="Save start",data=self.pothole_start, save_key="start")
-        # save_inspections = leaf.SaveData(task_name="Save insepctions", data=self.inspection_names, save_key="inspections")
 
         wait_for_enter = generic.WaitForEnterKey()
-        ####################################################################
-        # initial positions
-        ####################################################################
-        # arm home position
-        at_home = ugv.ArmAt(task_name="Arm at home?", pose_name="HOME")
+
         arm_to_home = ugv.MoveTo(
             task_name="Move arm to home", load_value="HOME"
         )
 
-        home_sel = pt.composites.Selector(
-            "HomeSelector", children=[at_home, arm_to_home], memory=True
-        )
-
-        # base at start
-        at_pothole_start = ugv.AtPose(
-            task_name="At pothole start?", pose_name="start"
-        )
-        go_to_pothole_start = ugv.GoToGPS(
-            task_name="Go to pothole start", load_key="start"
-        )
-
-        pothole_sel = pt.composites.Selector(
-            "PotholeStartSelector",
-            children=[at_pothole_start, go_to_pothole_start],
-            memory=True,
-        )
-
-        init_seq = pt.composites.Sequence(
-            name="Before inspection",
-            children=[home_sel, pothole_sel],
-            memory=True,
-        )
-
-        ####################################################################
-        # loop through inspection positons and find pothole
-        ####################################################################
-        inspection_loop = pt.composites.Selector(
-            name="Inspect and find pothole", memory=True
-        )
-
-        get_inspection = generic.PopFromList(
-            task_name="Get inspection",
-            load_key="inspections",
-            save_key="inspection",
-        )
-        at_inspection = ugv.ArmAt(
-            task_name=f"Arm at inspection?", pose_name="inspection"
-        )
         arm_to_inspection = ugv.MoveTo(
             task_name=f"Move arm inspection.", load_key="inspection"
         )
-        inspect_sel = pt.composites.Selector(
+        inspect_seq = pt.composites.Sequence(
             name="InspectionSelector",
-            children=[at_inspection, arm_to_inspection],
+            children=[arm_to_home, arm_to_inspection],
             memory=True,
         )
 
         load_arm_img_inspection = hlp.GetSynchedImages(
             task_name="Load wrist image",
             load_key="arm_cam_ns",
-            image_key="pothole/rgb/before",
+            image_key="cone/rgb",
             save=True,
         )
-        find_pothole = iccs.FindPothole(task_name="Find pothole at inspection")
 
-        find_pothole_seq = pt.composites.Sequence(
-            name="FindPotholeSeq",
-            children=[load_arm_img_inspection, find_pothole],
-            memory=False,
-        )
-
-        inspect_location = pt.composites.Sequence(
-            name="Search Inpsection Location",
-            memory=False,
-            children=[get_inspection, inspect_sel, find_pothole_seq],
+        # send_inspection_to_kafka = hlp.SendImageToKafka(
+        #     task_name="Send inspection to Kafka",
+        #     msg="Real image for HLP testing",
+        #     load_key="cone/rgb",
+        # )
+        send_inspection_to_kafka = generic.Wait(
+            task_name="Send inspection to Kafka", duration=5
         )
 
-        retry_inspection = generic.RetryUntilSuccessful(
-            child=inspect_location,
-            max_attempts=len(self.inspection_names),
-            name="Retry Inspection Locations",
-        )
-        no_pothole_found = pt.behaviours.Failure(name="No pothole found")
-        inspection_loop.add_children([retry_inspection, no_pothole_found])
-
-        ####################################################################
-        # if pothole found, send to kafka
-        ####################################################################
-        send_inspection_to_kafka = hlp.SendImageToKafka(
-            task_name="Send inspection to Kafka",
-            msg="Fake image for HLP testing",
-            load_key="pothole/rgb/before",
-        )
-
-        ####################################################################
-        # find safe offset
-        ####################################################################
-        pothole_in_odom = hlp.TransformPose(
-            task_name="Transform pothole CoM to odom",
-            target_frame="odom",
-            load_key="/pothole/com",
-            save_key="/pothole/odom",
-        )
-        # TODO FIND_OFFSET SHOULD BE CHANGED, ASK RQ
-        find_offset = ugv.FindOffset(
-            task_name="Find pothole offset",
-            defect="POTHOLE",
-            broadcast=True,
-            broadcast_frame="pothole_offset",
-            load_key="/pothole/odom",
-            save_key="/pothole/offset",
-        )
-        ####################################################################
-        # dock to safe offset
-        ####################################################################
-        # TODO DOCK ACTION HERE
-        at_offset = ugv.AtPose(task_name="At offset?")
-        dock_to_offset = ugv.Dock(
-            task_name="Dock to offset", load_value="pothole_offset"
-        )
-        # dock_to_offset
-
-        offset_seq = pt.composites.Sequence(
-            name="OffsetSeq",
-            children=[pothole_in_odom, find_offset, dock_to_offset],  # add dock
+        take_photo_seq = pt.composites.Sequence(
+            name="PhotoSequence",
+            children=[load_arm_img_inspection, send_inspection_to_kafka],
             memory=True,
         )
-        ####################################################################
-        # get deposit sequence
-        ####################################################################
 
-        get_deposit_seq = ugv.GetDepositSeq(
-            task_name="Get deposit sequence", load_key="/pothole/surface_area"
-        )
-
-        pre_deposit_seq = pt.composites.Sequence(
-            name="Pre-deposit tasks",
-            children=[send_inspection_to_kafka, offset_seq, get_deposit_seq],
-        )
-
-        deposit_material = ugv.Deposit()
-
-        # https://github.com/RobotnikAutomation/robotnik_navigation_msgs/blob/master/action/Dock.action
-
-        # TODO command_sequencer deposit seq
-        # TODO pilot integration (bt_ui & service calls)
-
-        # TODO Roller sequence
-
-        # dock_to_offset again!
-        moveto_validation = ugv.MoveTo(
-            task_name="Move arm to validation", load_value="VALIDATION"
-        )
-
-        load_arm_img_validation = hlp.GetSynchedImages(
-            task_name="Load wrist image",
-            load_key="arm_cam_ns",
-            image_key="pothole/rgb/after",
-            save=True,
-        )
-        send_validation_to_kafka = hlp.SendImageToKafka(
-            task_name="Send validation to Kafka",
-            msg="Fake image for HLP testing",
-            load_key="pothole/rgb/after",
-        )
-
-        root.add_children(
-            [init_seq, inspection_loop, pre_deposit_seq, wait_for_enter]
-        )
+        root.add_children([inspect_seq, take_photo_seq])
 
         return root
 
@@ -351,7 +216,7 @@ def main():
     rospy.init_node("pothole_leaves_bt")
     pt.logging.level = pt.logging.Level.DEBUG
 
-    node = PotholeBT()
+    node = ConePlaceBT()
     node.tree.visualise()
 
     rospy.spin()
