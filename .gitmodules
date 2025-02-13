@@ -1,0 +1,6 @@
+[submodule "submodules/ros-kafka-connector"]
+	path = submodules/ros-kafka-connector
+	url = git@github.com:ethz-asl/ros-kafka-connector.git
+[submodule "submodules/ros_trees"]
+	path = submodules/ros_trees
+	url = git@github.com:qcr/ros_trees.git
