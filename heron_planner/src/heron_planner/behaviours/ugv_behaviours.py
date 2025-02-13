@@ -183,7 +183,7 @@ class AtPose(rt.leaves_ros.SubscriberLeaf):
         if self.pose_name:
             self.pose = rt.data_management.get_value(self.pose_name)
         else:
-            self.pose = self._default_load_fn()
+            self.pose = self._default_load_fn(auto_generate=False)
 
     def _result_fn(self) -> bool:
         odom = self._default_result_fn()
@@ -229,7 +229,6 @@ class FindOffset(rt.leaves_ros.ServiceLeaf):
                 broadcast_to_tf=self.broadcast,
                 broadcast_frame=self.broadcast_frame,
             )
-            rospy.loginfo(f"sending {req}")
             return req
         else:
             rospy.logerr(f"Type {type(pose)}: is incorrect")
@@ -237,7 +236,6 @@ class FindOffset(rt.leaves_ros.ServiceLeaf):
 
     def _result_fn(self):
         res = self._default_result_fn()
-        rospy.logerr(f"offset res: {res}")
         if res.success:
             pose_key = self.save_key if self.save_key else "offset_pose"
             rt.data_management.set_value(pose_key, res.offset_pose)

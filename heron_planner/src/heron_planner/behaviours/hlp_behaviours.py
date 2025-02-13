@@ -83,7 +83,6 @@ class TransformPose(rt.leaves_ros.ServiceLeaf):
                 pose_in=pose_in,
                 target_frame=self.target_frame,
             )
-            rospy.loginfo(f"sending {req}")
             return req
         else:
             rospy.logerr(f"Type {type(pose_in)}: is incorrect")

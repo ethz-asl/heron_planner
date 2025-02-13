@@ -536,7 +536,7 @@ class UgvDummyInterface:
         
     def broadcast_tf(self, event):
         if self.cur_offset:
-            rospy.logerr_once(f"broadcasting to TF!")
+            rospy.logwarn_once(f"broadcasting to TF!")
             self.cur_offset.header.stamp = rospy.Time.now()
             self.tf_broadcaster.sendTransform(self.cur_offset)
 

@@ -59,35 +59,27 @@ class PotholeBT:
 
         self.tree_rate = rospy.get_param("tree_rate", 10)
 
-        self.inspection_names = [
-            "INSPECTION1",
-            "INSPECTION2",
-            "INSPECTION3",
-            "INSPECTION4",
-            "INSPECTION5",
-        ]
+        self.inspection_names = rospy.get_param("ugv/inspection_names")
 
-        self.body_cam_ns = "/robot/base_camera/front_rgbd_camera/"
-        self.arm_cam_ns = "/robot/arm_camera/front_rgbd_camera/"
-
+        self.body_cam_ns = rospy.get_param(
+            "ugv/body_cam_ns", "/robot/base_camera/front_rgbd_camera/"
+        )
+        self.arm_cam_ns = rospy.get_param(
+            "ugv/arm_cam_ns", "/robot/arm_camera/front_rgbd_camera/"
+        )
+        
     def build_root(self):
         """build root"""
 
         root = pt.composites.Sequence(name="InspectionSequence", memory=True)
-
 
         wait_for_enter = generic.WaitForEnterKey()
         ####################################################################
         # initial positions
         ####################################################################
         # arm home position
-        at_home = ugv.ArmAt(task_name="Arm at home?", pose_name="HOME")
         arm_to_home = ugv.MoveTo(
             task_name="Move arm to home", load_value="HOME"
-        )
-
-        home_sel = pt.composites.Selector(
-            "HomeSelector", children=[at_home, arm_to_home], memory=True
         )
 
         # base at start
@@ -106,7 +98,7 @@ class PotholeBT:
 
         init_seq = pt.composites.Sequence(
             name="Before inspection",
-            children=[home_sel, pothole_sel],
+            children=[arm_to_home, pothole_sel],
             memory=True,
         )
 
@@ -122,16 +114,8 @@ class PotholeBT:
             load_key="inspections",
             save_key="inspection",
         )
-        at_inspection = ugv.ArmAt(
-            task_name=f"Arm at inspection?", pose_name="inspection"
-        )
         arm_to_inspection = ugv.MoveTo(
             task_name=f"Move arm inspection.", load_key="inspection"
-        )
-        inspect_sel = pt.composites.Selector(
-            name="InspectionSelector",
-            children=[at_inspection, arm_to_inspection],
-            memory=True,
         )
 
         load_arm_img_inspection = hlp.GetSynchedImages(
@@ -151,7 +135,7 @@ class PotholeBT:
         inspect_location = pt.composites.Sequence(
             name="Search Inpsection Location",
             memory=False,
-            children=[get_inspection, inspect_sel, find_pothole_seq],
+            children=[get_inspection, arm_to_inspection, find_pothole_seq],
         )
 
         retry_inspection = generic.RetryUntilSuccessful(
@@ -192,29 +176,32 @@ class PotholeBT:
         ####################################################################
         # dock to safe offset
         ####################################################################
-        # TODO DOCK ACTION HERE
-        at_offset = ugv.AtPose(task_name="At offset?")
+        at_offset = ugv.AtPose(task_name="At offset?", pose_name="/pothole/offset")
         dock_to_offset = ugv.Dock(
             task_name="Dock to offset", load_value="pothole_offset"
         )
-        # dock_to_offset
+        offset_sel = pt.composites.Selector(
+            name="OffsetSel",
+            children=[at_offset, dock_to_offset],
+            memory=True
+        )
 
         offset_seq = pt.composites.Sequence(
             name="OffsetSeq",
-            children=[pothole_in_odom, find_offset, dock_to_offset],  # add dock
+            children=[pothole_in_odom, find_offset, offset_sel],  # add dock
             memory=True,
         )
         ####################################################################
         # get deposit sequence
         ####################################################################
 
-        get_deposit_seq = ugv.GetDepositSeq(
+        get_deposit = ugv.GetDepositSeq(
             task_name="Get deposit sequence", load_key="/pothole/surface_area"
         )
 
         pre_deposit_seq = pt.composites.Sequence(
             name="Pre-deposit tasks",
-            children=[send_inspection_to_kafka, offset_seq, get_deposit_seq],
+            children=[send_inspection_to_kafka, offset_seq, get_deposit],
         )
 
         deposit_material = ugv.Deposit()
@@ -227,7 +214,7 @@ class PotholeBT:
         # TODO Roller sequence
 
         # dock_to_offset again!
-        moveto_validation = ugv.MoveTo(
+        arm_to_validation = ugv.MoveTo(
             task_name="Move arm to validation", load_value="VALIDATION"
         )
 
@@ -243,8 +230,13 @@ class PotholeBT:
             load_key="pothole/rgb/after",
         )
 
+        validation_seq = pt.composites.Sequence(
+            name="ValidationSeq",
+            children=[arm_to_validation, load_arm_img_validation, send_validation_to_kafka]
+        )
+
         root.add_children(
-            [init_seq, inspection_loop, pre_deposit_seq, wait_for_enter]
+            [init_seq, inspection_loop, pre_deposit_seq, deposit_material, validation_seq, wait_for_enter]
         )
 
         return root
@@ -326,8 +318,8 @@ class PotholeBT:
 
     def update_state(self, tree, snapshot_visitor):
         state = String()
-        # tip_behaviour = tree.tip()
-        # state.data = tip_behaviour.name
+        tip_behaviour = tree.tip()
+        state.data = tip_behaviour.name
         state.data = pt.display.ascii_tree(
             tree.root, snapshot_information=snapshot_visitor
         )

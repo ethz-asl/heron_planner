@@ -37,7 +37,6 @@ class FindPothole(rt.leaves_ros.ServiceLeaf):
         if isinstance(res.center_of_mass, PoseStamped) and isinstance(
             res.surface_area_m, float
         ):
-            rospy.logwarn(f"Pothole found: {res}")
             rt.data_management.set_value("/pothole/com", res.center_of_mass)
             rt.data_management.set_value(
                 "/pothole/surface_area", res.surface_area_m

@@ -88,15 +88,16 @@ class ConePlaceBT:
             save=True,
         )
 
-        # KAFKA BROKER DOWN
-        # send_inspection_to_kafka = hlp.SendImageToKafka(
-        #     task_name="Send inspection to Kafka",
-        #     msg="Real image for HLP testing",
-        #     load_key="cone/rgb",
-        # )
-        send_inspection_to_kafka = generic.Wait(
-            task_name="Send inspection to Kafka", duration=5
+        send_inspection_to_kafka = hlp.SendImageToKafka(
+            task_name="Send inspection to Kafka",
+            msg="Real image for HLP testing",
+            load_key="cone/rgb",
         )
+
+        # example if kafka down!
+        # send_inspection_to_kafka = generic.Wait(
+        #     task_name="Send inspection to Kafka", duration=5
+        # )
 
         take_photo_seq = pt.composites.Sequence(
             name="PhotoSequence",

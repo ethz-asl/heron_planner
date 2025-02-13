@@ -75,8 +75,8 @@ class ICCSDummyInterface:
             rospy.loginfo(f"req types correct")
         else:
             rospy.logerr(f"req types incorrect")
-        # success = random.choice([True, False])
-        success = True # testing 
+        success = random.choice([True, False])
+        # success = True # testing 
         rospy.logwarn(f"found pothole? {success}")
 
         center_of_mass = PoseStamped()
