@@ -1,23 +1,17 @@
 #!/bin/bash
 
-# Based on the ETH Robotics Summer school docker: 
-# https://github.com/ETHZ-RobotX/smb_docker/
-
-# If not working, first do: sudo rm -rf /tmp/.docker.xauth
-# It still not working, try running the script as root.
-
-# Default options
-DOCKER=hlp_dev
+# default options
+DOCKER_IMAGE=hlp_dev
 DOCKERFILE=dev.Dockerfile
-NAME=hlp
+CONTAINER_NAME=hlp_docker
 BUILD=false
-WORKSPACE=/home/$USER/workspaces/hlp_ws
+WORKSPACE=/local/home/harrisl/workspaces/hlp_ws
 
 help()
 {
     echo "Usage: run_docker.sh [ -d | --docker <image name> ]
-               [ -b | --build <dockerfile name> ] [ -n | --name <docker name> ]
-               [ -w | --workspace </workspace/path> ]
+               [ -b | --build <dockerfile name> ] [ -n | --name <container name> ]
+               [ -w | --workspace <workspace path> ]
                [ -h | --help  ]"
     exit 2
 }
@@ -42,7 +36,7 @@ do
       shift 2
       ;;
     -n | --name )
-      NAME="$2"
+      CONTAINER_NAME="$2"
       shift 2
       ;;
     -w | --workspace )
@@ -64,7 +58,7 @@ do
 done
 
 if [ "$BUILD" = true ]; then
-     docker build -f $DOCKERFILE -t $DOCKER .
+     docker build -f $DOCKERFILE -t $DOCKER_IMAGE .
 fi
 
 XAUTH=/tmp/.docker.xauth
@@ -89,19 +83,17 @@ echo ""
 echo "Permissions:"
 ls -FAlh $XAUTH
 echo ""
-echo "Running docker..."
+echo "Running Docker with ROS Networking..."
 
 docker run -it --rm \
     --env="DISPLAY=$DISPLAY" \
-    --volume=$WORKSPACE:/root/hlp_ws \
-    --volume=/home/$USER/data:/root/data \
     --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
-    --env="XAUTHORITY=$XAUTH" \
-    --volume="$XAUTH:$XAUTH" \
+    --env="XAUTHORITY=${XAUTH:-/tmp/.docker.xauth}" \
     --net=host \
     --privileged \
-    --name=$NAME \
-    ${DOCKER} \
+    --name=$CONTAINER_NAME \
+    --volume=$WORKSPACE:/root/hlp_ws \
+    $DOCKER_IMAGE \
     bash
 
 echo "Done."

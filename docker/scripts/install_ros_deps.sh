@@ -1,31 +1,35 @@
 #!/bin/bash
-set -o pipefail
+set -x
+# set -o pipefail
 
-# set up a ROS workspace
-mkdir -p $HERON_DEP_WS/src
-cd $HERON_DEP_WS
+DOCKER_WS=/root/hlp_deps_ws/
+
+# Install ROS packages
+apt-get update && apt-get install -y \
+	python3-catkin-tools \
+	python3-osrf-pycommon \
+	ros-noetic-catkin \
+    ros-noetic-py-trees \
+    ros-noetic-py-trees-ros \
+    ros-noetic-rqt-py-trees \
+    ros-noetic-tf-conversions \
+    ros-noetic-rviz-visual-tools
+
+# Set up the workspace
+mkdir -p $DOCKER_WS/src
+cd $DOCKER_WS
 source /opt/ros/noetic/setup.bash
+
 catkin init
-catkin config --extend /opt/ros/noetic
+catkin config --extend /root/hlp_ws/devel # extend the host workspace
 catkin config --cmake-args -DCMAKE_BUILD_TYPE=Release
 
-# install ROS packages from apt
-apt-get update && apt-get install -y \
-	ros-noetic-py-trees \
-	ros-noetic-py-trees-ros \
-	ros-noetic-rqt-py-trees \
-	ros-noetic-tf-conversions \
-	ros-noetic-rviz-visual-tools \
-
-# Install all the other dependencies in the moma_dep_ws
-cd $HERON_DEP_WS/src || exit 1
+# Fetch repositories using vcs
+cd $DOCKER_WS/src || exit 1
 vcs import --recursive --input $SCRIPTS_PATH/ros_deps.repos
 
-# pip install some stuff.
-pip3 install kafka-python
+# Install Python dependencies
+pip3 install kafka-python scipy
 
-# add a rundemo alias:
-# echo 'alias rundemo="roslaunch grasp_demo grasp_demo.launch launch_rviz:=true"' >> ~/.bashrc
-
-# Clear cache to keep layer size down
+# Clean up
 rm -rf /var/lib/apt/lists/*

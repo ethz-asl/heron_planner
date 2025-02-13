@@ -1,16 +1,16 @@
 repositories:
-  heron_planner:
-    type: git
-    local-name: heron_planner
-    url: git@github.com:ethz-asl/heron_planner.git
-    version: f596ea47b3041684fd21f2cbe0133b72e4072000
-  ros_trees:
-    type: git
-    local-name: ros_trees
-    url: git@github.com:qcr/ros_trees.git
-    version: 544f1a271b0ecb78bc8a0faaa4bd2a0f72e3934a
   ros-kafka-connector:
     type: git
     local-name: ros-kafka-connector
     url: git@github.com:ethz-asl/ros-kafka-connector.git
     version: 1b286fa62e3609f9f6b6c375aeb3b093bf077c16
+  ros_trees:
+    type: git
+    local-name: ros_trees
+    url: git@github.com:qcr/ros_trees.git
+    version: 544f1a271b0ecb78bc8a0faaa4bd2a0f72e3934a
+  heron_planner:
+    type: git
+    local-name: heron_planner
+    url: git@github.com:ethz-asl/heron_planner.git
+    version: 3acb9b2ac65f310721fc2ecd76cfd8a0a76b32b1
