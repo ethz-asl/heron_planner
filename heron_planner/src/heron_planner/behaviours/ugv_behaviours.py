@@ -92,6 +92,11 @@ class GoToGPS(_CommandManager):
             rospy.logerr(f"Type {type(data)}: is incorrect")
             raise ValueError
 
+class CustomCommandManager(_CommandManager):
+    def __init__(self, task_name="", *args, **kwargs) -> None:
+        super(CustomCommandManager, self).__init__(
+            name=task_name if task_name else "Command Manager", *args, **kwargs
+        )
 
 class LiftRoller(_CommandSequencer):
     CMD = CommandString(command="LIFT_ROLLER")
