@@ -67,13 +67,8 @@ class PotholeBT:
         self.arm_cam_ns = rospy.get_param(
             "ugv/arm_cam_ns", "/robot/arm_camera/front_rgbd_camera/"
         )
-        
-    def build_root(self):
-        """build root"""
 
-        root = pt.composites.Sequence(name="InspectionSequence", memory=True)
-
-        wait_for_enter = generic.WaitForEnterKey()
+    def get_initial_seq(self) -> pt.composites.Composite:
         ####################################################################
         # initial positions
         ####################################################################
@@ -101,7 +96,9 @@ class PotholeBT:
             children=[arm_to_home, pothole_sel],
             memory=True,
         )
+        return init_seq
 
+    def get_inspection_seq(self) -> pt.composites.Composite:
         ####################################################################
         # loop through inspection positons and find pothole
         ####################################################################
@@ -154,7 +151,14 @@ class PotholeBT:
             msg="Fake image for HLP testing",
             load_key="pothole/rgb/before",
         )
+        inspection_seq = pt.composites.Sequence(
+            name="InpsectionSeq",
+            children=[inspection_loop, send_inspection_to_kafka],
+        )
 
+        return inspection_seq
+
+    def get_offset_seq(self) -> pt.composites.Composite:
         ####################################################################
         # find safe offset
         ####################################################################
@@ -164,7 +168,7 @@ class PotholeBT:
             load_key="/pothole/com",
             save_key="/pothole/odom",
         )
-        # TODO FIND_OFFSET SHOULD BE CHANGED, ASK RQ
+
         find_offset = ugv.FindOffset(
             task_name="Find pothole offset",
             defect="POTHOLE",
@@ -173,24 +177,30 @@ class PotholeBT:
             load_key="/pothole/odom",
             save_key="/pothole/offset",
         )
+        offset_seq = pt.composites.Sequence(
+            name="OffsetSeq",
+            children=[pothole_in_odom, find_offset],  # add dock
+            memory=True,
+        )
+        return offset_seq
+
+    def get_offset_sel(self) -> pt.composites.Composite:
         ####################################################################
-        # dock to safe offset
+        # dock to offset location
         ####################################################################
-        at_offset = ugv.AtPose(task_name="At offset?", pose_name="/pothole/offset")
+
+        at_offset = ugv.AtPose(
+            task_name="At offset?", pose_name="/pothole/offset"
+        )
         dock_to_offset = ugv.Dock(
             task_name="Dock to offset", load_value="pothole_offset"
         )
         offset_sel = pt.composites.Selector(
-            name="OffsetSel",
-            children=[at_offset, dock_to_offset],
-            memory=True
+            name="OffsetSel", children=[at_offset, dock_to_offset], memory=True
         )
+        return offset_sel
 
-        offset_seq = pt.composites.Sequence(
-            name="OffsetSeq",
-            children=[pothole_in_odom, find_offset, offset_sel],  # add dock
-            memory=True,
-        )
+    def get_deposit_seq(self) -> pt.composites.Composite:
         ####################################################################
         # get deposit sequence
         ####################################################################
@@ -199,21 +209,16 @@ class PotholeBT:
             task_name="Get deposit sequence", load_key="/pothole/surface_area"
         )
 
-        pre_deposit_seq = pt.composites.Sequence(
-            name="Pre-deposit tasks",
-            children=[send_inspection_to_kafka, offset_seq, get_deposit],
-        )
-
         deposit_material = ugv.Deposit()
 
-        # https://github.com/RobotnikAutomation/robotnik_navigation_msgs/blob/master/action/Dock.action
+        deposit_seq = pt.composites.Sequence(
+            name="DepositSeq",
+            children=[get_deposit, deposit_material],
+            memory=True,
+        )
+        return deposit_seq
 
-        # TODO command_sequencer deposit seq
-        # TODO pilot integration (bt_ui & service calls)
-
-        # TODO Roller sequence
-
-        # dock_to_offset again!
+    def get_validation_seq(self) -> pt.composites.Composite:
         arm_to_validation = ugv.MoveTo(
             task_name="Move arm to validation", load_value="VALIDATION"
         )
@@ -232,11 +237,37 @@ class PotholeBT:
 
         validation_seq = pt.composites.Sequence(
             name="ValidationSeq",
-            children=[arm_to_validation, load_arm_img_validation, send_validation_to_kafka]
+            children=[
+                arm_to_validation,
+                load_arm_img_validation,
+                send_validation_to_kafka,
+            ],
         )
+        return validation_seq
+
+    def build_root(self):
+        """build root"""
+
+        root = pt.composites.Sequence(name="InspectionSequence", memory=True)
+
+        wait_for_enter = generic.WaitForEnterKey()
+
+        # TODO pilot integration (bt_ui & service calls)
+        # TODO Roller sequence
+
+        # dock_to_offset again!
 
         root.add_children(
-            [init_seq, inspection_loop, pre_deposit_seq, deposit_material, validation_seq, wait_for_enter]
+            [
+                self.get_initial_seq(),
+                self.get_inspection_seq(),
+                self.get_offset_seq(),
+                self.get_offset_sel(),
+                self.get_deposit_seq(),
+                self.get_validation_seq(),
+                self.get_offset_sel(),
+                wait_for_enter,
+            ]
         )
 
         return root

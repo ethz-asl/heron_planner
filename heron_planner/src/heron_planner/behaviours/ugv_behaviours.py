@@ -20,6 +20,8 @@ from heron_msgs.srv import FindOffsetRequest
 CMD_MANAGER_SRV = rospy.get_param("ugv/cmd_manager_srv", "/robot/command_manager/command")
 CMD_SEQUENCER_SRV = rospy.get_param("ugv/cmd_sequencer_srv", "/robot/command_sequencer/command")
 MOVE_TO_ACTION = rospy.get_param("ugv/move_to_action", "/robot/arm/move_to")
+PICKUP_FROM_ACTION = rospy.get_param("ugv/pickup_from_action", "/robot/arm/pickup_from")
+PLACE_ON_ACTION = rospy.get_param("ugv/place_on_action", "/robot/arm/place_on")
 DOCK_ACTION = rospy.get_param("ugv/dock_action", "/robot/base/dock")
 ODOM_TOPIC = rospy.get_param("ugv/odom_topic", "/robot/odom")
 FIND_OFFSET_SRV = rospy.get_param("ugv/find_offset_srv", "/robot/find_offset")
@@ -44,6 +46,29 @@ class _CommandSequencer(rt.leaves_ros.ServiceLeaf):
         super(_CommandSequencer, self).__init__(
             service_name=CMD_SEQUENCER_SRV, *args, **kwargs
         )
+
+class Move(_CommandManager):
+    def __init__(self, task_name="", *args, **kwargs) -> None:
+        super(Move, self).__init__(
+            name=task_name if task_name else "Move base in XY",
+            load=True,
+            load_fn=self._load_fn,
+            *args,
+            **kwargs,
+        )
+
+    def _load_fn(self) -> str:
+        data = self._default_load_fn(auto_generate=False)
+
+        if isinstance(data, PoseStamped):
+            pose_arr = utils.array_from_pose(data.pose)
+            yaw = utils.angle_from_quaternion(pose_arr[3:])
+            return f"MOVE {pose_arr[0]} {pose_arr[1]} {yaw:.2f}"
+        if isinstance(data, str):
+            return data
+        else:
+            rospy.logerr(f"Type {type(data)}: is incorrect")
+            raise ValueError
 
 
 class GoToGPS(_CommandManager):
@@ -94,11 +119,26 @@ class Blow(_CommandSequencer):
             name="Blow", load_value=Blow.CMD, *args, **kwargs
         )
 
+class BlowPothole(_CommandSequencer):
+    """Moves robot forward 5cm 8x and blows"""
+    CMD = CommandString(command="BLOW_POTHOLE")
+
+    def __init__(self, *args, **kwargs) -> None:
+        super(BlowPothole, self).__init__(
+            name="BlowPothole", load_value=BlowPothole.CMD, *args, **kwargs
+        )
+
 
 class Deposit(_CommandSequencer):
     def __init__(self, task_name="", *args, **kwargs) -> None:
         super(Deposit, self).__init__(
             name=task_name if task_name else "Deposit material", *args, **kwargs
+        )
+
+class CustomCommandSequencer(_CommandSequencer):
+    def __init__(self, task_name="", *args, **kwargs) -> None:
+        super(CustomCommandSequencer, self).__init__(
+            name=task_name if task_name else "Command Sequncer", *args, **kwargs
         )
 
 
@@ -111,7 +151,25 @@ class MoveTo(rt.leaves_ros.ActionLeaf):
             **kwargs,
         )
 
+class PickUpFrom(rt.leaves_ros.ActionLeaf):
+    def __init__(self, task_name="", *args, **kwargs) -> None:
+        super(PickUpFrom, self).__init__(
+            name=task_name if task_name else "Picking up from named position",
+            action_namespace=PICKUP_FROM_ACTION,
+            *args,
+            **kwargs,
+        )
+
+class PlaceOn(rt.leaves_ros.ActionLeaf):
+    def __init__(self, task_name="", *args, **kwargs) -> None:
+        super(PlaceOn, self).__init__(
+            name=task_name if task_name else "Place on named position",
+            action_namespace=PLACE_ON_ACTION,
+            *args,
+            **kwargs,
+        )
 #TODO add pickup/place/movetopose actions here!
+
 
 class Dock(rt.leaves_ros.ActionLeaf):
     def __init__(

@@ -2,6 +2,8 @@ ugv:
   cmd_manager_srv: "/robot/command_manager/command"
   cmd_sequencer_srv: "/robot/command_sequencer/command"
   move_to_action: "/robot/arm/move_to"
+  pickup_from_action: "/robot/arm/pickup_from"
+  place_on_action: "/robot/arm/place_on"
   dock_action: "/robot/base/dock"
   odom_topic: "/robot/odom"
   find_offset_srv: "/robot/find_offset"
@@ -12,6 +14,11 @@ ugv:
     - "inspection_mid"
     - "inspection_left"
     - "inspection_right"
+  pothole_sequence:
+    - "POT_FB_1"
+    - "POT_FB_2"
+    - "POT_LR_1"
+    - "POT_LR_2"
 
 iccs:
   find_pothole_srv: "/iccs/find_pothole"
