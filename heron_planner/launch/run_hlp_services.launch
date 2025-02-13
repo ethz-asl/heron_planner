@@ -7,6 +7,7 @@
     <arg name="rviz" default="true" />
     <arg name="rviz_file" default="$(find heron_ui)/config/panel.rviz" />
 
+    <rosparam command="load" file="$(find heron_planner)/config/interface_names.yaml" />
     <include if="$(arg dummy_interface)" 
         file="$(find dummy_interface)/launch/dummy_interface.launch">
         <arg name="fake_data" value="$(arg fake_data)"/>

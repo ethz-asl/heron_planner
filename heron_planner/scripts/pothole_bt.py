@@ -26,9 +26,9 @@ class PotholeBT:
         self.is_paused = False
         self.previous_status = None
 
-        self.load_parameters()
-        self.load_subscribers()
         self.bb = pt.Blackboard()
+        self.load_parameters()
+        self.save_to_blackboard()
 
         self.root = self.build_root()
         self.tree = bt_runner.BehaviourTreeRunner("TestTree", self.root)
@@ -40,11 +40,7 @@ class PotholeBT:
 
         self.start_servers()
 
-    def build_root(self):
-        """build root"""
-
-        root = pt.composites.Sequence(name="InspectionSequence", memory=True)
-
+    def save_to_blackboard(self) -> None:
         ####################################################################
         # saving data to blackboard
         ####################################################################
@@ -52,8 +48,33 @@ class PotholeBT:
         self.bb.set("inspections", self.inspection_names)
         self.bb.set("arm_cam_ns", self.arm_cam_ns)
         self.bb.set("body_cam_ns", self.body_cam_ns)
-        # save_start = leaf.SaveData(task_name="Save start",data=self.pothole_start, save_key="start")
-        # save_inspections = leaf.SaveData(task_name="Save insepctions", data=self.inspection_names, save_key="inspections")
+
+    def load_parameters(self) -> None:
+
+        self.pothole_start = PoseStamped()
+        self.pothole_start.pose.position.x = 10.0
+        self.pothole_start.pose.position.y = 5.0
+        self.pothole_start.pose.orientation.z = 0.707
+        self.pothole_start.pose.orientation.w = 0.707
+
+        self.tree_rate = rospy.get_param("tree_rate", 10)
+
+        self.inspection_names = [
+            "INSPECTION1",
+            "INSPECTION2",
+            "INSPECTION3",
+            "INSPECTION4",
+            "INSPECTION5",
+        ]
+
+        self.body_cam_ns = "/robot/base_camera/front_rgbd_camera/"
+        self.arm_cam_ns = "/robot/arm_camera/front_rgbd_camera/"
+
+    def build_root(self):
+        """build root"""
+
+        root = pt.composites.Sequence(name="InspectionSequence", memory=True)
+
 
         wait_for_enter = generic.WaitForEnterKey()
         ####################################################################
@@ -251,36 +272,6 @@ class PotholeBT:
         self.stop_service = rospy.Service("hlp/stop", Trigger, self.stop_bt)
         self.pause_service = rospy.Service("hlp/pause", Trigger, self.pause_bt)
 
-    def load_parameters(self) -> None:
-
-        self.pothole_start = PoseStamped()
-        self.pothole_start.pose.position.x = 10.0
-        self.pothole_start.pose.position.y = 5.0
-        self.pothole_start.pose.orientation.z = 0.707
-        self.pothole_start.pose.orientation.w = 0.707
-
-        self.tree_rate = rospy.get_param("tree_rate", 10)
-
-        self.inspection_names = [
-            "INSPECTION1",
-            "INSPECTION2",
-            "INSPECTION3",
-            "INSPECTION4",
-            "INSPECTION5",
-        ]
-
-        self.body_cam_ns = "/robot/base_camera/front_rgbd_camera/"
-        self.arm_cam_ns = "/robot/arm_camera/front_rgbd_camera/"
-
-    def load_subscribers(self) -> None:
-        pass
-
-    def save_pothole_imgs(self, leaf):
-
-        if self.default_result_fn() is not None:
-            rt.data_management.set_value()
-            rt.data_management.set_value()
-
     def run_tree(self, hz: float = 30) -> None:
         """run tree in loop with pause support"""
         rate = rospy.Rate(hz)
@@ -348,7 +339,7 @@ class PotholeBT:
 
 
 def main():
-    rospy.init_node("pothole_leaves_bt")
+    rospy.init_node("pothole_bt")
     pt.logging.level = pt.logging.Level.DEBUG
 
     node = PotholeBT()

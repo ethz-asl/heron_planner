@@ -6,6 +6,12 @@ ugv:
   odom_topic: "/robot/odom"
   find_offset_srv: "/robot/find_offset"
   get_deposit_srv: "/robot/get_deposit_sequence"
+  body_cam_ns: "/robot/body_camera/front_rgbd_camera"
+  arm_cam_ns: "/robot/arm_camera/front_rgbd_camera"
+  inspection_names: 
+    - "inspection_mid"
+    - "inspection_left"
+    - "inspection_right"
 
 iccs:
   find_pothole_srv: "/iccs/find_pothole"
