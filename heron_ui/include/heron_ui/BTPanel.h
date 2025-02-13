@@ -5,6 +5,8 @@
 #include <rviz/panel.h>
 
 #include <QCheckBox>
+#include <QComboBox>
+#include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
 
@@ -22,14 +24,22 @@ class BTPanel : public rviz::Panel {
   void onStartButtonClicked();
   void onPauseButtonClicked();
   void onStopButtonClicked();
+  void onChooseSequenceButtonClicked();
 
  private:
+  void loadPotholeSequences();  // loads ros params
+
   QPushButton* start_button_;
   QPushButton* pause_button_;
   QPushButton* stop_button_;
-  bool is_started_ {false};
-  bool is_paused_ {false};
-  bool is_stopped_ {false};
+  QPushButton* choose_sequence_button_;
+
+  QLabel* sequence_label_;
+  QComboBox* sequence_dropdown_;
+
+  bool is_started_{false};
+  bool is_paused_{false};
+  bool is_stopped_{false};
 };
 }  // end namespace heron_ui
 
