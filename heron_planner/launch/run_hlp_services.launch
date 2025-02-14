@@ -4,6 +4,7 @@
     <arg name="dummy_interface" default="true" />
     <arg name="fake_data" default="true" /> 
     <arg name="pub_to_kafka" default="true"/>
+    <arg name="flask_server" default="true"/>
     <arg name="rviz" default="true" />
     <arg name="rviz_file" default="$(find heron_ui)/config/panel.rviz" />
 
@@ -17,6 +18,9 @@
         pkg="ros_kafka_connector" type="kafka_image_publisher.py" name="kafka_image_publisher"/> 
     
     <node pkg="heron_planner" type="hlp_servers.py" name="hlp_servers"/>
+
+    <node if="$(arg flask_server)" 
+        pkg="heron_utils" type="simple_flask_server.py" name="simple_flask_server"/> 
 
     <node if="$(arg rviz)" name="$(anon rviz)" pkg="rviz" type="rviz"
         respawn="false" args="-d $(arg rviz_file)" output="screen">

@@ -10,15 +10,25 @@ ugv:
   get_deposit_srv: "/robot/get_deposit_sequence"
   body_cam_ns: "/robot/body_camera/front_rgbd_camera"
   arm_cam_ns: "/robot/arm_camera/front_rgbd_camera"
+
+iccs:
+  find_pothole_srv: "/iccs/find_pothole"
+
+pothole:
   inspection_names: 
     - "inspection_mid"
     - "inspection_left"
     - "inspection_right"
-  pothole_sequence:
+  roller_sequence:
     - "POT_FB_1"
     - "POT_FB_2"
     - "POT_LR_1"
     - "POT_LR_2"
 
-iccs:
-  find_pothole_srv: "/iccs/find_pothole"
+cone_place:
+  gps_points:
+    - [37.7745, -122.4195]  # P1
+    - [37.7745, -122.4185]  # P2
+    - [37.7740, -122.4197]  # P3
+    - [37.7740, -122.4190]  # P4
+    - [37.7740, -122.4183]  # P5

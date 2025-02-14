@@ -34,20 +34,21 @@ def index():
 
 @app.route('/tree.svg')
 def tree_svg():
-    global tree
-
-    if tree is None is tree.root is None:
-        return "Tree not initialised", 500
+    if latest_svg is None:
+        return "Cannot recieve HTML from /hlp/html", 500
     
-    # generate svg automatically
-    graph = render.dot_graph(tree.root, include_status=True)
-    svg_output = graph.create_svg()
-    return Response(svg_output, mimetype='image/svg+xml')
+    return Response(latest_svg, mimetype='image/svg+xml')
+
+def svg_cb(msg):
+    global latest_svg
+    latest_svg = msg.data
+
+rospy.init_node("svg_server", anonymous=True)
+rospy.Subscriber("/hlp/html", String, svg_cb)
 
 
-def start_flask_server(tree_instance):
-    """run flask server."""
-    global tree
-
-    tree = tree_instance
+if __name__=="__main__":
+    
+    global latest_svg
+    latest_svg = ""
     app.run(host="0.0.0.0", port=5050, debug=True, use_reloader=False)

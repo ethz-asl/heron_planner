@@ -62,12 +62,12 @@ void BTPanel::loadPotholeSequences() {
   ros::NodeHandle nh;
   std::vector<std::string> sequences;
 
-  if (nh.getParam("/ugv/pothole_sequence", sequences)) {
+  if (nh.getParam("/pothole/roller_sequence", sequences)) {
     for (const auto &seq : sequences) {
       sequence_dropdown_->addItem(QString::fromStdString(seq));
     }
   } else {
-    ROS_WARN("Failed to load /ugv/pothole_sequence from ROS param server!");
+    ROS_WARN("Failed to load /pothole/roller_sequence from ROS param server!");
   }
 }
 

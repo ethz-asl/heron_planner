@@ -13,9 +13,9 @@ import heron_planner.leaves.iccs_behaviours as iccs
 import heron_planner.leaves.generic_behaviours as generic
 
 
-class ConePlaceBT(base_bt.BaseBT):
+class TestBT(base_bt.BaseBT):
     def __init__(self) -> None:
-        super().__init__("ConePlaceBT")
+        super().__init__("TestBT")
 
     def load_parameters(self) -> None:
         self.tree_rate = rospy.get_param("tree_rate", 10)
@@ -90,10 +90,10 @@ class ConePlaceBT(base_bt.BaseBT):
         return root
 
 def main():
-    rospy.init_node("cone_place_bt")
+    rospy.init_node("test_bt")
     pt.logging.level = pt.logging.Level.DEBUG
 
-    node = ConePlaceBT()
+    node = TestBT()
     node.tree.visualise()
 
     rospy.spin()
