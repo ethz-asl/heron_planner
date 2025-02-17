@@ -3,6 +3,7 @@
 <launch>
     <arg name="dummy_interface" default="true" />
     <arg name="fake_data" default="true" /> 
+    <arg name="fake_images" default="true" /> 
     <arg name="pub_to_kafka" default="true"/>
     <arg name="flask_server" default="true"/>
     <arg name="rviz" default="true" />
@@ -12,6 +13,7 @@
     <include if="$(arg dummy_interface)" 
         file="$(find dummy_interface)/launch/dummy_interface.launch">
         <arg name="fake_data" value="$(arg fake_data)"/>
+        <arg name="fake_images" value="$(arg fake_images)"/>
     </include>
 
     <node if="$(arg pub_to_kafka)"

@@ -84,8 +84,8 @@ class HLPServers:
 
         # topic names
         rgb_topic = f"{camera_ns}/rgb/image_raw"
-        depth_topic = f"{camera_ns}/depth/image_raw"
-        info_topic = f"{camera_ns}/color/camera_info"
+        depth_topic = f"{camera_ns}/stereo/image_raw"
+        info_topic = f"{camera_ns}/rgb/camera_info"
 
         rospy.loginfo(
             f"Fetching data from: {rgb_topic}, {depth_topic}, {info_topic}"

@@ -48,18 +48,18 @@ class TestBT(base_bt.BaseBT):
         #Send msg to kafka 'cones placed'
         
 
-        arm_to_home = ugv.MoveTo(
-            task_name="Move arm to home", load_value="HOME"
-        )
+        # arm_to_home = ugv.MoveTo(
+        #     task_name="Move arm to home", load_value="HOME"
+        # )
 
-        arm_to_inspection = ugv.MoveTo(
-            task_name=f"Move arm inspection.", load_key="inspection"
-        )
-        inspect_seq = pt.composites.Sequence(
-            name="InspectionSelector",
-            children=[arm_to_home, arm_to_inspection],
-            memory=True,
-        )
+        # arm_to_inspection = ugv.MoveTo(
+        #     task_name=f"Move arm inspection.", load_key="inspection"
+        # )
+        # inspect_seq = pt.composites.Sequence(
+        #     name="InspectionSelector",
+        #     children=[arm_to_home, arm_to_inspection],
+        #     memory=True,
+        # )
 
         load_arm_img_inspection = hlp.GetSynchedImages(
             task_name="Load wrist image",
@@ -85,7 +85,7 @@ class TestBT(base_bt.BaseBT):
             memory=True,
         )
 
-        root.add_children([inspect_seq, take_photo_seq])
+        root.add_children([take_photo_seq])
 
         return root
 
