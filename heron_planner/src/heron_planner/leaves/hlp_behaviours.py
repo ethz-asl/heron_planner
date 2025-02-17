@@ -49,6 +49,7 @@ class SendImageToKafka(rt.leaves_ros.ServiceLeaf):
             name=task_name if task_name else "Send photo to Kafka",
             service_name="/kafka/publish_image",
             load_fn=self._load_fn,
+            result_fn=self._result_fn,
             *args,
             **kwargs,
         )
@@ -58,11 +59,14 @@ class SendImageToKafka(rt.leaves_ros.ServiceLeaf):
         img = self._default_load_fn(auto_generate=False)
         if isinstance(img, Image):
             req = SendImageToKafkaRequest(image=img, message=self.msg)
-            rospy.logerr(f"Send image to kafka req: {req}")
             return req
         else:
             rospy.logerr(f"Type {type(img)}: is incorrect")
             raise ValueError
+        
+    def _result_fn(self):
+        res = self._default_result_fn()
+        rospy.logerr(f"response : {res}")
 
 
 class TransformPose(rt.leaves_ros.ServiceLeaf):
