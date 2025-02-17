@@ -58,6 +58,7 @@ class SendImageToKafka(rt.leaves_ros.ServiceLeaf):
         img = self._default_load_fn(auto_generate=False)
         if isinstance(img, Image):
             req = SendImageToKafkaRequest(image=img, message=self.msg)
+            rospy.logerr(f"Send image to kafka req: {req}")
             return req
         else:
             rospy.logerr(f"Type {type(img)}: is incorrect")
