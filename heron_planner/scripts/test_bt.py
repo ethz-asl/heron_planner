@@ -99,10 +99,13 @@ class TestBT(base_bt.BaseBT):
                 name="MoveArmSequence",
                 children=[
                     move_arm_to_home,
+                    wait_for_enter,
                     move_arm_to_inspection_mid,
                     take_snap,
+                    wait_for_enter,
                     move_arm_to_inspection_left,
                     take_snap,
+                    wait_for_enter,
                     move_arm_to_inspection_right,
                     take_snap,
                 ],
