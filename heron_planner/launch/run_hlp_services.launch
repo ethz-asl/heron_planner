@@ -1,12 +1,12 @@
 <?xml version="1.0"?>
 
 <launch>
-    <arg name="dummy_interface" default="true" />
+    <arg name="dummy_interface" default="false" />
     <arg name="fake_data" default="true" /> 
     <arg name="fake_images" default="true" /> 
     <arg name="pub_to_kafka" default="true"/>
-    <arg name="flask_server" default="true"/>
-    <arg name="rviz" default="true" />
+    <arg name="flask_server" default="false"/>
+    <arg name="rviz" default="false" />
     <arg name="rviz_file" default="$(find heron_ui)/config/panel.rviz" />
 
     <rosparam command="load" file="$(find heron_planner)/config/interface_names.yaml" />

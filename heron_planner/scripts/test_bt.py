@@ -41,6 +41,7 @@ class TestBT(base_bt.BaseBT):
         root = pt.composites.Sequence(name="InspectionSequence", memory=True)
 
         wait_for_enter = generic.WaitForEnterKey()
+        wait_10s = generic.Wait(task_name="Wait 10s", duration=10)
         load_arm_img_inspection = hlp.GetSynchedImages(
             task_name="Load wrist image",
             load_key="arm_cam_ns",
@@ -99,14 +100,18 @@ class TestBT(base_bt.BaseBT):
                 name="MoveArmSequence",
                 children=[
                     move_arm_to_home,
-                    wait_for_enter,
+                    wait_10s,
                     move_arm_to_inspection_mid,
-                    take_snap,
+                    wait_10s,
                     wait_for_enter,
+                    take_snap,
                     move_arm_to_inspection_left,
-                    take_snap,
+                    wait_10s,
                     wait_for_enter,
+                    take_snap,
                     move_arm_to_inspection_right,
+                    wait_10s,
+                    wait_for_enter,
                     take_snap,
                 ],
             )
@@ -120,7 +125,7 @@ def main():
     pt.logging.level = pt.logging.Level.DEBUG
 
     node = TestBT()
-    node.tree.visualise()
+    # node.tree.visualise()
 
     rospy.spin()
 
