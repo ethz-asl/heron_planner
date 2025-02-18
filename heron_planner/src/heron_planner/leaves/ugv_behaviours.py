@@ -49,6 +49,7 @@ class _CommandSequencer(rt.leaves_ros.ServiceLeaf):
 
 #TODO MOVE_ARM_TO loc man
 class MoveArmTo(_CommandManager):
+    CMD = "MOVE_ARM_TO"
     def __init__(self, task_name="", *args, **kwargs) -> None:
         super(MoveArmTo, self).__init__(
             name=task_name if task_name else "Move arm to named position",
@@ -63,7 +64,8 @@ class MoveArmTo(_CommandManager):
 
         if isinstance(data, str):
                 rospy.loginfo(f"Moving arm to: {data}")
-                return f"MOVE_ARM_TO {data}"
+                cmd_str = MoveArmTo.CMD + " " + data
+                return CommandString(command=cmd_str)
         else:
             rospy.logerr(f"Type {type(data)}: is incorrect")
             raise ValueError
@@ -72,7 +74,7 @@ class MoveArmTo(_CommandManager):
 #TODO TAKE_SNAP man
 class TakeSnap(_CommandManager):
     """this saves the current photo in the robot"""
-    CMD = "TAKE_SNAP"
+    CMD = CommandString(command="TAKE_SNAP")
 
     def __init__(self, task_name="", *args, **kwargs) -> None:
         super(TakeSnap, self).__init__(
