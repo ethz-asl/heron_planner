@@ -47,6 +47,41 @@ class _CommandSequencer(rt.leaves_ros.ServiceLeaf):
             service_name=CMD_SEQUENCER_SRV, *args, **kwargs
         )
 
+#TODO MOVE_ARM_TO loc man
+class MoveArmTo(_CommandManager):
+    def __init__(self, task_name="", *args, **kwargs) -> None:
+        super(MoveArmTo, self).__init__(
+            name=task_name if task_name else "Move arm to named position",
+            load=True,
+            load_fn=self._load_fn,
+            *args,
+            **kwargs,
+        )
+
+    def _load_fn(self) -> str:
+        data = self._default_load_fn(auto_generate=False)
+
+        if isinstance(data, str):
+                rospy.loginfo(f"Moving arm to: {data}")
+                return f"MOVE_ARM_TO {data}"
+        else:
+            rospy.logerr(f"Type {type(data)}: is incorrect")
+            raise ValueError
+
+
+#TODO TAKE_SNAP man
+class TakeSnap(_CommandManager):
+    """this saves the current photo in the robot"""
+    CMD = "TAKE_SNAP"
+
+    def __init__(self, task_name="", *args, **kwargs) -> None:
+        super(TakeSnap, self).__init__(
+            name=task_name if task_name else "Take snap",
+            load_value=TakeSnap.CMD,
+            *args,
+            **kwargs,
+        )
+
 class Move(_CommandManager):
     def __init__(self, task_name="", *args, **kwargs) -> None:
         super(Move, self).__init__(
@@ -98,6 +133,52 @@ class CustomCommandManager(_CommandManager):
             name=task_name if task_name else "Command Manager", *args, **kwargs
         )
 
+#TODO ROLLER_DOWN seq
+
+class RollerDown(_CommandSequencer):
+    CMD = CommandString(command="ROLLER_DOWN")
+
+    def __init__(self, *args, **kwargs) -> None:
+        super(RollerDown, self).__init__(
+            name="Lower Roller", load_value=RollerDown.CMD, *args, **kwargs
+        )
+
+class RollerUp(_CommandSequencer):
+    CMD = CommandString(command="ROLLER_UP")
+
+    def __init__(self, *args, **kwargs) -> None:
+        super(RollerUp, self).__init__(
+            name="Raise Roller", load_value=RollerUp.CMD, *args, **kwargs
+        )
+
+class RollerCommand(_CommandManager):
+    def __init__(self, task_name="", *args, **kwargs) -> None:
+        super(RollerCommand, self).__init__(
+            name=task_name if task_name else "Command Roller",
+            load=True,
+            load_fn=self._load_fn,
+            *args,
+            **kwargs,
+        )
+
+    def _load_fn(self) -> str:
+        data = self._default_load_fn(auto_generate=False)
+
+        if isinstance(data, float):
+            if data >= 0 and data <=1:
+                rospy.loginfo(f"Moving roller: {data}")
+                return f"ROLLER_COMMAND {str(data)}"
+        else:
+            rospy.logerr(f"Type {type(data)}: is incorrect")
+            raise ValueError
+
+
+#TODO ROLLER_UP seq
+#TODO ROLLER_COMMAND num manager
+# ROLLER_COMMAND 0 -> ROLLER_UP
+# ROLLER_COMMAND 1 -> ROLLER_DOWN
+
+
 class LiftRoller(_CommandSequencer):
     CMD = CommandString(command="LIFT_ROLLER")
 
@@ -140,6 +221,8 @@ class Deposit(_CommandSequencer):
             name=task_name if task_name else "Deposit material", *args, **kwargs
         )
 
+#TODO use dummy deposit seq
+
 class CustomCommandSequencer(_CommandSequencer):
     def __init__(self, task_name="", *args, **kwargs) -> None:
         super(CustomCommandSequencer, self).__init__(
@@ -173,8 +256,13 @@ class PlaceOn(rt.leaves_ros.ActionLeaf):
             *args,
             **kwargs,
         )
-#TODO add pickup/place/movetopose actions here!
+#TODO add pickup/place actions here!
+#PICKUP -> robot/arm/pickup_from right_holder/left_holder (wip from raquel)
+#TODO PICK manager
+#TODO PLACE manager
 
+#TODO DOCK name man -> similar to move_arm_to but to TF pos
+#TODO OMNI_DOCK name man
 
 class Dock(rt.leaves_ros.ActionLeaf):
     def __init__(

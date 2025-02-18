@@ -128,6 +128,80 @@ class SaveData(rt.leaves.Leaf):
 ################################################################################
 
 
+class ConditionSuccessThreshold(pt.behaviour.Behaviour):
+    def __init__(self, name: str, bb_key="", min_successes=1):
+        super().__init__(name=name)
+        self.blackboard = pt.blackboard.Blackboard()
+        self.blackboard_key = bb_key
+        self.min_successes = min_successes
+
+    def update(self):
+        count = self.blackboard.get(self.blackboard_key, 0)
+        return (
+            pt.common.Status.SUCCESS
+            if count >= self.min_successes
+            else pt.common.Status.FAILURE
+        )
+
+
+class CountSuccesses(pt.decorators.Condition):
+    def __init__(self, name: str, child, bb_key="success_counter"):
+        """
+        A decorator that counts how many times a child returns SUCCESS.
+
+        :param child: The child behavior to track
+        :param blackboard_key: Blackboard variable to store the count
+        """
+        super().__init__(name=name, child=child)
+        self.blackboard = pt.blackboard.Blackboard()
+        self.blackboard_key = bb_key
+        self.blackboard.set(self.blackboard_key, 0)
+        self.count = self.blackboard.get(self.blackboard_key)
+
+    def update(self):
+        result = self.decorated.status
+
+        if result == pt.common.Status.SUCCESS:
+            self.count = self.blackboard.get(self.blackboard_key, 0)
+            self.blackboard.set(self.blackboard_key, self.count + 1)
+        rospy.logerr(f"success count: {self.count}")
+
+        return result
+
+
+class Repeat(pt.decorators.Decorator):
+    """
+    Runs until successful num of time. -1 runs continously.
+    """
+
+    def __init__(
+        self, name: str, child: pt.behaviour.Behaviour, num_success: int
+    ):
+        super().__init__(name=name, child=child)
+        self.success = 0
+        self.num_success = num_success
+
+    def initialise(self) -> None:
+        """reset currently registered no. successes"""
+        self.success = 0
+
+    def update(self) -> pt.common.Status:
+        """Repeat until nth consecutive success"""
+        if self.decorated.status == pt.common.Status.FAILURE:
+            self.feedback_message = f"failed, aborting [status: {self.success} success from {self.num_success}]"
+            return pt.common.Status.FAILURE
+        elif self.decorated.status == pt.common.Status.SUCCESS:
+            self.success += 1
+            self.feedback_message = f"success [status: {self.success} success from {self.num_success}]"
+            if self.success == self.num_success:
+                return pt.common.Status.SUCCESS
+            else:
+                return pt.common.Status.RUNNING
+        else:
+            self.feedback_message = f"running [status: {self.success} success from {self.num_success}]"
+            return pt.common.Status.RUNNING
+
+
 class RetryUntilSuccessful(pt.decorators.Decorator):
     """
     custom decorator that retries its child until it suceeds

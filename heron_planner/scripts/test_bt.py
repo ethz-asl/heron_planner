@@ -18,6 +18,10 @@ class TestBT(base_bt.BaseBT):
         super().__init__("TestBT")
 
     def load_parameters(self) -> None:
+
+        self.test_img = rospy.get_param("/test/img")
+        self.test_arm = rospy.get_param("/test/arm")
+        self.test_comp = rospy.get_param("/test/comp")
         self.tree_rate = rospy.get_param("tree_rate", 10)
         self.inspection_names = rospy.get_param("pothole/inspection_names")
         self.body_cam_ns = rospy.get_param(
@@ -37,30 +41,6 @@ class TestBT(base_bt.BaseBT):
         root = pt.composites.Sequence(name="InspectionSequence", memory=True)
 
         wait_for_enter = generic.WaitForEnterKey()
-        # robot at known GPS
-        #TODO compute yaw from GPS
-
-        #LOOP
-        #TODO send GPS & yaw to GOTO_GPS
-        #TODO send PICKUP_FROM stack to robot
-        #TODO send PLACE_ON floor to robot
-
-        #Send msg to kafka 'cones placed'
-        
-
-        # arm_to_home = ugv.MoveTo(
-        #     task_name="Move arm to home", load_value="HOME"
-        # )
-
-        # arm_to_inspection = ugv.MoveTo(
-        #     task_name=f"Move arm inspection.", load_key="inspection"
-        # )
-        # inspect_seq = pt.composites.Sequence(
-        #     name="InspectionSelector",
-        #     children=[arm_to_home, arm_to_inspection],
-        #     memory=True,
-        # )
-
         load_arm_img_inspection = hlp.GetSynchedImages(
             task_name="Load wrist image",
             load_key="arm_cam_ns",
@@ -74,20 +54,63 @@ class TestBT(base_bt.BaseBT):
             load_key="cone/rgb",
         )
 
-        # example if kafka down!
-        # send_inspection_to_kafka = generic.Wait(
-        #     task_name="Send inspection to Kafka", duration=5
-        # )
+        roller_down = ugv.RollerDown()
+        roller_up = ugv.RollerUp()
+        roller_cmd_half = ugv.RollerCommand(
+            task_name="roller half way", load_value=0.5
+        )
+        blow = ugv.Blow()
+        blow_pothole = ugv.BlowPothole()
 
-        take_photo_seq = pt.composites.Sequence(
-            name="PhotoSequence",
-            children=[load_arm_img_inspection, send_inspection_to_kafka],
-            memory=True,
+        take_snap = ugv.TakeSnap()
+        move_arm_to_home = ugv.MoveArmTo(
+            task_name="Move arm to home", load_value="home"
+        )
+        move_arm_to_inspection_mid = ugv.MoveArmTo(
+            task_name="Move arm to inspection_mid",
+            load_value="inspection_mid",
+        )
+        move_arm_to_inspection_left = ugv.MoveArmTo(
+            task_name="Move arm to inspection_left",
+            load_value="inspection_left",
+        )
+        move_arm_to_inspection_right = ugv.MoveArmTo(
+            task_name="Move arm to inspection_right",
+            load_value="inspection_right",
         )
 
-        root.add_children([take_photo_seq])
+        if self.test_img:
+            take_photo_seq = pt.composites.Sequence(
+                name="PhotoSequence",
+                children=[load_arm_img_inspection, send_inspection_to_kafka],
+                memory=True,
+            )
+            root.add_children([take_photo_seq])
+
+
+        if self.test_comp:
+            roller_test_seq = pt.composites.Sequence(
+                name="ComponentTestSequence", children=[roller_down, roller_up]
+            )
+            root.add_children([roller_test_seq, blow])
+
+        if self.test_arm:
+            move_arm_seq = pt.composites.Sequence(
+                name="MoveArmSequence",
+                children=[
+                    move_arm_to_home,
+                    move_arm_to_inspection_mid,
+                    take_snap,
+                    move_arm_to_inspection_left,
+                    take_snap,
+                    move_arm_to_inspection_right,
+                    take_snap,
+                ],
+            )
+            root.add_children([move_arm_seq])
 
         return root
+
 
 def main():
     rospy.init_node("test_bt")

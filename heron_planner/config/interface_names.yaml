@@ -1,4 +1,6 @@
 ugv:
+  # robot_running: True
+  robot_running: False
   cmd_manager_srv: "/robot/command_manager/command"
   cmd_sequencer_srv: "/robot/command_sequencer/command"
   move_to_action: "/robot/arm/move_to"
@@ -20,10 +22,10 @@ pothole:
     - "inspection_left"
     - "inspection_right"
   roller_sequence:
-    - "POT_FB_1"
-    - "POT_FB_2"
-    - "POT_FB_3"
-    - "POT_ROLL_OVER"
+    - "POT_FB_1" # first tank
+    - "POT_FB_2" # second tank
+    - "POT_FB_3" # third tank
+    - "POT_ROLL_OVER" 
 
 cone_place:
   gps_points:
@@ -32,3 +34,9 @@ cone_place:
     - [37.7740, -122.4197]  # P3
     - [37.7740, -122.4190]  # P4
     - [37.7740, -122.4183]  # P5
+
+#TODO position in dummy file & hardcoded pothole size&loc
+test:
+  arm: True
+  comp: False
+  img: False

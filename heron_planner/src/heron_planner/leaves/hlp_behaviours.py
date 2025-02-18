@@ -23,7 +23,8 @@ class GetSynchedImages(rt.leaves_ros.ServiceLeaf):
     def __init__(
         self,
         task_name="",
-        image_key="img",
+        image_key="",
+        save_bb_key="",
         *args,
         **kwargs,
     ) -> None:
@@ -35,11 +36,19 @@ class GetSynchedImages(rt.leaves_ros.ServiceLeaf):
             **kwargs,
         )
         self.image_key = image_key
+        self.save_bb_key = save_bb_key
 
     def _result_fn(self):
         res = self._default_result_fn()
+
         if isinstance(res.image_rgb, Image) and self.save:
-            rt.data_management.set_value(self.image_key, res.image_rgb)
+            if self.save_bb_key is not None:
+                self.image_key = self.image_key + "/" + rt.data_management.get_value(self.save_bb_key)
+                rospy.logwarn(f"Saving img to: {self.image_key}")
+
+            if self.image_key is not None:
+                rt.data_management.set_value(self.image_key, res.image_rgb)
+
         return res
 
 
