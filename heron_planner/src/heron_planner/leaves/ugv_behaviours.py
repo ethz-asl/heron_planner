@@ -56,6 +56,7 @@ class MoveArmTo(_CommandManager):
             name=task_name if task_name else "Move arm to named position",
             load=True,
             load_fn=self._load_fn,
+            result_fn=self._result_fn,
             *args,
             **kwargs,
         )
@@ -66,11 +67,16 @@ class MoveArmTo(_CommandManager):
         if isinstance(data, str):
                 rospy.loginfo(f"Moving arm to: {data}")
                 cmd_str = MoveArmTo.CMD + " " + data
+                rospy.logerr(f"Command string: {cmd_str}")
                 return SetCommandStringRequest(command=cmd_str)
         else:
             rospy.logerr(f"Type {type(data)}: is incorrect")
             raise ValueError
 
+    def _result_fn(self):
+        res = self._default_result_fn()
+        rospy.logerr(f"Result from MOVE_ARM_TO srv: {res}")
+        return res
 
 #TODO TAKE_SNAP man
 class TakeSnap(_CommandManager):
