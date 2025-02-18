@@ -7,15 +7,15 @@ from sensor_msgs.msg import Image, CameraInfo
 from cv_bridge import CvBridge
 
 class FakeCameraPublisher:
-    def __init__(self, camera_ns="/robot/arm_camera/front_rgbd_camera"):
+    def __init__(self, camera_ns="/arm_camera/arm_camera"):
         rospy.init_node("fake_camera_publisher")
         self.bridge = CvBridge()
         self.camera_ns = camera_ns.rstrip("/")  # Normalize namespace
 
         # Define topic names
         self.rgb_topic = f"{self.camera_ns}/rgb/image_raw"
-        self.depth_topic = f"{self.camera_ns}/depth/image_raw"
-        self.info_topic = f"{self.camera_ns}/color/camera_info"
+        self.depth_topic = f"{self.camera_ns}/stereo/image_raw"
+        self.info_topic = f"{self.camera_ns}/rgb/camera_info"
 
         # Publishers
         self.rgb_pub = rospy.Publisher(self.rgb_topic, Image, queue_size=1)

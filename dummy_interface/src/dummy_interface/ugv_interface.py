@@ -68,23 +68,25 @@ class UgvDummyInterface:
         self.load_parameters()
 
         # services
-        self.cmd_sequencer_srv = rospy.Service(
-            "/robot/command_sequencer/command",
-            SetCommandString,
-            self.handle_cmd_sequencer,
-        )
+        if not self.robot_running:
+            self.cmd_sequencer_srv = rospy.Service(
+                "/robot/command_sequencer/command",
+                SetCommandString,
+                self.handle_cmd_sequencer,
+            )
 
-        self.cmd_manager_srv = rospy.Service(
-            "/robot/command_manager/command",
-            SetCommandString,
-            self.handle_cmd_manager,
-        )
+            self.cmd_manager_srv = rospy.Service(
+                "/robot/command_manager/command",
+                SetCommandString,
+                self.handle_cmd_manager,
+            )
 
-        self.cmd_manager_srv = rospy.Service(
-            "/robot/change_mode",
-            ChangeRobotMode,
-            self.handle_change_mode,
-        )
+            self.cmd_manager_srv = rospy.Service(
+                "/robot/change_mode",
+                ChangeRobotMode,
+                self.handle_change_mode,
+            )
+
         self.get_deposit_srv = rospy.Service(
             "/robot/get_deposit_sequence",
             GetDepositSeq,
@@ -97,36 +99,37 @@ class UgvDummyInterface:
         )
 
         # actions
-        self.move_to_srv = actionlib.SimpleActionServer(
-            "/robot/arm/move_to",
-            MoveToAction,
-            execute_cb=self.handle_move_to,
-            auto_start=False,
-        )
-        self.move_to_pose_srv = actionlib.SimpleActionServer(
-            "/robot/arm/move_to_pose",
-            MoveToPoseAction,
-            execute_cb=self.handle_move_to_pose,
-            auto_start=False,
-        )
-        self.pickup_from_srv = actionlib.SimpleActionServer(
-            "/robot/arm/pickup_from",
-            PickupFromAction,
-            execute_cb=self.handle_pickup_from,
-            auto_start=False,
-        )
-        self.place_on_srv = actionlib.SimpleActionServer(
-            "/robot/arm/place_on",
-            PlaceOnAction,
-            execute_cb=self.handle_place_on,
-            auto_start=False,
-        )
-        self.dock_srv = actionlib.SimpleActionServer(
-            "/robot/base/dock",
-            DockAction,
-            execute_cb=self.handle_dock,
-            auto_start=False,
-        )
+        if not self.robot_running:
+            self.move_to_srv = actionlib.SimpleActionServer(
+                "/robot/arm/move_to",
+                MoveToAction,
+                execute_cb=self.handle_move_to,
+                auto_start=False,
+            )
+            self.move_to_pose_srv = actionlib.SimpleActionServer(
+                "/robot/arm/move_to_pose",
+                MoveToPoseAction,
+                execute_cb=self.handle_move_to_pose,
+                auto_start=False,
+            )
+            self.pickup_from_srv = actionlib.SimpleActionServer(
+                "/robot/arm/pickup_from",
+                PickupFromAction,
+                execute_cb=self.handle_pickup_from,
+                auto_start=False,
+            )
+            self.place_on_srv = actionlib.SimpleActionServer(
+                "/robot/arm/place_on",
+                PlaceOnAction,
+                execute_cb=self.handle_place_on,
+                auto_start=False,
+            )
+            self.dock_srv = actionlib.SimpleActionServer(
+                "/robot/base/dock",
+                DockAction,
+                execute_cb=self.handle_dock,
+                auto_start=False,
+            )
 
         self.tf_buffer = tf2_ros.Buffer(rospy.Duration(5.0))  # Store 5 seconds of TF history
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
@@ -134,18 +137,20 @@ class UgvDummyInterface:
         self.cur_offset = None # offset transform to be broadcast
 
         # start actions
-        self.move_to_srv.start()
-        self.move_to_pose_srv.start()
-        self.pickup_from_srv.start()
-        self.place_on_srv.start()
-        self.dock_srv.start()
+        if not self.robot_running:
+            self.move_to_srv.start()
+            self.move_to_pose_srv.start()
+            self.pickup_from_srv.start()
+            self.place_on_srv.start()
+            self.dock_srv.start()
+
+            self.broadcast_timer = rospy.Timer(rospy.Duration(0.1), self.broadcast_tf)
 
         rospy.loginfo("Dummy UGV interface services are ready.")
-        self.broadcast_timer = rospy.Timer(rospy.Duration(0.1), self.broadcast_tf)
 
     def load_parameters(self) -> None:
         self.map_frame = rospy.get_param("map_frame", "robot_map")
-
+        self.robot_running = rospy.get_param("/ugv/robot_running", True)
 
     def handle_cmd_sequencer(
         self, req: SetCommandStringRequest
