@@ -384,7 +384,7 @@ class PickUpFrom(_CommandManager):
 
     def _result_fn(self):
         res = self._default_result_fn()
-        rospy.logerr(f"Result from MOVE_ARM_TO srv: {res}")
+        rospy.logerr(f"Result Pick: {res}")
         return res
 
 
@@ -418,7 +418,7 @@ class PlaceOn(_CommandManager):
 
     def _result_fn(self):
         res = self._default_result_fn()
-        rospy.logerr(f"Result from MOVE_ARM_TO srv: {res}")
+        rospy.logerr(f"Result Place: {res}")
         return res
 
 # TODO add pickup/place actions here!

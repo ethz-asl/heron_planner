@@ -147,21 +147,17 @@ class PotholeTestBT(base_bt.BaseBT):
             task_name="Place cone on floor", load_value="floor"
         )
 
-        sel_test = pt.composites.Selector(
-            "testSel",
-            children=[pick_up_robot, ugv.TakeSnap(), place_on_floor],
-            memory=True,
-        )
-
         root.add_children(
-            [sel_test, wait_for_enter]
             # [
             #     self.move_take_snap(
             #         move_loc="inspection_mid",
             #         seq_task_name="MoveToInspectionMidSeq",
             #     ),
+            #     self.get_kafka_photo_seq(
+            #         img_key="/pothole/mid", kafka_msg="inspection mid pothole"
+            #     ),
             # ]
-            # [arm_to_home, self.get_inspection_loop()]
+            [arm_to_home, self.get_inspection_loop()]
             # [ugv.TakeSnap()]
         )
 
@@ -173,7 +169,7 @@ def main():
     pt.logging.level = pt.logging.Level.DEBUG
 
     node = PotholeTestBT()
-    node.tree.visualise()
+    # node.tree.visualise()
 
     rospy.spin()
 

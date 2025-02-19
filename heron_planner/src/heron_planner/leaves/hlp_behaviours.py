@@ -24,7 +24,7 @@ class GetSynchedImages(rt.leaves_ros.ServiceLeaf):
         self,
         task_name="",
         image_key="",
-        save_bb_key="",
+        save_bb_key=None,
         *args,
         **kwargs,
     ) -> None:
@@ -75,7 +75,8 @@ class SendImageToKafka(rt.leaves_ros.ServiceLeaf):
         
     def _result_fn(self):
         res = self._default_result_fn()
-        rospy.logerr(f"response : {res}")
+        rospy.logerr(f"kafka response : {res}")
+        return res
 
 
 class TransformPose(rt.leaves_ros.ServiceLeaf):

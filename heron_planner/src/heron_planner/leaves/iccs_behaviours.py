@@ -19,7 +19,7 @@ FIND_POTHOLE_SRV = rospy.get_param(
 
 
 class FindPothole(rt.leaves_ros.ServiceLeaf):
-    def __init__(self, task_name="", save_bb_key="", *args, **kwargs) -> None:
+    def __init__(self, task_name="", save_bb_key=None, *args, **kwargs) -> None:
         super(FindPothole, self).__init__(
             name=task_name if task_name else "Find pothole",
             service_name=FIND_POTHOLE_SRV,
