@@ -148,13 +148,13 @@ class PotholeTestBT(base_bt.BaseBT):
         )
 
         sel_test = pt.composites.Selector(
-            name="testSel",
+            "testSel",
             children=[pick_up_robot, ugv.TakeSnap(), place_on_floor],
             memory=True,
         )
 
         root.add_children(
-            sel_test
+            sel_test, wait_for_enter
             # [
             #     self.move_take_snap(
             #         move_loc="inspection_mid",
