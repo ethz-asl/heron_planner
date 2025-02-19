@@ -1,6 +1,8 @@
 ugv:
   # robot_running: True
   robot_running: False
+  cmd_manager_action: "/robot/command_manager/action"
+  cmd_sequencer_action: "/robot/command_sequencer/action"
   cmd_manager_srv: "/robot/command_manager/command"
   cmd_sequencer_srv: "/robot/command_sequencer/command"
   move_to_action: "/robot/arm/move_to"

@@ -9,7 +9,12 @@ from nav_msgs.msg import Odometry
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import PoseStamped, Pose2D, Twist
 
-from robot_simple_command_manager_msgs.msg import CommandString
+from robot_simple_command_manager_msgs.msg import (
+    CommandString,
+    RobotSimpleCommandAction,
+    RobotSimpleCommandActionGoal,
+    RobotSimpleCommandActionResult,
+)
 from robot_simple_command_manager_msgs.srv import SetCommandStringRequest
 from robotnik_navigation_msgs.msg import DockGoal
 from heron_msgs.srv import FindOffsetRequest
@@ -18,39 +23,68 @@ from heron_msgs.srv import FindOffsetRequest
 ############################# parameters from config ###############################
 ################################################################################
 
-CMD_MANAGER_SRV = rospy.get_param("ugv/cmd_manager_srv", "/robot/command_manager/command")
-CMD_SEQUENCER_SRV = rospy.get_param("ugv/cmd_sequencer_srv", "/robot/command_sequencer/command")
+# TODO change CMD_MANAGER & CMD_SEQUENCER to action!!
+CMD_MANAGER_ACTION = rospy.get_param(
+    "ugv/cmd_manager_action", "/robot/command_manager/action"
+)
+CMD_SEQUENCER_ACTION = rospy.get_param(
+    "ugv/cmd_sequencer_action", "/robot/command_sequencer/action"
+)
+CMD_MANAGER_SRV = rospy.get_param(
+    "ugv/cmd_manager_srv", "/robot/command_manager/command"
+)
+CMD_SEQUENCER_SRV = rospy.get_param(
+    "ugv/cmd_sequencer_srv", "/robot/command_sequencer/command"
+)
 MOVE_TO_ACTION = rospy.get_param("ugv/move_to_action", "/robot/arm/move_to")
-PICKUP_FROM_ACTION = rospy.get_param("ugv/pickup_from_action", "/robot/arm/pickup_from")
+PICKUP_FROM_ACTION = rospy.get_param(
+    "ugv/pickup_from_action", "/robot/arm/pickup_from"
+)
 PLACE_ON_ACTION = rospy.get_param("ugv/place_on_action", "/robot/arm/place_on")
 DOCK_ACTION = rospy.get_param("ugv/dock_action", "/robot/base/dock")
 ODOM_TOPIC = rospy.get_param("ugv/odom_topic", "/robot/odom")
 FIND_OFFSET_SRV = rospy.get_param("ugv/find_offset_srv", "/robot/find_offset")
-GET_DEPOSIT_SRV = rospy.get_param("ugv/get_deposit_srv", "/robot/get_deposit_sequence")
+GET_DEPOSIT_SRV = rospy.get_param(
+    "ugv/get_deposit_srv", "/robot/get_deposit_sequence"
+)
 
 ################################################################################
 ############################### leaf definitions ###############################
 ################################################################################
 
 
-class _CommandManager(rt.leaves_ros.ServiceLeaf):
+# class _CommandManager(rt.leaves_ros.ServiceLeaf):
+#     def __init__(self, *args, **kwargs):
+#         """Base class for sending commands to the command_manager"""
+#         super(_CommandManager, self).__init__(
+#             service_name=CMD_MANAGER_SRV, *args, **kwargs
+#         )
+
+# class _CommandSequencer(rt.leaves_ros.ServiceLeaf):
+#     def __init__(self, *args, **kwargs):
+#         """Base class for sending commands to the command_sequencer"""
+#         super(_CommandSequencer, self).__init__(
+#             service_name=CMD_SEQUENCER_SRV, *args, **kwargs
+#         )
+
+class _CommandManager(rt.leaves_ros.ActionLeaf):
     def __init__(self, *args, **kwargs):
-        """Base class for sending commands to the command_manager"""
+        """Base class for sending action goals to the command_manager"""
         super(_CommandManager, self).__init__(
-            service_name=CMD_MANAGER_SRV, *args, **kwargs
+            action_namespace=CMD_MANAGER_ACTION, *args, **kwargs
         )
 
-
-class _CommandSequencer(rt.leaves_ros.ServiceLeaf):
+class _CommandSequencer(rt.leaves_ros.ActionLeaf):
     def __init__(self, *args, **kwargs):
-        """Base class for sending commands to the command_sequencer"""
+        """Base class for sending action goals to the command_sequencer"""
         super(_CommandSequencer, self).__init__(
-            service_name=CMD_SEQUENCER_SRV, *args, **kwargs
+            action_namespace=CMD_SEQUENCER_ACTION, *args, **kwargs
         )
 
-#TODO MOVE_ARM_TO loc man
+
 class MoveArmTo(_CommandManager):
     CMD = "MOVE_ARM_TO"
+
     def __init__(self, task_name="", *args, **kwargs) -> None:
         super(MoveArmTo, self).__init__(
             name=task_name if task_name else "Move arm to named position",
@@ -65,10 +99,10 @@ class MoveArmTo(_CommandManager):
         data = self._default_load_fn(auto_generate=False)
 
         if isinstance(data, str):
-                rospy.loginfo(f"Moving arm to: {data}")
-                cmd_str = MoveArmTo.CMD + " " + data
-                rospy.logerr(f"Command string: {cmd_str}")
-                return SetCommandStringRequest(command=cmd_str)
+            rospy.loginfo(f"Moving arm to: {data}")
+            cmd_str = MoveArmTo.CMD + " " + data
+            rospy.logerr(f"Command string: {cmd_str}")
+            return RobotSimpleCommandActionGoal(command=cmd_str)
         else:
             rospy.logerr(f"Type {type(data)}: is incorrect")
             raise ValueError
@@ -78,10 +112,12 @@ class MoveArmTo(_CommandManager):
         rospy.logerr(f"Result from MOVE_ARM_TO srv: {res}")
         return res
 
-#TODO TAKE_SNAP man
+
+# TODO TAKE_SNAP man
 class TakeSnap(_CommandManager):
     """this saves the current photo in the robot"""
-    CMD = SetCommandStringRequest(command="TAKE_SNAP")
+
+    CMD = RobotSimpleCommandActionGoal(command="TAKE_SNAP")
 
     def __init__(self, task_name="", *args, **kwargs) -> None:
         super(TakeSnap, self).__init__(
@@ -91,7 +127,10 @@ class TakeSnap(_CommandManager):
             **kwargs,
         )
 
+
 class Move(_CommandManager):
+    CMD = "MOVE"
+
     def __init__(self, task_name="", *args, **kwargs) -> None:
         super(Move, self).__init__(
             name=task_name if task_name else "Move base in XY",
@@ -107,7 +146,8 @@ class Move(_CommandManager):
         if isinstance(data, PoseStamped):
             pose_arr = utils.array_from_pose(data.pose)
             yaw = utils.angle_from_quaternion(pose_arr[3:])
-            return f"MOVE {pose_arr[0]} {pose_arr[1]} {yaw:.2f}"
+            cmd_str = f"{Move.CMD} {pose_arr[0]} {pose_arr[1]} {yaw:.2f}"
+            return RobotSimpleCommandActionGoal(command=cmd_str)
         if isinstance(data, str):
             return data
         else:
@@ -116,6 +156,8 @@ class Move(_CommandManager):
 
 
 class GoToGPS(_CommandManager):
+    CMD = "GOTO_GPS"
+
     def __init__(self, task_name="", *args, **kwargs) -> None:
         super(GoToGPS, self).__init__(
             name=task_name if task_name else "Move base to GPS",
@@ -131,18 +173,35 @@ class GoToGPS(_CommandManager):
         if isinstance(data, PoseStamped):
             pose_arr = utils.array_from_pose(data.pose)
             yaw = utils.angle_from_quaternion(pose_arr[3:])
-            return f"GOTO_GPS {pose_arr[0]} {pose_arr[1]} {yaw:.2f}"
+            cmd_str = f"{GoToGPS.CMD} {pose_arr[0]} {pose_arr[1]} {yaw:.2f}"
+            return RobotSimpleCommandActionGoal(command=cmd_str)
         else:
             rospy.logerr(f"Type {type(data)}: is incorrect")
             raise ValueError
 
+
 class CustomCommandManager(_CommandManager):
     def __init__(self, task_name="", *args, **kwargs) -> None:
         super(CustomCommandManager, self).__init__(
-            name=task_name if task_name else "Command Manager", *args, **kwargs
+            name=task_name if task_name else "Command Manager",
+            load_fn=self._load_fn,
+            *args,
+            **kwargs,
         )
 
-#TODO ROLLER_DOWN seq
+    def _load_fn(self) -> RobotSimpleCommandActionGoal:
+        data = self._default_load_fn(auto_generate=False)
+
+        if isinstance(data, str):
+            rospy.loginfo(f"Sending cmd manager req: {data}")
+            return RobotSimpleCommandActionGoal(command=data)
+        else:
+            rospy.logerr(f"Type {type(data)} is not str")
+            raise ValueError
+
+
+# TODO ROLLER_DOWN seq
+
 
 class RollerDown(_CommandSequencer):
     CMD = CommandString(command="ROLLER_DOWN")
@@ -152,6 +211,7 @@ class RollerDown(_CommandSequencer):
             name="Lower Roller", load_value=RollerDown.CMD, *args, **kwargs
         )
 
+
 class RollerUp(_CommandSequencer):
     CMD = CommandString(command="ROLLER_UP")
 
@@ -160,7 +220,10 @@ class RollerUp(_CommandSequencer):
             name="Raise Roller", load_value=RollerUp.CMD, *args, **kwargs
         )
 
+
 class RollerCommand(_CommandManager):
+    CMD = "ROLLER_COMMAND"
+
     def __init__(self, task_name="", *args, **kwargs) -> None:
         super(RollerCommand, self).__init__(
             name=task_name if task_name else "Command Roller",
@@ -170,22 +233,17 @@ class RollerCommand(_CommandManager):
             **kwargs,
         )
 
-    def _load_fn(self) -> str:
+    def _load_fn(self) -> RobotSimpleCommandActionGoal:
         data = self._default_load_fn(auto_generate=False)
 
         if isinstance(data, float):
-            if data >= 0 and data <=1:
+            if data >= 0 and data <= 1:
                 rospy.loginfo(f"Moving roller: {data}")
-                return f"ROLLER_COMMAND {str(data)}"
+                cmd_str = f"{RollerCommand.CMD} {str(data)}"
+                return RobotSimpleCommandActionGoal(command=cmd_str)
         else:
             rospy.logerr(f"Type {type(data)}: is incorrect")
             raise ValueError
-
-
-#TODO ROLLER_UP seq
-#TODO ROLLER_COMMAND num manager
-# ROLLER_COMMAND 0 -> ROLLER_UP
-# ROLLER_COMMAND 1 -> ROLLER_DOWN
 
 
 class LiftRoller(_CommandSequencer):
@@ -214,8 +272,10 @@ class Blow(_CommandSequencer):
             name="Blow", load_value=Blow.CMD, *args, **kwargs
         )
 
+
 class BlowPothole(_CommandSequencer):
     """Moves robot forward 5cm 8x and blows"""
+
     CMD = CommandString(command="BLOW_POTHOLE")
 
     def __init__(self, *args, **kwargs) -> None:
@@ -225,18 +285,47 @@ class BlowPothole(_CommandSequencer):
 
 
 class Deposit(_CommandSequencer):
+    # TODO ask how does this work, do we know if open or not?
+    CMD = "DEPOSIT"
+
     def __init__(self, task_name="", *args, **kwargs) -> None:
         super(Deposit, self).__init__(
-            name=task_name if task_name else "Deposit material", *args, **kwargs
+            name=task_name if task_name else "Deposit material",
+            load_fn=self._load_fn,
+            *args,
+            **kwargs,
         )
 
-#TODO use dummy deposit seq
+    def _load_fn(self):
+        data = self._default_load_fn(autogenerate=False)
+
+        if isinstance(data, (1 | 2 | 3)):
+            rospy.loginfo(f"Activating deposit {data}")
+            cmd_str = f"{Deposit.CMD} {str(data)}"
+            return CommandString(command=cmd_str)
+
+
+# TODO use dummy deposit seq
+
 
 class CustomCommandSequencer(_CommandSequencer):
     def __init__(self, task_name="", *args, **kwargs) -> None:
         super(CustomCommandSequencer, self).__init__(
-            name=task_name if task_name else "Command Sequncer", *args, **kwargs
+            name=task_name if task_name else "Command Sequncer",
+            load_fn=self._load_fn,
+            *args,
+            **kwargs,
         )
+
+    def _load_fn(self) -> CommandString:
+        data = self._default_load_fn(auto_generate=False)
+
+        if isinstance(data, str):
+            rospy.loginfo(f"Sending cmd sequencer req: {data}")
+            return CommandString(command=data)
+        else:
+            rospy.logerr(f"Type {type(data)} is not str")
+            raise ValueError
 
 
 class MoveTo(rt.leaves_ros.ActionLeaf):
@@ -248,6 +337,7 @@ class MoveTo(rt.leaves_ros.ActionLeaf):
             **kwargs,
         )
 
+
 class PickUpFrom(rt.leaves_ros.ActionLeaf):
     def __init__(self, task_name="", *args, **kwargs) -> None:
         super(PickUpFrom, self).__init__(
@@ -257,6 +347,7 @@ class PickUpFrom(rt.leaves_ros.ActionLeaf):
             **kwargs,
         )
 
+
 class PlaceOn(rt.leaves_ros.ActionLeaf):
     def __init__(self, task_name="", *args, **kwargs) -> None:
         super(PlaceOn, self).__init__(
@@ -265,13 +356,16 @@ class PlaceOn(rt.leaves_ros.ActionLeaf):
             *args,
             **kwargs,
         )
-#TODO add pickup/place actions here!
-#PICKUP -> robot/arm/pickup_from right_holder/left_holder (wip from raquel)
-#TODO PICK manager
-#TODO PLACE manager
 
-#TODO DOCK name man -> similar to move_arm_to but to TF pos
-#TODO OMNI_DOCK name man
+
+# TODO add pickup/place actions here!
+# PICKUP -> robot/arm/pickup_from right_holder/left_holder (wip from raquel)
+# TODO PICK manager
+# TODO PLACE manager
+
+# TODO DOCK name man -> similar to move_arm_to but to TF pos
+# TODO OMNI_DOCK name man
+
 
 class Dock(rt.leaves_ros.ActionLeaf):
     def __init__(
@@ -289,7 +383,7 @@ class Dock(rt.leaves_ros.ActionLeaf):
             action_namespace=DOCK_ACTION,
             load_fn=self._load_fn,
             result_fn=self._result_fn,
-            * args,
+            *args,
             **kwargs,
         )
         self.robot_dock_frame = robot_dock_frame
@@ -306,17 +400,18 @@ class Dock(rt.leaves_ros.ActionLeaf):
                 dock_frame=dock_frame,
                 robot_dock_frame=self.robot_dock_frame,
                 dock_offset=self.dock_offset,
-                maximum_velocity=self.max_vel
+                maximum_velocity=self.max_vel,
             )
             return req
         else:
             rospy.logerr(f"Type {type(dock_frame)}: is incorrect")
             raise ValueError
-        
+
     def _result_fn(self):
         res = self._default_result_fn()
         rospy.loginfo(f"Dock action: {res.description}")
         return res.success
+
 
 class AtPose(rt.leaves_ros.SubscriberLeaf):
     def __init__(
@@ -412,4 +507,3 @@ class GetDepositSeq(rt.leaves_ros.ServiceLeaf):
             *args,
             **kwargs,
         )
-
