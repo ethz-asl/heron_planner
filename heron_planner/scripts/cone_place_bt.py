@@ -73,7 +73,6 @@ class ConePlaceBT(base_bt.BaseBT):
             memory=True,
         )
 
-
     def build_root(self) -> pt.behaviour.Behaviour:
         """build root"""
 
@@ -93,7 +92,9 @@ class ConePlaceBT(base_bt.BaseBT):
             task_name="Place cone on floor", load_value="floor"
         )
 
-        move_forward = ugv.Move(task_name="move forward", load_value="MOVE 3.0 0")
+        move_forward = ugv.Move(
+            task_name="move forward", load_value="MOVE 3.0 0"
+        )
 
         pick_up_cone2 = ugv.PickUpFrom(
             task_name="Pick up cone from robot", load_value="robot"
@@ -102,9 +103,17 @@ class ConePlaceBT(base_bt.BaseBT):
             task_name="Place cone on floor", load_value="floor"
         )
 
-
         root.add_children(
-            [arm_to_home, pick_up_cone1, place_cone1]
+            [
+                arm_to_home,
+                pick_up_cone1,
+                place_cone1,
+                arm_to_home,
+                move_forward,
+                pick_up_cone2,
+                place_cone2,
+                arm_to_home,
+            ]
         )
 
         return root
@@ -122,4 +131,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
