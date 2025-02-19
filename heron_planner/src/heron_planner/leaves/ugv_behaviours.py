@@ -227,7 +227,7 @@ class RollerSequence(_CommandSequencer):
         data = self._default_load_fn(auto_generate=False)
 
         if isinstance(data, str):
-            cmd_str = f"{RollerSequence.CMD} + {data}"
+            cmd_str = f"{RollerSequence.CMD}{data}"
             rospy.loginfo(f"Sending roller sequence: {cmd_str}")
             return RobotSimpleCommandGoal(
                     command=CommandString(command=cmd_str)
