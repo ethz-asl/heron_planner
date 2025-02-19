@@ -15,6 +15,15 @@ from robot_simple_command_manager_msgs.srv import (
     SetCommandStringRequest,
     SetCommandStringResponse,
 )
+from robot_simple_command_manager_msgs.msg import (
+    RobotSimpleCommandAction,
+    RobotSimpleCommandActionGoal,
+    RobotSimpleCommandActionFeedback,
+    RobotSimpleCommandActionResult, 
+    CommandStringResult,
+    CommandStringFeedback,
+    CommandString,
+)
 from robotnik_navigation_msgs.msg import DockAction, DockGoal, DockResult
 from heron_msgs.srv import (
     ChangeRobotMode,
@@ -69,17 +78,17 @@ class UgvDummyInterface:
 
         # services
         if not self.robot_running:
-            self.cmd_sequencer_srv = rospy.Service(
-                "/robot/command_sequencer/command",
-                SetCommandString,
-                self.handle_cmd_sequencer,
-            )
+            # self.cmd_sequencer_srv = rospy.Service(
+            #     "/robot/command_sequencer/command",
+            #     SetCommandString,
+            #     self.handle_cmd_sequencer,
+            # )
 
-            self.cmd_manager_srv = rospy.Service(
-                "/robot/command_manager/command",
-                SetCommandString,
-                self.handle_cmd_manager,
-            )
+            # self.cmd_manager_srv = rospy.Service(
+            #     "/robot/command_manager/command",
+            #     SetCommandString,
+            #     self.handle_cmd_manager,
+            # )
 
             self.cmd_manager_srv = rospy.Service(
                 "/robot/change_mode",
@@ -130,6 +139,12 @@ class UgvDummyInterface:
                 execute_cb=self.handle_dock,
                 auto_start=False,
             )
+            self.cmd_manager_action = actionlib.SimpleActionServer(
+                "/robot/command_manager/action",
+                RobotSimpleCommandAction,
+                execute_cb=self.handle_cmd_manager,
+                auto_start=False
+            )
 
         self.tf_buffer = tf2_ros.Buffer(rospy.Duration(5.0))  # Store 5 seconds of TF history
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
@@ -143,6 +158,7 @@ class UgvDummyInterface:
             self.pickup_from_srv.start()
             self.place_on_srv.start()
             self.dock_srv.start()
+            self.cmd_manager_action.start()
 
             self.broadcast_timer = rospy.Timer(rospy.Duration(0.1), self.broadcast_tf)
 
@@ -152,181 +168,203 @@ class UgvDummyInterface:
         self.map_frame = rospy.get_param("map_frame", "robot_map")
         self.robot_running = rospy.get_param("/ugv/robot_running", True)
 
-    def handle_cmd_sequencer(
-        self, req: SetCommandStringRequest
-    ) -> SetCommandStringResponse:
-        """"""
-        rospy.loginfo(f"Recieved cmd : {req.command}")
+    # def handle_cmd_sequencer(
+    #     self, req: SetCommandStringRequest
+    # ) -> SetCommandStringResponse:
+    #     """"""
+    #     rospy.loginfo(f"Recieved cmd : {req.command}")
 
-        sequences = (
-            "LOWER_ROLLER",
-            "LOWER_ROLLER_HALF",
-            "LIFT_ROLLER",
-            "BLOW",
-            "DEPOSIT_1",
-            "DEPOSIT_2",
-            "DEPOSIT_3",
-            "ENABLE_PAINT_MS",
-            "DISABLE_PAINT_MS",
-        )
+    #     sequences = (
+    #         "LOWER_ROLLER",
+    #         "LOWER_ROLLER_HALF",
+    #         "LIFT_ROLLER",
+    #         "BLOW",
+    #         "DEPOSIT_1",
+    #         "DEPOSIT_2",
+    #         "DEPOSIT_3",
+    #         "ENABLE_PAINT_MS",
+    #         "DISABLE_PAINT_MS",
+    #     )
 
-        if req.command in sequences:
-            rospy.loginfo(f"Sending sequence {req.command} to robot.")
-            rospy.sleep(4.0)
-            message = f"Sequence {req.command} finished."
-            return self.generate_cmd_res(success=True, message=message, code=0)
-        else:
-            # command not recognised
-            return self.generate_cmd_res(
-                success=False,
-                message=f"Unknown command: {req.command}",
-                code=4,
-            )
+    #     if req.command in sequences:
+    #         rospy.loginfo(f"Sending sequence {req.command} to robot.")
+    #         rospy.sleep(4.0)
+    #         message = f"Sequence {req.command} finished."
+    #         return self.generate_cmd_res(success=True, message=message, code=0)
+    #     else:
+    #         # command not recognised
+    #         return self.generate_cmd_res(
+    #             success=False,
+    #             message=f"Unknown command: {req.command}",
+    #             code=4,
+    #         )
 
     def handle_cmd_manager(
-        self, req: SetCommandStringRequest
-    ) -> SetCommandStringResponse:
-        """handling inputs from cmd manager"""
-        rospy.loginfo(f"Recieved cmd : {req.command}")
+        self, goal: RobotSimpleCommandActionGoal
+    ):
+        rospy.loginfo(f"Command manager recieved: {goal.command}")
+        rospy.sleep(3.0)
 
-        # parse the command
-        command_parts = req.command.split()
-        if not command_parts:
-            return self.generate_cmd_res(
-                success=False, message="Empty command received", code=1
-            )
+        cmd_string_res = CommandStringResult(success=True, message=f"Exected {goal.command}")
+        res = RobotSimpleCommandActionResult(result=cmd_string_res)
+        self.cmd_manager_action.set_succeeded(res)
+        rospy.loginfo(f"CMD manager completed {res}")
 
-        primary_command = command_parts[0].upper()
+    def handle_cmd_sequencer(
+        self, goal: RobotSimpleCommandActionGoal
+    ):
+        rospy.loginfo(f"Command sequencer recieved: {goal.command}")
+        rospy.sleep(3.0)
 
-        # handle specific commands
-        if primary_command == "MOVE":
-            if len(command_parts) != 3:
-                return self.generate_cmd_res(
-                    success=False, message="Invalid MOVE command format", code=2
-                )
-            try:
-                x = float(command_parts[1])
-                y = float(command_parts[2])
+        cmd_string_res = CommandStringResult(success=True, message=f"Exected {goal.command}")
+        res = RobotSimpleCommandActionResult(result=cmd_string_res)
+        self.cmd_manager_action.set_succeeded(res)
+        rospy.loginfo(f"CMD sequencer completed {res}")
 
-                rospy.loginfo(f"Moving robot {x, y} [m] in (X, Y)")
-                rospy.sleep(3.0)
-                message = f"Robot successfully moved"
-                return self.generate_cmd_res(
-                    success=True, message=message, code=0
-                )
-            except ValueError:
-                return self.generate_cmd_res(
-                    success=False,
-                    message="Invalid MOVE command parameters",
-                    code=3,
-                )
+    # def handle_cmd_manager(
+    #     self, req: SetCommandStringRequest
+    # ) -> SetCommandStringResponse:
+    #     """handling inputs from cmd manager"""
+    #     rospy.loginfo(f"Recieved cmd : {req.command}")
 
-        elif primary_command == "TURN":
-            if len(command_parts) != 2:
-                return self.generate_cmd_res(
-                    success=False, message="Invalid TURN command format", code=2
-                )
-            try:
-                angle = float(command_parts[1])
-                rospy.loginfo(f"Turning robot by {angle} [rad]")
-                message = f"Robot successfully turned"
+    #     # parse the command
+    #     command_parts = req.command.split()
+    #     if not command_parts:
+    #         return self.generate_cmd_res(
+    #             success=False, message="Empty command received", code=1
+    #         )
 
-                return self.generate_cmd_res(
-                    success=True, message=message, code=0
-                )
-            except ValueError:
-                return self.generate_cmd_res(
-                    success=False,
-                    message="Invalid TURN command parameter",
-                    code=3,
-                )
+    #     primary_command = command_parts[0].upper()
 
-        elif primary_command == "SET_DO":
-            if len(command_parts) != 3:
-                return self.generate_cmd_res(
-                    success=False,
-                    message="Invalid SET_DO command format",
-                    code=2,
-                )
-            try:
-                pin = int(command_parts[1])
-                on_state = command_parts[2].lower() in ("true", "1", "on")
-                off_state = command_parts[2].lower() in ("false", "0", "off")
-                if on_state:
-                    state_msg = "ON"
-                elif off_state:
-                    state_msg = "OFF"
-                else:
-                    return self.generate_cmd_res(
-                        success=False,
-                        message="Invalid on/off SET_DO format",
-                        code=2,
-                    )
+    #     # handle specific commands
+    #     if primary_command == "MOVE":
+    #         if len(command_parts) != 3:
+    #             return self.generate_cmd_res(
+    #                 success=False, message="Invalid MOVE command format", code=2
+    #             )
+    #         try:
+    #             x = float(command_parts[1])
+    #             y = float(command_parts[2])
 
-                message = f"Setting digital output pin {pin} to {state_msg}"
-                rospy.loginfo(message)
-                rospy.sleep(2.0)
-                return self.generate_cmd_res(
-                    success=True, message=message, code=0
-                )
-            except ValueError:
-                return self.generate_cmd_res(
-                    success=False,
-                    message="Invalid SET_DO command parameters",
-                    code=3,
-                )
+    #             rospy.loginfo(f"Moving robot {x, y} [m] in (X, Y)")
+    #             rospy.sleep(3.0)
+    #             message = f"Robot successfully moved"
+    #             return self.generate_cmd_res(
+    #                 success=True, message=message, code=0
+    #             )
+    #         except ValueError:
+    #             return self.generate_cmd_res(
+    #                 success=False,
+    #                 message="Invalid MOVE command parameters",
+    #                 code=3,
+    #             )
 
-        elif primary_command == "WAIT":
-            if len(command_parts) != 2:
-                return self.generate_cmd_res(
-                    success=False, message="Invalid WAIT command format", code=2
-                )
-            try:
-                wait_time = float(command_parts[1])
-                rospy.loginfo(f"Waiting for {wait_time} [s]")
-                message = f"Waiting for {wait_time} [s]"
-                rospy.sleep(wait_time)
-                return self.generate_cmd_res(
-                    success=True, message=message, code=0
-                )
-            except ValueError:
-                return self.generate_cmd_res(
-                    success=False,
-                    message="Invalid WAIT command parameter",
-                    code=3,
-                )
-        elif primary_command == "GOTO_GPS":
-            if len(command_parts) != 4:
-                return self.generate_cmd_res(
-                    success=False, message="Invalid MOVE command format", code=2
-                )
-            try:
-                x = float(command_parts[1])
-                y = float(command_parts[2])
-                yaw = float(command_parts[3])
+    #     elif primary_command == "TURN":
+    #         if len(command_parts) != 2:
+    #             return self.generate_cmd_res(
+    #                 success=False, message="Invalid TURN command format", code=2
+    #             )
+    #         try:
+    #             angle = float(command_parts[1])
+    #             rospy.loginfo(f"Turning robot by {angle} [rad]")
+    #             message = f"Robot successfully turned"
 
-                rospy.loginfo(
-                    f"Moving robot {x, y} [m] in (X, Y), in {yaw} [rad] direction"
-                )
-                rospy.sleep(3.0)
-                message = f"Robot successfully moved"
-                return self.generate_cmd_res(
-                    success=True, message=message, code=0
-                )
-            except ValueError:
-                return self.generate_cmd_res(
-                    success=False,
-                    message="Invalid MOVE command parameters",
-                    code=3,
-                )
+    #             return self.generate_cmd_res(
+    #                 success=True, message=message, code=0
+    #             )
+    #         except ValueError:
+    #             return self.generate_cmd_res(
+    #                 success=False,
+    #                 message="Invalid TURN command parameter",
+    #                 code=3,
+    #             )
 
-        else:
-            # command not recognised
-            return self.generate_cmd_res(
-                success=False,
-                message=f"Unknown command: {primary_command}",
-                code=4,
-            )
+    #     elif primary_command == "SET_DO":
+    #         if len(command_parts) != 3:
+    #             return self.generate_cmd_res(
+    #                 success=False,
+    #                 message="Invalid SET_DO command format",
+    #                 code=2,
+    #             )
+    #         try:
+    #             pin = int(command_parts[1])
+    #             on_state = command_parts[2].lower() in ("true", "1", "on")
+    #             off_state = command_parts[2].lower() in ("false", "0", "off")
+    #             if on_state:
+    #                 state_msg = "ON"
+    #             elif off_state:
+    #                 state_msg = "OFF"
+    #             else:
+    #                 return self.generate_cmd_res(
+    #                     success=False,
+    #                     message="Invalid on/off SET_DO format",
+    #                     code=2,
+    #                 )
+
+    #             message = f"Setting digital output pin {pin} to {state_msg}"
+    #             rospy.loginfo(message)
+    #             rospy.sleep(2.0)
+    #             return self.generate_cmd_res(
+    #                 success=True, message=message, code=0
+    #             )
+    #         except ValueError:
+    #             return self.generate_cmd_res(
+    #                 success=False,
+    #                 message="Invalid SET_DO command parameters",
+    #                 code=3,
+    #             )
+
+    #     elif primary_command == "WAIT":
+    #         if len(command_parts) != 2:
+    #             return self.generate_cmd_res(
+    #                 success=False, message="Invalid WAIT command format", code=2
+    #             )
+    #         try:
+    #             wait_time = float(command_parts[1])
+    #             rospy.loginfo(f"Waiting for {wait_time} [s]")
+    #             message = f"Waiting for {wait_time} [s]"
+    #             rospy.sleep(wait_time)
+    #             return self.generate_cmd_res(
+    #                 success=True, message=message, code=0
+    #             )
+    #         except ValueError:
+    #             return self.generate_cmd_res(
+    #                 success=False,
+    #                 message="Invalid WAIT command parameter",
+    #                 code=3,
+    #             )
+    #     elif primary_command == "GOTO_GPS":
+    #         if len(command_parts) != 4:
+    #             return self.generate_cmd_res(
+    #                 success=False, message="Invalid MOVE command format", code=2
+    #             )
+    #         try:
+    #             x = float(command_parts[1])
+    #             y = float(command_parts[2])
+    #             yaw = float(command_parts[3])
+
+    #             rospy.loginfo(
+    #                 f"Moving robot {x, y} [m] in (X, Y), in {yaw} [rad] direction"
+    #             )
+    #             rospy.sleep(3.0)
+    #             message = f"Robot successfully moved"
+    #             return self.generate_cmd_res(
+    #                 success=True, message=message, code=0
+    #             )
+    #         except ValueError:
+    #             return self.generate_cmd_res(
+    #                 success=False,
+    #                 message="Invalid MOVE command parameters",
+    #                 code=3,
+    #             )
+
+    #     else:
+    #         # command not recognised
+    #         return self.generate_cmd_res(
+    #             success=False,
+    #             message=f"Unknown command: {primary_command}",
+    #             code=4,
+    #         )
 
     def handle_change_mode(
         self, req: ChangeRobotModeRequest

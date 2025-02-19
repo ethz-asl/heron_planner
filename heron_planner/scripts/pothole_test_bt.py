@@ -32,6 +32,102 @@ class PotholeTestBT(base_bt.BaseBT):
         self.bb.set("body_cam_ns", self.body_cam_ns)
         self.bb.set("inspections", self.inspection_names)
 
+    def move_take_snap(
+        self, move_loc: str = "home", seq_task_name: str = "MoveToHomeSeq"
+    ) -> pt.composites.Composite:
+        move_arm = ugv.MoveArmTo(
+            task_name=f"Move arm to {move_loc}", load_value=move_loc
+        )
+
+        take_snap = ugv.TakeSnap()
+        return pt.composites.Sequence(
+            name=seq_task_name, children=[move_arm, take_snap], memory=True
+        )
+
+    def get_kafka_photo_seq(
+        self,
+        img_key: str,
+        kafka_msg: str = "",
+        cam_ns: str = "arm_cam_ns",
+        seq_task_name="KafkaImageSeq",
+        load_img_task_name="Get images",
+        send_kafka_task_name="Send image to kafka",
+    ) -> pt.composites.Composite:
+        """"""
+        load_img = hlp.GetSynchedImages(
+            task_name=load_img_task_name,
+            load_key=cam_ns,
+            image_key=img_key,
+            save=True,
+        )
+
+        send_img_to_kafka = hlp.SendImageToKafka(
+            task_name=send_kafka_task_name,
+            msg=kafka_msg,
+            load_key=img_key,
+        )
+
+        return pt.composites.Sequence(
+            name=seq_task_name,
+            children=[load_img, send_img_to_kafka],
+            memory=True,
+        )
+
+    def get_inspection_loop(self) -> pt.composites.Composite:
+        """loop through inspection positons and find pothole"""
+
+        inspection_mid = self.move_take_snap(
+            move_loc="inpsection_mid", seq_task_name="MoveToInspectionMidSeq"
+        )
+        mid_photo = self.get_kafka_photo_seq(
+            img_key="/pothole/mid", kafka_msg="Inpsection mid pothole"
+        )
+
+        inspection_left = self.move_take_snap(
+            move_loc="inpsection_left", seq_task_name="MoveToInspectionLeftSeq"
+        )
+        left_photo = self.get_kafka_photo_seq(
+            img_key="/pothole/left", kafka_msg="Inpsection left pothole"
+        )
+
+        inspection_right = self.move_take_snap(
+            move_loc="inpsection_right",
+            seq_task_name="MoveToInspectionRightSeq",
+        )
+        right_photo = self.get_kafka_photo_seq(
+            img_key="/pothole/right", kafka_msg="Inpsection right pothole"
+        )
+
+        return pt.composites.Sequence(
+            name="InpsectionLoop",
+            children=[
+                inspection_mid,
+                mid_photo,
+                inspection_left,
+                left_photo,
+                inspection_right,
+                right_photo,
+            ],
+        )
+
+    def get_pothole_sel(self) -> pt.composites.Composite:
+        find_pothole_mid = iccs.FindPothole(
+            task_name="Find pothole at inspection mid", load_key="pothole/mid"
+        )
+        find_pothole_left = iccs.FindPothole(
+            task_name="Find pothole at inspection left", load_key="pothole/left"
+        )
+        find_pothole_right = iccs.FindPothole(
+            task_name="Find pothole at inspection right",
+            load_key="pothole/right",
+        )
+
+        return pt.composites.Sequence(
+            name="FindPotholeSel",
+            children=[find_pothole_mid, find_pothole_left, find_pothole_right],
+            memory=False,
+        )
+
     def build_root(self) -> pt.behaviour.Behaviour:
         """build root"""
 
@@ -39,76 +135,21 @@ class PotholeTestBT(base_bt.BaseBT):
 
         wait_for_enter = generic.WaitForEnterKey()
 
-        #TODO HARDCODE THIS
-        inspection_loop = pt.composites.Selector(
-            name="Inspect and find pothole", memory=True
-        )
-
         arm_to_home = ugv.MoveArmTo(
-            task_name="Move arm to",
+            task_name="Move arm to home",
             load_value="home",
         )
 
-        get_inspection = generic.PopFromList(
-            task_name="Get inspection",
-            load_key="inspections",
-            save_key="inspection",
+        root.add_children(
+            [
+                self.move_take_snap(
+                    move_loc="inpsection_mid",
+                    seq_task_name="MoveToInspectionMidSeq",
+                )
+            ]
+            # [arm_to_home, self.get_inspection_loop(), self.get_pothole_sel()]
+            # [ugv.TakeSnap()]
         )
-        arm_to_inspection = ugv.MoveArmTo(
-            task_name="Move arm to inspection", load_key="inspection"
-        )
-
-        take_inspection_snap = ugv.TakeSnap(task_name="Take snap of inspection")
-        load_arm_img_inspection = hlp.GetSynchedImages(
-            task_name="Load wrist image",
-            load_key="arm_cam_ns",
-            image_key="pothole/rgb/before",
-            save_bb_key="inspection",
-            save=True,
-        )
-
-        count_pothole_success = generic.CountSuccesses(
-            name="Find pothole at inspection count",
-            child=iccs.FindPothole(
-                task_name="Find pothole at inspection", save_bb_key="inspection"
-            ),
-            bb_key="pothole_detections",
-        )
-        inspect_location = pt.composites.Sequence(
-            name="Inspect pothole",
-            children=[
-                get_inspection,
-                arm_to_inspection,
-                load_arm_img_inspection,
-                take_inspection_snap,
-                count_pothole_success,
-            ],
-            memory=False,
-        )
-
-        go_to_all_inspections = generic.Repeat(
-            name="Go to inspections and take photos",
-            child=inspect_location,
-            num_success=len(self.inspection_names),
-        )
-
-        pothole_found = generic.ConditionSuccessThreshold(
-            "Found pothole?", bb_key="pothole_detections", min_successes=1
-        )
-        # GOTO ALL INSPECTIONS
-
-        send_inspection_to_kafka = hlp.SendImageToKafka(
-            task_name="Send inspection to Kafka",
-            msg="Real image for HLP testing",
-            load_key="cone/rgb",
-        )
-
-        # example if kafka down!
-        # send_inspection_to_kafka = generic.Wait(
-        #     task_name="Send inspection to Kafka", duration=5
-        # )
-
-        root.add_children([go_to_all_inspections, pothole_found])
 
         return root
 

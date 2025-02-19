@@ -42,17 +42,18 @@ class TestBT(base_bt.BaseBT):
 
         wait_for_enter = generic.WaitForEnterKey()
         wait_10s = generic.Wait(task_name="Wait 10s", duration=10)
+
         load_arm_img_inspection = hlp.GetSynchedImages(
             task_name="Load wrist image",
             load_key="arm_cam_ns",
-            image_key="cone/rgb",
+            image_key="pothole/rgb",
             save=True,
         )
 
         send_inspection_to_kafka = hlp.SendImageToKafka(
             task_name="Send inspection to Kafka",
             msg="Real image for HLP testing",
-            load_key="cone/rgb",
+            load_key="pothole/rgb",
         )
 
         roller_down = ugv.RollerDown()
@@ -100,18 +101,12 @@ class TestBT(base_bt.BaseBT):
                 name="MoveArmSequence",
                 children=[
                     move_arm_to_home,
-                    wait_10s,
                     move_arm_to_inspection_mid,
-                    wait_10s,
-                    wait_for_enter,
                     take_snap,
+
                     move_arm_to_inspection_left,
-                    wait_10s,
-                    wait_for_enter,
                     take_snap,
                     move_arm_to_inspection_right,
-                    wait_10s,
-                    wait_for_enter,
                     take_snap,
                 ],
             )

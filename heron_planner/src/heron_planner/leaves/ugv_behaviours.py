@@ -12,8 +12,8 @@ from geometry_msgs.msg import PoseStamped, Pose2D, Twist
 from robot_simple_command_manager_msgs.msg import (
     CommandString,
     RobotSimpleCommandAction,
-    RobotSimpleCommandActionGoal,
-    RobotSimpleCommandActionResult,
+    RobotSimpleCommandGoal,
+    RobotSimpleCommandResult,
 )
 from robot_simple_command_manager_msgs.srv import SetCommandStringRequest
 from robotnik_navigation_msgs.msg import DockGoal
@@ -67,6 +67,8 @@ GET_DEPOSIT_SRV = rospy.get_param(
 #             service_name=CMD_SEQUENCER_SRV, *args, **kwargs
 #         )
 
+#TODO pick & place for cmd
+
 class _CommandManager(rt.leaves_ros.ActionLeaf):
     def __init__(self, *args, **kwargs):
         """Base class for sending action goals to the command_manager"""
@@ -95,14 +97,17 @@ class MoveArmTo(_CommandManager):
             **kwargs,
         )
 
-    def _load_fn(self) -> str:
+    def _load_fn(self) -> CommandString:
         data = self._default_load_fn(auto_generate=False)
 
         if isinstance(data, str):
             rospy.loginfo(f"Moving arm to: {data}")
             cmd_str = MoveArmTo.CMD + " " + data
             rospy.logerr(f"Command string: {cmd_str}")
-            return RobotSimpleCommandActionGoal(command=cmd_str)
+            
+            return RobotSimpleCommandGoal(
+                    command=CommandString(command=cmd_str)
+                )
         else:
             rospy.logerr(f"Type {type(data)}: is incorrect")
             raise ValueError
@@ -117,7 +122,7 @@ class MoveArmTo(_CommandManager):
 class TakeSnap(_CommandManager):
     """this saves the current photo in the robot"""
 
-    CMD = RobotSimpleCommandActionGoal(command="TAKE_SNAP")
+    CMD = CommandString(command="TAKE_SNAP")
 
     def __init__(self, task_name="", *args, **kwargs) -> None:
         super(TakeSnap, self).__init__(
@@ -147,7 +152,7 @@ class Move(_CommandManager):
             pose_arr = utils.array_from_pose(data.pose)
             yaw = utils.angle_from_quaternion(pose_arr[3:])
             cmd_str = f"{Move.CMD} {pose_arr[0]} {pose_arr[1]} {yaw:.2f}"
-            return RobotSimpleCommandActionGoal(command=cmd_str)
+            return CommandString(command=cmd_str)
         if isinstance(data, str):
             return data
         else:
@@ -174,7 +179,7 @@ class GoToGPS(_CommandManager):
             pose_arr = utils.array_from_pose(data.pose)
             yaw = utils.angle_from_quaternion(pose_arr[3:])
             cmd_str = f"{GoToGPS.CMD} {pose_arr[0]} {pose_arr[1]} {yaw:.2f}"
-            return RobotSimpleCommandActionGoal(command=cmd_str)
+            return CommandString(command=cmd_str)
         else:
             rospy.logerr(f"Type {type(data)}: is incorrect")
             raise ValueError
@@ -189,12 +194,12 @@ class CustomCommandManager(_CommandManager):
             **kwargs,
         )
 
-    def _load_fn(self) -> RobotSimpleCommandActionGoal:
+    def _load_fn(self) -> CommandString:
         data = self._default_load_fn(auto_generate=False)
 
         if isinstance(data, str):
             rospy.loginfo(f"Sending cmd manager req: {data}")
-            return RobotSimpleCommandActionGoal(command=data)
+            return CommandString(command=data)
         else:
             rospy.logerr(f"Type {type(data)} is not str")
             raise ValueError
@@ -233,14 +238,14 @@ class RollerCommand(_CommandManager):
             **kwargs,
         )
 
-    def _load_fn(self) -> RobotSimpleCommandActionGoal:
+    def _load_fn(self) -> CommandString:
         data = self._default_load_fn(auto_generate=False)
 
         if isinstance(data, float):
             if data >= 0 and data <= 1:
                 rospy.loginfo(f"Moving roller: {data}")
                 cmd_str = f"{RollerCommand.CMD} {str(data)}"
-                return RobotSimpleCommandActionGoal(command=cmd_str)
+                return CommandString(command=cmd_str)
         else:
             rospy.logerr(f"Type {type(data)}: is incorrect")
             raise ValueError
