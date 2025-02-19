@@ -152,7 +152,9 @@ class Move(_CommandManager):
             pose_arr = utils.array_from_pose(data.pose)
             yaw = utils.angle_from_quaternion(pose_arr[3:])
             cmd_str = f"{Move.CMD} {pose_arr[0]} {pose_arr[1]} {yaw:.2f}"
-            return CommandString(command=cmd_str)
+            return RobotSimpleCommandGoal(
+                    command=CommandString(command=cmd_str)
+                )
         if isinstance(data, str):
             return data
         else:
@@ -179,7 +181,9 @@ class GoToGPS(_CommandManager):
             pose_arr = utils.array_from_pose(data.pose)
             yaw = utils.angle_from_quaternion(pose_arr[3:])
             cmd_str = f"{GoToGPS.CMD} {pose_arr[0]} {pose_arr[1]} {yaw:.2f}"
-            return CommandString(command=cmd_str)
+            return RobotSimpleCommandGoal(
+                    command=CommandString(command=cmd_str)
+                )
         else:
             rospy.logerr(f"Type {type(data)}: is incorrect")
             raise ValueError
@@ -199,7 +203,9 @@ class CustomCommandManager(_CommandManager):
 
         if isinstance(data, str):
             rospy.loginfo(f"Sending cmd manager req: {data}")
-            return CommandString(command=data)
+            return RobotSimpleCommandGoal(
+                    command=CommandString(command=data)
+                )
         else:
             rospy.logerr(f"Type {type(data)} is not str")
             raise ValueError
@@ -245,7 +251,9 @@ class RollerCommand(_CommandManager):
             if data >= 0 and data <= 1:
                 rospy.loginfo(f"Moving roller: {data}")
                 cmd_str = f"{RollerCommand.CMD} {str(data)}"
-                return CommandString(command=cmd_str)
+                return RobotSimpleCommandGoal(
+                        command=CommandString(command=cmd_str)
+                    )
         else:
             rospy.logerr(f"Type {type(data)}: is incorrect")
             raise ValueError
@@ -307,7 +315,9 @@ class Deposit(_CommandSequencer):
         if isinstance(data, (1 | 2 | 3)):
             rospy.loginfo(f"Activating deposit {data}")
             cmd_str = f"{Deposit.CMD} {str(data)}"
-            return CommandString(command=cmd_str)
+            return RobotSimpleCommandGoal(
+                    command=CommandString(command=cmd_str)
+                )
 
 
 # TODO use dummy deposit seq
@@ -327,7 +337,9 @@ class CustomCommandSequencer(_CommandSequencer):
 
         if isinstance(data, str):
             rospy.loginfo(f"Sending cmd sequencer req: {data}")
-            return CommandString(command=data)
+            return RobotSimpleCommandGoal(
+                    command=CommandString(command=data)
+                )
         else:
             rospy.logerr(f"Type {type(data)} is not str")
             raise ValueError

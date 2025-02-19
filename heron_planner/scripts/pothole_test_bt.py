@@ -77,29 +77,29 @@ class PotholeTestBT(base_bt.BaseBT):
         """loop through inspection positons and find pothole"""
 
         inspection_mid = self.move_take_snap(
-            move_loc="inpsection_mid", seq_task_name="MoveToInspectionMidSeq"
+            move_loc="inspection_mid", seq_task_name="MoveToInspectionMidSeq"
         )
         mid_photo = self.get_kafka_photo_seq(
-            img_key="/pothole/mid", kafka_msg="Inpsection mid pothole"
+            img_key="/pothole/mid", kafka_msg="inspection mid pothole"
         )
 
         inspection_left = self.move_take_snap(
-            move_loc="inpsection_left", seq_task_name="MoveToInspectionLeftSeq"
+            move_loc="inspection_left", seq_task_name="MoveToInspectionLeftSeq"
         )
         left_photo = self.get_kafka_photo_seq(
-            img_key="/pothole/left", kafka_msg="Inpsection left pothole"
+            img_key="/pothole/left", kafka_msg="inspection left pothole"
         )
 
         inspection_right = self.move_take_snap(
-            move_loc="inpsection_right",
+            move_loc="inspection_right",
             seq_task_name="MoveToInspectionRightSeq",
         )
         right_photo = self.get_kafka_photo_seq(
-            img_key="/pothole/right", kafka_msg="Inpsection right pothole"
+            img_key="/pothole/right", kafka_msg="inspection right pothole"
         )
 
         return pt.composites.Sequence(
-            name="InpsectionLoop",
+            name="inspectionLoop",
             children=[
                 inspection_mid,
                 mid_photo,
@@ -143,11 +143,11 @@ class PotholeTestBT(base_bt.BaseBT):
         root.add_children(
             [
                 self.move_take_snap(
-                    move_loc="inpsection_mid",
+                    move_loc="inspection_mid",
                     seq_task_name="MoveToInspectionMidSeq",
-                )
+                ),
             ]
-            # [arm_to_home, self.get_inspection_loop(), self.get_pothole_sel()]
+            # [arm_to_home, self.get_inspection_loop()]
             # [ugv.TakeSnap()]
         )
 
