@@ -155,8 +155,11 @@ class Move(_CommandManager):
             return RobotSimpleCommandGoal(
                     command=CommandString(command=cmd_str)
                 )
-        if isinstance(data, str):
-            return data
+        if isinstance(data, str):  
+            rospy.logwarn(f"Sending command : {data}")
+            return RobotSimpleCommandGoal(
+                command=CommandString(command=data)
+            )
         else:
             rospy.logerr(f"Type {type(data)}: is incorrect")
             raise ValueError

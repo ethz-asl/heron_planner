@@ -30,74 +30,96 @@ class ConePlaceBT(base_bt.BaseBT):
     def save_to_blackboard(self) -> None:
         self.bb.set("arm_cam_ns", self.arm_cam_ns)
         self.bb.set("body_cam_ns", self.body_cam_ns)
+        self.bb.set("inspections", self.inspection_names)
+
+    def move_take_snap(
+        self, move_loc: str = "home", seq_task_name: str = "MoveToHomeSeq"
+    ) -> pt.composites.Composite:
+        move_arm = ugv.MoveArmTo(
+            task_name=f"Move arm to {move_loc}", load_value=move_loc
+        )
+
+        take_snap = ugv.TakeSnap()
+        return pt.composites.Sequence(
+            name=seq_task_name, children=[move_arm, take_snap], memory=True
+        )
+
+    def get_kafka_photo_seq(
+        self,
+        img_key: str,
+        kafka_msg: str = "",
+        cam_ns: str = "arm_cam_ns",
+        seq_task_name="KafkaImageSeq",
+        load_img_task_name="Get images",
+        send_kafka_task_name="Send image to kafka",
+    ) -> pt.composites.Composite:
+        """"""
+        load_img = hlp.GetSynchedImages(
+            task_name=load_img_task_name,
+            load_key=cam_ns,
+            image_key=img_key,
+            save=True,
+        )
+
+        send_img_to_kafka = hlp.SendImageToKafka(
+            task_name=send_kafka_task_name,
+            msg=kafka_msg,
+            load_key=img_key,
+        )
+
+        return pt.composites.Sequence(
+            name=seq_task_name,
+            children=[load_img, send_img_to_kafka],
+            memory=True,
+        )
+
 
     def build_root(self) -> pt.behaviour.Behaviour:
         """build root"""
 
-        root = pt.composites.Sequence(name="InspectionSequence", memory=True)
+        root = pt.composites.Sequence(name="ConePlaceSequence", memory=True)
 
         wait_for_enter = generic.WaitForEnterKey()
-        # robot at known GPS
-        #TODO compute yaw from GPS
 
-        #LOOP
-        #TODO send GPS & yaw to GOTO_GPS
-        #TODO send PICKUP_FROM stack to robot
-        #TODO send PLACE_ON floor to robot
-
-        #Send msg to kafka 'cones placed'
-        
-
-        arm_to_home = ugv.MoveTo(
-            task_name="Move arm to home", load_value="HOME"
+        arm_to_home = ugv.MoveArmTo(
+            task_name="Move arm to home",
+            load_value="home",
         )
 
-        arm_to_inspection = ugv.MoveTo(
-            task_name=f"Move arm inspection.", load_key="inspection"
+        pick_up_cone1 = ugv.PickUpFrom(
+            task_name="Pick up cone from robot", load_value="robot"
         )
-        inspect_seq = pt.composites.Sequence(
-            name="InspectionSelector",
-            children=[arm_to_home, arm_to_inspection],
-            memory=True,
+        place_cone1 = ugv.PlaceOn(
+            task_name="Place cone on floor", load_value="floor"
         )
 
-        load_arm_img_inspection = hlp.GetSynchedImages(
-            task_name="Load wrist image",
-            load_key="arm_cam_ns",
-            image_key="cone/rgb",
-            save=True,
+        move_forward = ugv.Move(task_name="move forward", load_value="MOVE 3.0 0")
+
+        pick_up_cone2 = ugv.PickUpFrom(
+            task_name="Pick up cone from robot", load_value="robot"
+        )
+        place_cone2 = ugv.PlaceOn(
+            task_name="Place cone on floor", load_value="floor"
         )
 
-        send_inspection_to_kafka = hlp.SendImageToKafka(
-            task_name="Send inspection to Kafka",
-            msg="Real image for HLP testing",
-            load_key="cone/rgb",
+
+        root.add_children(
+            [arm_to_home, pick_up_cone1, place_cone1]
         )
-
-        # example if kafka down!
-        # send_inspection_to_kafka = generic.Wait(
-        #     task_name="Send inspection to Kafka", duration=5
-        # )
-
-        take_photo_seq = pt.composites.Sequence(
-            name="PhotoSequence",
-            children=[load_arm_img_inspection, send_inspection_to_kafka],
-            memory=True,
-        )
-
-        root.add_children([inspect_seq, take_photo_seq])
 
         return root
+
 
 def main():
     rospy.init_node("cone_place_bt")
     pt.logging.level = pt.logging.Level.DEBUG
 
     node = ConePlaceBT()
-    node.tree.visualise()
+    # node.tree.visualise()
 
     rospy.spin()
 
 
 if __name__ == "__main__":
     main()
+
