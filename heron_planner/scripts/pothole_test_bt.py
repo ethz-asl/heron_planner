@@ -154,7 +154,7 @@ class PotholeTestBT(base_bt.BaseBT):
         )
 
         root.add_children(
-            sel_test, wait_for_enter
+            [sel_test, wait_for_enter]
             # [
             #     self.move_take_snap(
             #         move_loc="inspection_mid",
