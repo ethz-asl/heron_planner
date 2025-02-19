@@ -147,7 +147,11 @@ class PotholeTestBT(base_bt.BaseBT):
             task_name="Place cone on floor", load_value="floor"
         )
 
-        sel_test = pt.composites.Selector(pick_up_robot, ugv.TakeSnap(), place_on_floor)
+        sel_test = pt.composites.Selector(
+            name="testSel",
+            children=[pick_up_robot, ugv.TakeSnap(), place_on_floor],
+            memory=True,
+        )
 
         root.add_children(
             sel_test
