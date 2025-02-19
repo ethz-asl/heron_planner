@@ -212,6 +212,30 @@ class CustomCommandManager(_CommandManager):
 
 
 # TODO ROLLER_DOWN seq
+class RollerSequence(_CommandSequencer):
+    CMD = command="POT_"
+
+    def __init__(self, task_name="", *args, **kwargs) -> None:
+        super(RollerSequence, self).__init__(
+            name=task_name if task_name else "Roller Sequence",
+            load_fn=self._load_fn,
+            *args,
+            **kwargs,
+        )
+
+    def _load_fn(self) -> CommandString:
+        data = self._default_load_fn(auto_generate=False)
+
+        if isinstance(data, str):
+            cmd_str = f"{RollerSequence.CMD} + {data}"
+            rospy.loginfo(f"Sending roller sequence: {cmd_str}")
+            return RobotSimpleCommandGoal(
+                    command=CommandString(command=cmd_str)
+                )
+        else:
+            rospy.logerr(f"Type {type(data)} is not str")
+            raise ValueError
+
 
 
 class RollerDown(_CommandSequencer):

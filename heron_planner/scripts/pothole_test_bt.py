@@ -147,17 +147,15 @@ class PotholeTestBT(base_bt.BaseBT):
             task_name="Place cone on floor", load_value="floor"
         )
 
+        roller_up = ugv.RollerUp()
+        roller_sequence = ugv.RollerSequence(
+            task_name="Pothole FB 1", load_value="FB_1"
+        )
+        
+
         root.add_children(
-            # [
-            #     self.move_take_snap(
-            #         move_loc="inspection_mid",
-            #         seq_task_name="MoveToInspectionMidSeq",
-            #     ),
-            #     self.get_kafka_photo_seq(
-            #         img_key="/pothole/mid", kafka_msg="inspection mid pothole"
-            #     ),
-            # ]
-            [arm_to_home, self.get_inspection_loop()]
+            [arm_to_home, roller_up, roller_sequence]
+            # [arm_to_home, self.get_inspection_loop()]
             # [ugv.TakeSnap()]
         )
 
