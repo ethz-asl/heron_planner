@@ -355,25 +355,71 @@ class MoveTo(rt.leaves_ros.ActionLeaf):
         )
 
 
-class PickUpFrom(rt.leaves_ros.ActionLeaf):
+class PickUpFrom(_CommandManager):
+    CMD = "PICK"
+
     def __init__(self, task_name="", *args, **kwargs) -> None:
         super(PickUpFrom, self).__init__(
-            name=task_name if task_name else "Picking up from named position",
-            action_namespace=PICKUP_FROM_ACTION,
+            name=task_name if task_name else "Pick up from named position",
+            load=True,
+            load_fn=self._load_fn,
+            result_fn=self._result_fn,
             *args,
             **kwargs,
         )
 
+    def _load_fn(self) -> CommandString:
+        data = self._default_load_fn(auto_generate=False)
 
-class PlaceOn(rt.leaves_ros.ActionLeaf):
+        if isinstance(data, str):
+            rospy.loginfo(f"Picking up from: {data}")
+            cmd_str = PickUpFrom.CMD + " " + data
+            
+            return RobotSimpleCommandGoal(
+                    command=CommandString(command=cmd_str)
+                )
+        else:
+            rospy.logerr(f"Type {type(data)}: is incorrect")
+            raise ValueError
+
+    def _result_fn(self):
+        res = self._default_result_fn()
+        rospy.logerr(f"Result from MOVE_ARM_TO srv: {res}")
+        return res
+
+
+
+class PlaceOn(_CommandManager):
+    CMD = "PLACE"
+
     def __init__(self, task_name="", *args, **kwargs) -> None:
         super(PlaceOn, self).__init__(
             name=task_name if task_name else "Place on named position",
-            action_namespace=PLACE_ON_ACTION,
+            load=True,
+            load_fn=self._load_fn,
+            result_fn=self._result_fn,
             *args,
             **kwargs,
         )
 
+    def _load_fn(self) -> CommandString:
+        data = self._default_load_fn(auto_generate=False)
+
+        if isinstance(data, str):
+            rospy.loginfo(f"Placing on: {data}")
+            cmd_str = PlaceOn.CMD + " " + data
+            
+            return RobotSimpleCommandGoal(
+                    command=CommandString(command=cmd_str)
+                )
+        else:
+            rospy.logerr(f"Type {type(data)}: is incorrect")
+            raise ValueError
+
+    def _result_fn(self):
+        res = self._default_result_fn()
+        rospy.logerr(f"Result from MOVE_ARM_TO srv: {res}")
+        return res
 
 # TODO add pickup/place actions here!
 # PICKUP -> robot/arm/pickup_from right_holder/left_holder (wip from raquel)

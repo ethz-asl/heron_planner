@@ -140,13 +140,23 @@ class PotholeTestBT(base_bt.BaseBT):
             load_value="home",
         )
 
+        pick_up_robot = ugv.PickUpFrom(
+            task_name="Pick up cone from robot", load_value="robot"
+        )
+        place_on_floor = ugv.PlaceOn(
+            task_name="Place cone on floor", load_value="floor"
+        )
+
+        sel_test = pt.composites.Selector(pick_up_robot, ugv.TakeSnap(), place_on_floor)
+
         root.add_children(
-            [
-                self.move_take_snap(
-                    move_loc="inspection_mid",
-                    seq_task_name="MoveToInspectionMidSeq",
-                ),
-            ]
+            sel_test
+            # [
+            #     self.move_take_snap(
+            #         move_loc="inspection_mid",
+            #         seq_task_name="MoveToInspectionMidSeq",
+            #     ),
+            # ]
             # [arm_to_home, self.get_inspection_loop()]
             # [ugv.TakeSnap()]
         )
