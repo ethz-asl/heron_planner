@@ -326,7 +326,7 @@ class BlowPothole(_CommandSequencer):
 
 class Deposit(_CommandSequencer):
     # TODO ask how does this work, do we know if open or not?
-    CMD = "DEPOSIT"
+    CMD = "DEPOSIT_"
 
     def __init__(self, task_name="", *args, **kwargs) -> None:
         super(Deposit, self).__init__(
@@ -341,7 +341,7 @@ class Deposit(_CommandSequencer):
 
         if isinstance(data, int):
             rospy.loginfo(f"Activating deposit {data}")
-            cmd_str = f"{Deposit.CMD} {str(data)}"
+            cmd_str = f"{Deposit.CMD}{str(data)}"
             return RobotSimpleCommandGoal(
                     command=CommandString(command=cmd_str)
                 )
