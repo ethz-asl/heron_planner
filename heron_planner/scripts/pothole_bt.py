@@ -168,6 +168,7 @@ class PotholeBT(base_bt.BaseBT):
         root.add_children(
             [
                 roller_up,
+                arm_to_home,
                 reverse_1,
                 arm_to_inspection_mid,
                 arm_to_home,
