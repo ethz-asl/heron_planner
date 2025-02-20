@@ -77,7 +77,7 @@ class PotholeBT(base_bt.BaseBT):
         """loop through inspection positons and find pothole"""
 
         inspection_mid = self.move_take_snap(
-            move_loc="inspection_mid", seq_task_name="MoveToInspectionMidSeq"
+            move_loc="inspection_mid_old", seq_task_name="MoveToInspectionMidSeq"
         )
         mid_photo = self.get_kafka_photo_seq(
             img_key="/pothole/mid", kafka_msg="inspection mid pothole"
@@ -131,7 +131,7 @@ class PotholeBT(base_bt.BaseBT):
     def build_root(self) -> pt.behaviour.Behaviour:
         """build root"""
 
-        root = pt.composites.Sequence(name="InspectionSequence", memory=True)
+        root = pt.composites.Sequence(name="PotholeSequence", memory=True)
 
         wait_for_enter = generic.WaitForEnterKey()
 
@@ -141,7 +141,7 @@ class PotholeBT(base_bt.BaseBT):
         )
         arm_to_inspection_mid = ugv.MoveArmTo(
             task_name="Move arm to inspection mid",
-            load_value="inspection_mid",
+            load_value="inspection_mid_old",
         )
 
         reverse_1 = ugv.Move(task_name="reverse 1m", load_value="MOVE -1.0 0.0")
@@ -170,10 +170,12 @@ class PotholeBT(base_bt.BaseBT):
                 roller_up,
                 reverse_1,
                 arm_to_inspection_mid,
+                arm_to_home,
+                forward_half,
                 # self.get_inspection_loop(),
                 blow_pothole,
                 reverse_half,
-                deposit1
+                deposit1,
             ]
             # [arm_to_home, self.get_inspection_loop()]
             # [ugv.TakeSnap()]
