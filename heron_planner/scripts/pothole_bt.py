@@ -139,12 +139,25 @@ class PotholeBT(base_bt.BaseBT):
             task_name="Move arm to home",
             load_value="home",
         )
+        arm_to_inspection_mid = ugv.MoveArmTo(
+            task_name="Move arm to inspection mid",
+            load_value="inspection_mid",
+        )
+
+        reverse_1 = ugv.Move(task_name="reverse 1m", load_value="MOVE -1.0 0.0")
+        reverse_half = ugv.Move(task_name="reverse 0.5m", load_value="MOVE -0.5 0.0")
+        forward_1 = ugv.Move(task_name="forward 1m", load_value="MOVE 1.0 0.0")
+        forward_half = ugv.Move(task_name="forward 0.5m", load_value="MOVE 0.5 0.0")
+        # dock = ugv.Dock(
+        #     task_name="dock to start of offset",
+
+        # ) # can we dock to specific frame? is this a cmd_manager cmd?
 
         blow_pothole = ugv.BlowPothole()
 
         deposit1 = ugv.Deposit(task_name="Open deposit 1", load_value=1)        
-        deposit2 = ugv.Deposit(task_name="Open deposit 2", load_value=2)        
-        deposit3 = ugv.Deposit(task_name="Open deposit 3", load_value=3)        
+        # deposit2 = ugv.Deposit(task_name="Open deposit 2", load_value=2)        
+        # deposit3 = ugv.Deposit(task_name="Open deposit 3", load_value=3)        
 
         roller_up = ugv.RollerUp()
         roller_down = ugv.RollerDown()
@@ -152,9 +165,16 @@ class PotholeBT(base_bt.BaseBT):
             task_name="Pothole FB 1", load_value="FB_1"
         )
         
-
         root.add_children(
-            [arm_to_home, roller_up, roller_sequence]
+            [
+                roller_up,
+                reverse_1,
+                arm_to_inspection_mid,
+                # self.get_inspection_loop(),
+                blow_pothole,
+                reverse_half,
+                deposit1
+            ]
             # [arm_to_home, self.get_inspection_loop()]
             # [ugv.TakeSnap()]
         )

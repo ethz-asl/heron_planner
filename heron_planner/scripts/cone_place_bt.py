@@ -75,6 +75,7 @@ class ConePlaceBT(base_bt.BaseBT):
 
     def build_root(self) -> pt.behaviour.Behaviour:
         """build root"""
+        #TODO automated cone
 
         root = pt.composites.Sequence(name="ConePlaceSequence", memory=True)
 
@@ -130,12 +131,12 @@ class ConePlaceBT(base_bt.BaseBT):
                 move_forward,
                 pick_up_cone2,
                 place_cone2,
-                # move_forward,
-                # pick_up_cone3,
-                # place_cone3,
-                # move_diagonal,
-                # pick_up_cone4,
-                # place_cone4
+                move_forward,
+                pick_up_cone3,
+                place_cone3,
+                move_diagonal,
+                pick_up_cone4,
+                place_cone4
             ]
         )
 
