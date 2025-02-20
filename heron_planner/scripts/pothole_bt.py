@@ -149,13 +149,13 @@ class PotholeBT(base_bt.BaseBT):
 
         take_snap = ugv.TakeSnap()
 
-        reverse_1 = ugv.Move(task_name="reverse 1m", load_value="MOVE -1.0 0.0")
+        reverse_to_inspection = ugv.Move(task_name="reverse 1.3m", load_value="MOVE -1.3 0.0")
         reverse_half = ugv.Move(task_name="reverse 0.5m", load_value="MOVE -0.5 0.0")
 
         forward_1 = ugv.Move(task_name="forward 1m", load_value="MOVE 1.0 0.0")
         forward_half = ugv.Move(task_name="forward 0.5m", load_value="MOVE 0.5 0.0")
         
-        forward_to_blow = ugv.Move(task_name="forward to blow", load_value="MOVE 0.65 0")
+        forward_to_blow = ugv.Move(task_name="forward to blow", load_value="MOVE 0.95 0")
         reverse_to_deposit = ugv.Move(task_name="reverse to deposit", load_value="MOVE -0.10 0")
         
         # dock = ugv.Dock(
@@ -180,7 +180,7 @@ class PotholeBT(base_bt.BaseBT):
             [
                 roller_up,
                 arm_to_home,
-                reverse_1,
+                reverse_to_inspection,
                 self.get_inspection_loop(),
                 arm_to_home,
                 forward_to_blow,
@@ -189,6 +189,7 @@ class PotholeBT(base_bt.BaseBT):
                 deposit1,
                 roller_sequence,
                 mid_photo,
+                arm_to_home,
             ]
             # [arm_to_home, self.get_inspection_loop()]
             # [ugv.TakeSnap()]
