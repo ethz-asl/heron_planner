@@ -21,10 +21,10 @@ class PotholeBT(base_bt.BaseBT):
         self.tree_rate = rospy.get_param("tree_rate", 10)
         self.inspection_names = rospy.get_param("pothole/inspection_names")
         self.body_cam_ns = rospy.get_param(
-            "ugv/body_cam_ns", "/body_camera/body_camera"
+            "ugv/body_cam_ns", "/robot/body_camera"
         )
         self.arm_cam_ns = rospy.get_param(
-            "ugv/arm_cam_ns", "/arm_camera/arm_camera"
+            "ugv/arm_cam_ns", "/robot/arm_camera"
         )
 
     def save_to_blackboard(self) -> None:
@@ -50,7 +50,7 @@ class PotholeBT(base_bt.BaseBT):
         kafka_msg: str = "",
         cam_ns: str = "arm_cam_ns",
         seq_task_name="KafkaImageSeq",
-        load_img_task_name="Get images",
+        load_img_task_name="Get images for kafka",
         send_kafka_task_name="Send image to kafka",
     ) -> pt.composites.Composite:
         """"""
@@ -80,14 +80,14 @@ class PotholeBT(base_bt.BaseBT):
             move_loc="inspection_mid_old", seq_task_name="MoveToInspectionMidSeq"
         )
         mid_photo = self.get_kafka_photo_seq(
-            img_key="/pothole/mid", kafka_msg="inspection mid pothole"
+            img_key="/pothole/mid", kafka_msg="pothole/inspection-mid"
         )
 
         inspection_left = self.move_take_snap(
             move_loc="inspection_left", seq_task_name="MoveToInspectionLeftSeq"
         )
         left_photo = self.get_kafka_photo_seq(
-            img_key="/pothole/left", kafka_msg="inspection left pothole"
+            img_key="/pothole/left", kafka_msg="pothole/inspection-left"
         )
 
         inspection_right = self.move_take_snap(
@@ -95,7 +95,7 @@ class PotholeBT(base_bt.BaseBT):
             seq_task_name="MoveToInspectionRightSeq",
         )
         right_photo = self.get_kafka_photo_seq(
-            img_key="/pothole/right", kafka_msg="inspection right pothole"
+            img_key="/pothole/right", kafka_msg="pothole/inspection-right"
         )
 
         return pt.composites.Sequence(
