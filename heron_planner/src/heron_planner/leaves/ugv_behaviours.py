@@ -339,7 +339,7 @@ class Deposit(_CommandSequencer):
     def _load_fn(self):
         data = self._default_load_fn(auto_generate=False)
 
-        if isinstance(data, (1 | 2 | 3)):
+        if isinstance(data, int):
             rospy.loginfo(f"Activating deposit {data}")
             cmd_str = f"{Deposit.CMD} {str(data)}"
             return RobotSimpleCommandGoal(
