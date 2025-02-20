@@ -429,7 +429,7 @@ class PlaceOn(_CommandManager):
             **kwargs,
         )
 
-    def _load_fn(self) -> CommandString:
+    def _load_fn(self) -> RobotSimpleCommandGoal:
         data = self._default_load_fn(auto_generate=False)
 
         if isinstance(data, str):
@@ -446,6 +446,7 @@ class PlaceOn(_CommandManager):
     def _result_fn(self):
         res = self._default_result_fn()
         rospy.logerr(f"Result Place: {res}")
+        rospy.logerr(f"Type {type(res)}")
         return res
 
 # TODO add pickup/place actions here!

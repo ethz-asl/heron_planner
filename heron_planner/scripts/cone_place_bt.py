@@ -85,22 +85,41 @@ class ConePlaceBT(base_bt.BaseBT):
             load_value="home",
         )
 
-        pick_up_cone1 = ugv.PickUpFrom(
-            task_name="Pick up cone from robot", load_value="robot"
-        )
-        place_cone1 = ugv.PlaceOn(
-            task_name="Place cone on floor", load_value="floor"
-        )
-
         move_forward = ugv.Move(
             task_name="move forward", load_value="MOVE 3.0 0"
         )
 
+        move_diagonal = ugv.Move(
+            task_name="move diagonal", load_value="MOVE 1.5 1.5"
+        )
+
+        pick_up_cone1 = ugv.PickUpFrom(
+            task_name="Pick up cone 1 from robot", load_value="robot"
+        )
+        place_cone1 = ugv.PlaceOn(
+            task_name="Place cone 1 on floor", load_value="floor"
+        )
+
+
         pick_up_cone2 = ugv.PickUpFrom(
-            task_name="Pick up cone from robot", load_value="robot"
+            task_name="Pick up cone 2 from robot", load_value="robot"
         )
         place_cone2 = ugv.PlaceOn(
-            task_name="Place cone on floor", load_value="floor"
+            task_name="Place cone 2 on floor", load_value="floor"
+        )
+
+        pick_up_cone3 = ugv.PickUpFrom(
+            task_name="Pick up cone 3 from robot", load_value="robot"
+        )
+        place_cone3 = ugv.PlaceOn(
+            task_name="Place cone 3 on floor", load_value="floor"
+        )
+
+        pick_up_cone4 = ugv.PickUpFrom(
+            task_name="Pick up cone 4 from robot", load_value="robot"
+        )
+        place_cone4 = ugv.PlaceOn(
+            task_name="Place cone 4 on floor", load_value="floor"
         )
 
         root.add_children(
@@ -108,11 +127,15 @@ class ConePlaceBT(base_bt.BaseBT):
                 arm_to_home,
                 pick_up_cone1,
                 place_cone1,
-                arm_to_home,
                 move_forward,
                 pick_up_cone2,
                 place_cone2,
-                arm_to_home,
+                # move_forward,
+                # pick_up_cone3,
+                # place_cone3,
+                # move_diagonal,
+                # pick_up_cone4,
+                # place_cone4
             ]
         )
 
