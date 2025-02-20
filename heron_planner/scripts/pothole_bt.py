@@ -143,6 +143,10 @@ class PotholeBT(base_bt.BaseBT):
             task_name="Move arm to inspection mid",
             load_value="inspection_mid_old",
         )
+        mid_photo = self.get_kafka_photo_seq(
+            img_key="/pothole/validation", kafka_msg="pothole/validation"
+        )
+
         take_snap = ugv.TakeSnap()
 
         reverse_1 = ugv.Move(task_name="reverse 1m", load_value="MOVE -1.0 0.0")
@@ -177,13 +181,14 @@ class PotholeBT(base_bt.BaseBT):
                 roller_up,
                 arm_to_home,
                 reverse_1,
-                # arm_to_inspection_mid,
                 self.get_inspection_loop(),
                 arm_to_home,
                 forward_to_blow,
                 blow_pothole,
                 reverse_to_deposit,
                 deposit1,
+                roller_sequence,
+                mid_photo,
             ]
             # [arm_to_home, self.get_inspection_loop()]
             # [ugv.TakeSnap()]
