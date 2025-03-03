@@ -16,11 +16,11 @@ ugv:
   arm_cam_ns: "/robot/arm_camera"
 
 iccs:
-  find_pothole_srv: "/iccs/find_pothole"
+  find_pothole_srv: "iccs_pothole_finder"
 
 pothole:
   inspection_names: 
-    - "inspection_mid"
+    - "inspection_mid_old"
     - "inspection_left"
     - "inspection_right"
   roller_sequence:

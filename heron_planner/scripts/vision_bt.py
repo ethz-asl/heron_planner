@@ -13,9 +13,9 @@ import heron_planner.leaves.iccs_behaviours as iccs
 import heron_planner.leaves.generic_behaviours as generic
 
 
-class PotholeBT(base_bt.BaseBT):
+class VisionBT(base_bt.BaseBT):
     def __init__(self) -> None:
-        super().__init__("PotholeTestBT")
+        super().__init__("VisionTestBT")
 
     def load_parameters(self) -> None:
         self.tree_rate = rospy.get_param("tree_rate", 10)
@@ -110,24 +110,6 @@ class PotholeBT(base_bt.BaseBT):
             ],
         )
 
-    def get_pothole_sel(self) -> pt.composites.Composite:
-        find_pothole_mid = iccs.FindPothole(
-            task_name="Find pothole at inspection mid", load_key="pothole/mid"
-        )
-        find_pothole_left = iccs.FindPothole(
-            task_name="Find pothole at inspection left", load_key="pothole/left"
-        )
-        find_pothole_right = iccs.FindPothole(
-            task_name="Find pothole at inspection right",
-            load_key="pothole/right",
-        )
-
-        return pt.composites.Sequence(
-            name="FindPotholeSel",
-            children=[find_pothole_mid, find_pothole_left, find_pothole_right],
-            memory=False,
-        )
-
     def build_root(self) -> pt.behaviour.Behaviour:
         """build root"""
 
@@ -150,61 +132,26 @@ class PotholeBT(base_bt.BaseBT):
         take_snap = ugv.TakeSnap()
 
         reverse_to_inspection = ugv.Move(task_name="reverse 1.3m", load_value="MOVE -1.3 0.0")
-        reverse_half = ugv.Move(task_name="reverse 0.5m", load_value="MOVE -0.5 0.0")
 
-        forward_1 = ugv.Move(task_name="forward 1m", load_value="MOVE 1.0 0.0")
-        forward_half = ugv.Move(task_name="forward 0.5m", load_value="MOVE 0.5 0.0")
+        find_pothole = iccs.FindPothole(task_name="Find pothole")
         
-        forward_to_blow = ugv.Move(task_name="forward to blow", load_value="MOVE 0.95 0")
-        reverse_to_deposit = ugv.Move(task_name="reverse to deposit", load_value="MOVE -0.10 0")
-        
-        # dock = ugv.Dock(
-        #     task_name="dock to start of offset",
-
-        # ) # can we dock to specific frame? is this a cmd_manager cmd?
-
-        # distance 0.25
-        blow_pothole = ugv.BlowPothole()
-
-        deposit1 = ugv.Deposit(task_name="Open deposit 1", load_value=1)        
-        # deposit2 = ugv.Deposit(task_name="Open deposit 2", load_value=2)        
-        # deposit3 = ugv.Deposit(task_name="Open deposit 3", load_value=3)        
-
-        roller_up = ugv.RollerUp()
-        roller_down = ugv.RollerDown()
-        roller_sequence = ugv.RollerSequence(
-            task_name="Pothole FB 1", load_value="FB_1"
-        )
-        
-        # sequence assuming robot starts with deposit over pothole
-        # using deposit 1 only
         root.add_children(
             [
-                roller_up,
                 arm_to_home,
                 reverse_to_inspection,
-                self.get_inspection_loop(),
-                arm_to_home,
-                forward_to_blow,
-                blow_pothole,
-                reverse_to_deposit,
-                deposit1,
-                roller_sequence,
+                arm_to_inspection_mid,
                 mid_photo,
-                arm_to_home,
             ]
-            # [arm_to_home, self.get_inspection_loop()]
-            # [ugv.TakeSnap()]
         )
 
         return root
 
 
 def main():
-    rospy.init_node("pothole_bt")
+    rospy.init_node("/hlp/vision_bt")
     pt.logging.level = pt.logging.Level.DEBUG
 
-    node = PotholeBT()
+    node = VisionBT()
     # node.tree.visualise()
 
     rospy.spin()
