@@ -20,12 +20,13 @@ class CrackPathGenerator:
        self.tf_buffer = tf2_ros.Buffer()
        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
 
-       self.path_pub = rospy.Publisher("hlp/crack_path", Path, queue_size=10)
+       self.path_pub = rospy.Publisher("hlp/crack_path", Path, queue_size=1)
+       self.path_overlay = rospy.Publisher("hlp/crack_path_overlay", Image, queue_size=1)
 
        # either from bb or subscriber
-       rospy.Subscriber("hlp/crack_start", PointStamped, self.start_point_cb)
-       rospy.Subscriber("hlp/crack_end", PointStamped, self.end_point_cb)
-       rospy.Subscriber("hlp/crack_segmentation", Image, self.segmentation_cb)
+       rospy.Subscriber("crack_start", PointStamped, self.start_point_cb)
+       rospy.Subscriber("crack_end", PointStamped, self.end_point_cb)
+       rospy.Subscriber("crack_segmentation", Image, self.segmentation_cb)
 
        self.bridge = cv_bridge.CvBridge()
        self.start_point = None
@@ -80,6 +81,18 @@ class CrackPathGenerator:
         rospy.loginfo("finding longest contour")        
         contour = max(contours, key=len)
         points = np.array([point[0] for point in contour])
+
+        # create overlay pub to put on mesh in purple
+        overlay_mask = self.bridge.imgmsg_to_cv2(self.seg_mask, desired_encoding='passthrough')
+        overlay_mask = cv2.cvtColor(overlay_mask, cv2.COLOR_GRAY2BGR)
+        ## implementation here 
+        for idx in range(len(points) - 1):
+            cv2.line(overlay_mask, tuple(points[idx]), tuple(points[idx + 1]), (255, 0, 255),2)
+        
+        overlay_msg = self.bridge.cv2_to_imgmsg(overlay_mask, encoding="bgr8")
+        overlay_msg.header.stamp = rospy.Time.now()
+        self.path_overlay.publish(overlay_msg)
+        rospy.loginfo(f"publshed overlay path")
 
         # convert pixel to realworld coords
         rospy.loginfo("converting to path")        
