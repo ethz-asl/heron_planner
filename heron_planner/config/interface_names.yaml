@@ -14,11 +14,18 @@ ugv:
   get_deposit_srv: "/robot/get_deposit_sequence"
   body_cam_ns: "/robot/body_camera"
   arm_cam_ns: "/robot/arm_camera"
+  arm_cam_frame: "front_rgbd_camera_rgb_camera_optical_frame"
+  base_frame: "robot_base_footprint"
+  map_frame: "robot_map"
+
+kafka: False
 
 iccs:
-  find_pothole_srv: "iccs_pothole_finder"
+  find_pothole_srv: "/find_potholes"
+  find_cracks_srv: "/find_cracks"
 
 pothole:
+  offset: 2.0
   inspection_names: 
     - "inspection_mid_old"
     - "inspection_left"
@@ -36,6 +43,11 @@ cone_place:
     - [37.7740, -122.4197]  # P3
     - [37.7740, -122.4190]  # P4
     - [37.7740, -122.4183]  # P5
+
+cracks: 
+  offset: 0.7
+  is_right_side: True
+  # is_right_side: False
 
 #TODO position in dummy file & hardcoded pothole size&loc
 test:

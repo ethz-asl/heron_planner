@@ -23,29 +23,28 @@ from heron_msgs.srv import FindOffsetRequest
 ############################# parameters from config ###############################
 ################################################################################
 
-# TODO change CMD_MANAGER & CMD_SEQUENCER to action!!
 CMD_MANAGER_ACTION = rospy.get_param(
-    "ugv/cmd_manager_action", "/robot/command_manager/action"
+    "/ugv/cmd_manager_action", "/robot/command_manager/action"
 )
 CMD_SEQUENCER_ACTION = rospy.get_param(
-    "ugv/cmd_sequencer_action", "/robot/command_sequencer/action"
+    "/ugv/cmd_sequencer_action", "/robot/command_sequencer/action"
 )
 CMD_MANAGER_SRV = rospy.get_param(
-    "ugv/cmd_manager_srv", "/robot/command_manager/command"
+    "/ugv/cmd_manager_srv", "/robot/command_manager/command"
 )
 CMD_SEQUENCER_SRV = rospy.get_param(
-    "ugv/cmd_sequencer_srv", "/robot/command_sequencer/command"
+    "/ugv/cmd_sequencer_srv", "/robot/command_sequencer/command"
 )
 MOVE_TO_ACTION = rospy.get_param("ugv/move_to_action", "/robot/arm/move_to")
 PICKUP_FROM_ACTION = rospy.get_param(
-    "ugv/pickup_from_action", "/robot/arm/pickup_from"
+    "/ugv/pickup_from_action", "/robot/arm/pickup_from"
 )
-PLACE_ON_ACTION = rospy.get_param("ugv/place_on_action", "/robot/arm/place_on")
-DOCK_ACTION = rospy.get_param("ugv/dock_action", "/robot/base/dock")
-ODOM_TOPIC = rospy.get_param("ugv/odom_topic", "/robot/odom")
-FIND_OFFSET_SRV = rospy.get_param("ugv/find_offset_srv", "/robot/find_offset")
+PLACE_ON_ACTION = rospy.get_param("/ugv/place_on_action", "/robot/arm/place_on")
+DOCK_ACTION = rospy.get_param("/ugv/dock_action", "/robot/base/dock")
+ODOM_TOPIC = rospy.get_param("/ugv/odom_topic", "/robot/odom")
+FIND_OFFSET_SRV = rospy.get_param("/ugv/find_offset_srv", "/robot/find_offset")
 GET_DEPOSIT_SRV = rospy.get_param(
-    "ugv/get_deposit_srv", "/robot/get_deposit_sequence"
+    "/ugv/get_deposit_srv", "/robot/get_deposit_sequence"
 )
 
 ################################################################################
@@ -189,6 +188,30 @@ class GoToGPS(_CommandManager):
                 )
         else:
             rospy.logerr(f"Type {type(data)}: is incorrect")
+            raise ValueError
+
+class OmniDock(_CommandManager):
+    CMD = "OMNI_DOCK"
+
+    def __init__(self, task_name="", *args, **kwargs) -> None:
+        super(OmniDock, self).__init__(
+            name=task_name if task_name else "Omni dock",
+            load=True,
+            load_fn=self._load_fn,
+            *args,
+            **kwargs,
+        )
+
+    def _load_fn(self) -> str:
+        data = self._default_load_fn(auto_generate=False)
+
+        if isinstance(data, str):
+            cmd_str = f"{OmniDock.CMD} {data} 0 0 0"
+            return RobotSimpleCommandGoal(
+                command=CommandString(command=cmd_str)
+            )
+        else:
+            rospy.logerr(f"Type {type(data)} is incorrect")
             raise ValueError
 
 
@@ -457,7 +480,6 @@ class PlaceOn(_CommandManager):
 # TODO DOCK name man -> similar to move_arm_to but to TF pos
 # TODO OMNI_DOCK name man
 
-
 class Dock(rt.leaves_ros.ActionLeaf):
     def __init__(
         self,
@@ -503,7 +525,6 @@ class Dock(rt.leaves_ros.ActionLeaf):
         rospy.loginfo(f"Dock action: {res.description}")
         return res.success
 
-
 class AtPose(rt.leaves_ros.SubscriberLeaf):
     def __init__(
         self,
@@ -544,50 +565,6 @@ class AtPose(rt.leaves_ros.SubscriberLeaf):
             raise ValueError
 
 
-class FindOffset(rt.leaves_ros.ServiceLeaf):
-    def __init__(
-        self,
-        defect,
-        broadcast=True,
-        broadcast_frame="offset",
-        task_name="",
-        *args,
-        **kwargs,
-    ):
-        super(FindOffset, self).__init__(
-            name=task_name if task_name else "Find offset pose",
-            service_name=FIND_OFFSET_SRV,
-            load_fn=self._load_fn,
-            result_fn=self._result_fn,
-            *args,
-            **kwargs,
-        )
-        self.defect = defect
-        self.broadcast = broadcast
-        self.broadcast_frame = broadcast_frame
-
-    def _load_fn(self):
-        pose = self._default_load_fn(auto_generate=False)
-        if isinstance(pose, PoseStamped):
-            req = FindOffsetRequest(
-                defect_pose=pose,
-                defect_type=self.defect,
-                broadcast_to_tf=self.broadcast,
-                broadcast_frame=self.broadcast_frame,
-            )
-            return req
-        else:
-            rospy.logerr(f"Type {type(pose)}: is incorrect")
-            raise ValueError
-
-    def _result_fn(self):
-        res = self._default_result_fn()
-        if res.success:
-            pose_key = self.save_key if self.save_key else "offset_pose"
-            rt.data_management.set_value(pose_key, res.offset_pose)
-            return res.offset_pose
-        rospy.logwarn(f"Error finding offset")
-        return res.success
 
 
 class GetDepositSeq(rt.leaves_ros.ServiceLeaf):

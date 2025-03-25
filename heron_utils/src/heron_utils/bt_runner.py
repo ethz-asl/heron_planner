@@ -8,7 +8,7 @@ import ros_trees as rt
 
 class BehaviourTreeRunner(rt.trees.BehaviourTree):
     def __init__(
-        self, tree_name: str, root: pt.behaviour.Behaviour, hz: float = 10
+        self, tree_name: str, root: pt.behaviour.Behaviour, hz: float = 10, restart: bool = False
     ) -> None:
         """
         wrapping the ros_trees BehaviourTree class
@@ -18,6 +18,7 @@ class BehaviourTreeRunner(rt.trees.BehaviourTree):
         super(BehaviourTreeRunner, self).__init__(tree_name, root)
         self.tree_name = tree_name
         self.hz = hz
+        self.restart = restart
         self.running = False
         self.paused = False
         self._thread = None
@@ -74,6 +75,19 @@ class BehaviourTreeRunner(rt.trees.BehaviourTree):
             if tree_status in [pt.common.Status.SUCCESS, pt.common.Status.FAILURE]:
                 rospy.loginfo(f"{self.tree_name} finished with status: {tree_status}")
                 self.running = False # stop loop
+
+                if self.restart:
+                    rospy.loginfo(f"Restarting {self.tree_name}...")
+
+                    # proper cleanup before restarting
+                    # self.stop()
+                    self.restart_tree(setup_timeout)
+                    time.sleep(1)  # Small delay to avoid race conditions
+                    self.start()
+
+                    continue  # Restart the loop instead of stopping
+                
+                self.running = False  # Stop loop if not restarting
                 break
 
             if remaining > 0:
@@ -83,6 +97,27 @@ class BehaviourTreeRunner(rt.trees.BehaviourTree):
                     break
 
         rospy.loginfo(f"Stopping Behaviour Tree: {self.tree_name}")
+
+    def restart_tree(self, setup_timeout):
+        """shuts down all ROS services before restarting"""
+        rospy.loginfo("Shutting down ROS services before restarting...")
+        
+        # Unregister all known services
+        try:
+            rospy.Service("/vision_bt/get_blackboard_variables").shutdown("Shutting down for restart")
+        except Exception as e:
+            rospy.logwarn(f"Could not shutdown service: {e}")
+
+        self.root.terminate(pt.common.Status.INVALID)  # Ensure nodes clean up
+        rospy.loginfo("Behavior tree terminated.")
+        
+        self.running = False  # Ensure the loop stops
+        self.paused = False
+        
+        if self._thread and self._thread.is_alive():
+            rospy.loginfo("Waiting for thread to exit...")
+            self._thread.join(timeout=2)  # Forcefully wait for the thread to exit
+            self._thread = None  # Set it to None after shutting down
 
     def start(self):
         if self.running:
@@ -102,8 +137,12 @@ class BehaviourTreeRunner(rt.trees.BehaviourTree):
             self.resume()  # ensure pause condition is released
 
         if self._thread:
-            self._thread.join()
-            self._thead = None
+            rospy.loginfo("Waiting for thread to join...")
+            self._thread.join(timeout=2)  # timeout to avoid infinite waiting
+            if self._thread.is_alive():
+                rospy.logwarn("thread did not exit in time, forcing cleanup.")
+            self._thread = None  # ensure it's properly cleaned up
+
 
         rospy.loginfo("Behaviour tree stopped.")
 

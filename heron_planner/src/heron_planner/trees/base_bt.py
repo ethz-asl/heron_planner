@@ -91,7 +91,7 @@ class BaseBT:
                 continue
 
             # self.update_state()  # pub hlp state for flask server
-            self.tree.run(hz=hz, push_to_start=True, log_level="WARN")
+            self.tree.run(hz=hz, push_to_start=False, log_level="WARN")
 
     def start_bt(self, req: TriggerRequest) -> TriggerResponse:
         """start the BT execution"""
