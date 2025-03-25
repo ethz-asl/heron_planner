@@ -6,12 +6,14 @@ import ros_trees as rt
 
 import heron_utils.transform_utils as utils
 
+from nav_msgs.msg import Path
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import PoseStamped
 
 from heron_msgs.srv import (
     SendImageToKafkaRequest,
     TransformPoseRequest,
+    FindOffsetRequest,
 )
 
 ################################################################################
@@ -78,6 +80,27 @@ class SendImageToKafka(rt.leaves_ros.ServiceLeaf):
         rospy.logerr(f"kafka response : {res}")
         return res
 
+class FakeSendImageToKafka(rt.leaves.Leaf):
+
+    def __init__(self, task_name="", msg="", *args, **kwargs):
+        super(FakeSendImageToKafka, self).__init__(
+            name=task_name if task_name else "Send photo to Kafka (fake)",
+            load_fn=self._load_fn,
+            *args,
+            **kwargs,
+        )
+        self.msg = msg
+
+    def _load_fn(self):
+        img = self._default_load_fn(auto_generate=False)
+        if isinstance(img, Image):
+            # here make req to send to kafka
+            rospy.loginfo(f"Sending img to (fake) kafka: {self.msg}")
+            rospy.loginfo(f"(fake) kafka responded: success")
+        else: 
+            rospy.logerr(f"Type {type(img)}: is incorrect")
+            raise ValueError
+
 
 class TransformPose(rt.leaves_ros.ServiceLeaf):
     def __init__(self, target_frame, task_name="", *args, **kwargs):
@@ -112,6 +135,80 @@ class TransformPose(rt.leaves_ros.ServiceLeaf):
         rospy.logwarn(f"Transform failed.")
         return res.success
 
+class GenerateCrackPath(rt.leaves_ros.ServiceLeaf):
+    def __init__(self, task_name="", save_bb_key=None, *args, **kwargs):
+        super(GenerateCrackPath, self).__init__(
+            name=task_name if task_name else "Generate crack path",
+            service_name="/hlp/generate_crack_path",
+            result_fn=self._result_fn,
+            *args,
+            **kwargs,    
+        )
+        self.save_bb_key = save_bb_key
+
+    def _result_fn(self):
+        path = "/crack/path"
+        middle_pose = "/crack/middle"
+        if self.save_bb_key is not None:
+            bb_key = rt.data_management.get_value(self.save_bb_key)
+            path = path + "/" + bb_key
+            middle_pose = middle_pose + "/" + bb_key
+
+        res = self._default_result_fn()
+        rospy.logwarn(f"Found path?: {res.success}")
+        if not res.success:
+            return False
+    
+        if isinstance(res.path, Path) and isinstance(res.middle_pose, PoseStamped) and self.save:
+            rt.data_management.set_value(path, res.path)
+            rt.data_management.set_value(middle_pose, res.middle_pose)
+
+        return res
+
+class FindOffset(rt.leaves_ros.ServiceLeaf):
+    def __init__(
+        self,
+        defect,
+        broadcast=True,
+        broadcast_frame="offset",
+        task_name="",
+        *args,
+        **kwargs,
+    ):
+        super(FindOffset, self).__init__(
+            name=task_name if task_name else "Find offset pose",
+            service_name="/hlp/find_offset",
+            load_fn=self._load_fn,
+            result_fn=self._result_fn,
+            *args,
+            **kwargs,
+        )
+        self.defect = defect
+        self.broadcast = broadcast
+        self.broadcast_frame = broadcast_frame
+
+    def _load_fn(self):
+        pose = self._default_load_fn(auto_generate=False)
+        if isinstance(pose, PoseStamped):
+            req = FindOffsetRequest(
+                defect_pose=pose,
+                defect_type=self.defect,
+                broadcast_to_tf=self.broadcast,
+                broadcast_frame=self.broadcast_frame,
+            )
+            return req
+        else:
+            rospy.logerr(f"Type {type(pose)}: is incorrect")
+            raise ValueError
+
+    def _result_fn(self):
+        res = self._default_result_fn()
+        if res.success:
+            pose_key = self.save_key if self.save_key else self.defect + "offset"
+            rt.data_management.set_value(pose_key, res.offset_pose)
+            return res.offset_pose
+        rospy.logwarn(f"Error finding offset")
+        return res.success
 
 class PopFromList(rt.leaves.Leaf):
 

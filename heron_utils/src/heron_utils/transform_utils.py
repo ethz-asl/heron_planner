@@ -79,16 +79,18 @@ def pose_stamped_from_array(
 def transform_from_pose_stamped(pose: PoseStamped, child_frame: str) -> TransformStamped:
     """"""
     if isinstance(pose, PoseStamped):
+
         transform = TransformStamped()
         transform.header.stamp = pose.header.stamp
         transform.header.frame_id = pose.header.frame_id
         transform.child_frame_id = child_frame
 
         transform.transform.translation.x = pose.pose.position.x
-        transform.transform.translation.x = pose.pose.position.y
-        transform.transform.translation.x = pose.pose.position.z
+        transform.transform.translation.y = pose.pose.position.y
+        transform.transform.translation.z = pose.pose.position.z
         transform.transform.rotation = pose.pose.orientation
 
+        rospy.logwarn(f"transform {transform}")
         return transform
     else:
         rospy.logerr(f"Pose should be of type PoseStamped: {type(pose)}")

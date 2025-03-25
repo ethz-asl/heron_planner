@@ -47,13 +47,13 @@ class ICCSDummyInterface:
 
         # services
         self.find_pothole_srv = rospy.Service(
-            "/iccs/find_pothole",
+            "/find_potholes",
             FindPothole,
             self.handle_find_pothole,
         )
 
         self.find_crack_srv = rospy.Service(
-            "/iccs/find_crack",
+            "/find_cracks",
             FindCrack,
             self.handle_find_crack,
         )
@@ -75,17 +75,17 @@ class ICCSDummyInterface:
             rospy.loginfo(f"req types correct")
         else:
             rospy.logerr(f"req types incorrect")
-        success = random.choice([True, False])
-        # success = True # testing 
+        # success = random.choice([True, False])
+        success = True # testing 
         rospy.logwarn(f"found pothole? {success}")
 
         center_of_mass = PoseStamped()
         center_of_mass.header.stamp = rospy.Time.now()
-        center_of_mass.header.frame_id = "arm_camera_link"
+        center_of_mass.header.frame_id = "robot/arm_camera_rgb_camera_optical_frame"
         center_of_mass.pose.position.x = 0
         center_of_mass.pose.position.y = 0
         center_of_mass.pose.position.z = 0
-        center_of_mass.pose.orientation.w = 0
+        center_of_mass.pose.orientation.w = 1
 
         surface_area = random.uniform(0.08, 0.20)
         rospy.logwarn(f"Surface area is : {surface_area}")

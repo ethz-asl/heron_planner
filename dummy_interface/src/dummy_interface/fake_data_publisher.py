@@ -61,11 +61,12 @@ class FakeDataPublisher:
         self.tf_broadcaster = tf2_ros.TransformBroadcaster()
 
         self.transforms = [
-            self.create_transform("robot_map", "odom", 0, 0, 0),
-            self.create_transform("odom", "base_link", 0, 0, 0),
-            self.create_transform("base_link", "base_camera_link", 0.2, 0.0, 0.5),
+            self.create_transform("robot_map", "odom", 1, 1, 0),
+            self.create_transform("odom", "robot_base_footprint", 0, 0, 0),
+            self.create_transform("robot_base_footprint", "base_camera_link", 0.2, 0.0, 0.5),
             self.create_transform("base_camera_link", "arm_camera_link", 0.1, 0.0, 0.2),
-            self.create_transform("arm_camera_link", "robot/arm_camera_rgb_camera_optical_frame", 0.0, 0.0, 0.05),
+            # self.create_transform("arm_camera_link", "robot/arm_camera_rgb_camera_optical_frame", 0.0, 0.0, 0.05),
+            self.create_transform("arm_camera_link", "front_rgbd_camera_rgb_camera_optical_frame", 0.0, 0.0, 0.05),
         ]
 
         self.bridge = CvBridge()

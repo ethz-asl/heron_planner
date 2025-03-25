@@ -13,19 +13,19 @@ import heron_planner.leaves.iccs_behaviours as iccs
 import heron_planner.leaves.generic_behaviours as generic
 
 
-class VisionBT(base_bt.BaseBT):
+class CrackBT(base_bt.BaseBT):
     def __init__(self) -> None:
-        super().__init__("VisionTestBT")
+        super().__init__("CrackBT")
 
     def load_parameters(self) -> None:
         self.tree_rate = rospy.get_param("tree_rate", 10)
-        self.inspection_names = rospy.get_param("/pothole/inspection_names")
         self.body_cam_ns = rospy.get_param(
-            "/ugv/body_cam_ns", "/robot/body_camera"
+            "ugv/body_cam_ns", "/robot/body_camera"
         )
-        self.arm_cam_ns = rospy.get_param("/ugv/arm_cam_ns", "/robot/arm_camera")
-        self.arm_cam_tf = rospy.get_param("/ugv/arm_cam_tf", "")
-        self.use_kafka = rospy.get_param("/kafka", False)
+        self.arm_cam_ns = rospy.get_param(
+            "ugv/arm_cam_ns", "/robot/arm_camera"
+        )
+        self.use_kafka = rospy.get_param("kafka", False)
 
     def save_to_blackboard(self) -> None:
         self.bb.set("arm_cam_ns", self.arm_cam_ns)
@@ -63,11 +63,15 @@ class VisionBT(base_bt.BaseBT):
 
         if self.use_kafka:
             send_img_to_kafka = hlp.SendImageToKafka(
-                task_name=send_kafka_task_name, msg=kafka_msg, load_key=img_key
+                task_name=send_kafka_task_name,
+                msg=kafka_msg,
+                load_key=img_key,
             )
         else:
             send_img_to_kafka = hlp.FakeSendImageToKafka(
-                task_name=send_kafka_task_name, msg=kafka_msg, load_key=img_key
+                task_name=send_kafka_task_name,
+                msg=kafka_msg,
+                load_key=img_key,
             )
 
         return pt.composites.Sequence(
@@ -75,83 +79,68 @@ class VisionBT(base_bt.BaseBT):
             children=[load_img, send_img_to_kafka],
             memory=True,
         )
-
+    
     def find_pothole_seq(
-        self,
-        img_key: str,
-        cam_ns: str = "arm_cam_ns",
-        seq_task_name: str = "FindPotholeSeq",
-        load_img_task_name: str = "Get img from arm",
-        find_task_name: str = "Find pothole",
+            self,
+            img_key: str,
+            cam_ns: str = "arm_cam_ns",
+            seq_task_name: str = "FindPotholeSeq",
+            load_img_task_name: str = "Get img from arm",
+            find_task_name:str = "Find pothole"
     ) -> pt.composites.Composite:
-
+        
         load_img = hlp.GetSynchedImages(
             task_name=load_img_task_name,
             load_key=cam_ns,
             image_key=img_key,
-            save=True,
+            save=True
         )
         find_pothole = iccs.FindPothole(task_name=find_task_name)
-        transform_pothole = hlp.TransformPose(task_name="Transform pothole to odom",
-                                              target_frame="odom",
-                                              load_key="/pothole/com",
-                                              save_key="/pothole/odom")
-        find_offset = hlp.FindOffset(
-            defect="pothole",
-            broadcast=True,
-            broadcast_frame="pothole_offset",
-            load_key="/pothole/odom",
-        )
 
         return pt.composites.Sequence(
             name=seq_task_name,
-            children=[load_img, find_pothole, transform_pothole, find_offset],
-            memory=True,
+            children=[load_img, find_pothole],
+            memory=True
         )
 
     def find_crack_seq(
-        self,
-        img_key: str,
-        cam_ns: str = "arm_cam_ns",
-        seq_task_name: str = "FindCrackSeq",
-        load_img_task_name: str = "Get img from arm",
-        find_task_name: str = "Find crack",
+            self,
+            img_key: str,
+            cam_ns: str = "arm_cam_ns",
+            seq_task_name: str = "FindCrackSeq",
+            load_img_task_name: str = "Get img from arm",
+            find_task_name:str = "Find crack"
     ) -> pt.composites.Composite:
-
+        
         load_img = hlp.GetSynchedImages(
             task_name=load_img_task_name,
             load_key=cam_ns,
             image_key=img_key,
-            save=True,
+            save=True
         )
         find_crack = iccs.FindCrack(task_name=find_task_name)
         generate_crack_path = hlp.GenerateCrackPath()
-        find_offset = hlp.FindOffset(
-            defect="crack",
-            broadcast=True,
-            broadcast_frame="crack_offset",
-            load_key="/crack/middle"
-        )
 
-        # TODO add here a confirmation
-        # TODO get center of path & docking pose
-        # TODO move to crack dock
-        # TODO relook at path
-        # TODO add path interpolator here
-        # TODO move to "pose"
+        #TODO add here a confirmation
+        #TODO get center of path & docking pose
+        #TODO move to crack dock
+        #TODO relook at path
+        #TODO add path interpolator here
+        #TODO move to "pose"
+
 
         return pt.composites.Sequence(
             name=seq_task_name,
-            children=[load_img, find_crack, generate_crack_path, find_offset],
-            memory=True,
+            children=[load_img, find_crack, generate_crack_path],
+            memory=True
         )
+
 
     def get_inspection_loop(self) -> pt.composites.Composite:
         """loop through inspection positons and find pothole"""
 
         inspection_mid = self.move_take_snap(
-            move_loc="inspection_mid_old",
-            seq_task_name="MoveToInspectionMidSeq",
+            move_loc="inspection_mid_old", seq_task_name="MoveToInspectionMidSeq"
         )
         mid_photo = self.get_kafka_photo_seq(
             img_key="/pothole/mid", kafka_msg="pothole/inspection-mid"
@@ -192,31 +181,27 @@ class VisionBT(base_bt.BaseBT):
         wait_for_enter = generic.WaitForEnterKey()
 
         arm_to_home = ugv.MoveArmTo(
-            task_name="Move arm to home", load_value="home"
+            task_name="Move arm to home",
+            load_value="home",
         )
         arm_to_inspection_mid = ugv.MoveArmTo(
             task_name="Move arm to inspection mid",
             load_value="inspection_mid_old",
         )
-        pothole_photo = self.find_pothole_seq(img_key="/pothole/inspection")
-        crack_photo = self.find_crack_seq(img_key="/crack/inspection")
+        pothole_photo = self.find_pothole_seq(
+            img_key="/pothole/inspection"
+        )
+        crack_photo = self.find_crack_seq(
+            img_key="/crack/inspection"
+        )
 
-        # then we would want to dock to position
-        # then inspection left
-        # redo crack photo
 
         take_snap = ugv.TakeSnap()
 
-        reverse_to_inspection = ugv.Move(
-            task_name="reverse 1.3m", load_value="MOVE -1.3 0.0"
-        )
-
-        find_pothole = iccs.FindPothole(task_name="Find pothole")
+        reverse_to_inspection = ugv.Move(task_name="reverse 1.3m", load_value="MOVE -1.3 0.0")
 
         root.add_children(
-            [   
-                arm_to_home,
-                self.get_inspection_loop(),
+            [
                 crack_photo
                 # pothole_photo
             ]
@@ -226,10 +211,10 @@ class VisionBT(base_bt.BaseBT):
 
 
 def main():
-    rospy.init_node("vision_bt")
+    rospy.init_node("crack_bt")
     pt.logging.level = pt.logging.Level.DEBUG
 
-    node = VisionBT()
+    node = CrackBT()
     # node.tree.visualise()
 
     rospy.spin()
