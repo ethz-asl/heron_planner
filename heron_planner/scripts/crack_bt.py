@@ -37,8 +37,8 @@ class CrackBT(base_bt.BaseBT):
         fake_dock_pose = PoseStamped()
         fake_dock_pose.header.frame_id = "robot_odom"
         fake_dock_pose.header.stamp = rospy.Time.now()
-        fake_dock_pose.pose.position.x = 0.0
-        fake_dock_pose.pose.position.y = 0.0
+        fake_dock_pose.pose.position.x = 0.2
+        fake_dock_pose.pose.position.y = 0.2
         fake_dock_pose.pose.position.z = 0.0
         fake_dock_pose.pose.orientation.w = 1.0
 
@@ -178,6 +178,7 @@ class CrackBT(base_bt.BaseBT):
         crack_photo = self.find_crack_seq(img_key="/crack/inspection")
 
         crack_inspection = self.get_inspection_loop()
+        
         dock_midpoint = ugv.OmniDock(load_value="fake_dock")
         move_to_pose = ugv.MoveToPose()
         # then we would want to dock to position
@@ -190,14 +191,16 @@ class CrackBT(base_bt.BaseBT):
             task_name="reverse 1.3m", load_value="MOVE -1.3 0.0"
         )
 
-        find_pothole = iccs.FindPothole(task_name="Find pothole")
+        test_omni_dock = ugv.OmniDock(load_value="cone_1")
+        test_goto = ugv.GoTo(load_key="fake_dock_pose")
 
         root.add_children(
             [   
                 arm_to_home,
-                self.get_inspection_loop(),
-                crack_photo
-                # pothole_photo
+                # self.get_inspection_loop(),
+                # crack_photo,
+                test_goto,
+                test_omni_dock
             ]
         )
 

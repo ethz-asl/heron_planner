@@ -242,6 +242,9 @@ class HLPServers:
                 2,
             )
 
+        # reverse the points for robot path
+        smooth_points = smooth_points[::-1]
+
         path = Path()
         path.header.stamp = rospy.Time.now()
         # path.header.frame_id = MAP_FRAME
@@ -254,6 +257,7 @@ class HLPServers:
             pose.pose.position.x = x * scale
             pose.pose.position.y = y * scale
             pose.pose.position.z = 0  # road assumed 2d or add offset here TODO
+
             pose.pose.orientation.w = 1 # assume pose points up (can change later) TODO
 
             # Transform pose to robot_map or world
