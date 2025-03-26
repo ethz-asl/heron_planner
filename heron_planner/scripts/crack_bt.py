@@ -173,10 +173,12 @@ class CrackBT(base_bt.BaseBT):
         arm_to_home = ugv.MoveArmTo(
             task_name="Move arm to home", load_value="home"
         )
-        crack_photo = self.find_crack_seq(img_key="/crack/inspection")
 
         crack_inspection = self.get_inspection_loop()
-        
+
+        arm_to_left = ugv.MoveArmTo(task_name="Move arm to left", load_value="inspection_left") 
+        crack_photo = self.find_crack_seq(img_key="/crack/inspection")
+    
         dock_midpoint = ugv.OmniDock(load_value="fake_dock")
         move_to_pose = ugv.MoveToPose()
         # then we would want to dock to position
@@ -195,10 +197,11 @@ class CrackBT(base_bt.BaseBT):
         root.add_children(
             [   
                 # arm_to_home,
+                arm_to_left,
                 # self.get_inspection_loop(),
-                # crack_photo,
-                test_goto,
-                test_omni_dock
+                crack_photo,
+                # test_goto,
+                # test_omni_dock
             ]
         )
 
