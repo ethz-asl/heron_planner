@@ -178,19 +178,19 @@ class GoTo(_CommandManager):
             **kwargs,
         )
 
-        def _load_fn(self) -> str:
-            data = self._default_load_fn(auto_generate=False)
+    def _load_fn(self) -> str:
+        data = self._default_load_fn(auto_generate=False)
 
-            if isinstance(data, PoseStamped):
-                pose_arr = utils.array_from_pose(data.pose)
-                yaw = utils.angle_from_quaternion(pose_arr[3:])
-                cmd_str = f"{GoTo.CMD} {pose_arr[0]} {pose_arr[1]} {yaw:.2f}"
-                return RobotSimpleCommandGoal(
-                    command=CommandString(command=cmd_str)
-                )
-            else:
-                rospy.logerr(f"Type {type(data)}: is incorrect")
-                raise ValueError
+        if isinstance(data, PoseStamped):
+            pose_arr = utils.array_from_pose(data.pose)
+            yaw = utils.angle_from_quaternion(pose_arr[3:])
+            cmd_str = f"{GoTo.CMD} {pose_arr[0]} {pose_arr[1]} {yaw:.2f}"
+            return RobotSimpleCommandGoal(
+                command=CommandString(command=cmd_str)
+            )
+        else:
+            rospy.logerr(f"Type {type(data)}: is incorrect")
+            raise ValueError
 
 class GoToGPS(_CommandManager):
     CMD = "RLC_GOTO_GPS"
