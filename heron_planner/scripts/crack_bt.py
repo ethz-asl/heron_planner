@@ -21,7 +21,6 @@ class CrackBT(base_bt.BaseBT):
 
     def load_parameters(self) -> None:
         self.tree_rate = rospy.get_param("tree_rate", 10)
-        self.inspection_names = rospy.get_param("/pothole/inspection_names")
         self.body_cam_ns = rospy.get_param(
             "/ugv/body_cam_ns", "/robot/body_camera"
         )
@@ -32,7 +31,6 @@ class CrackBT(base_bt.BaseBT):
     def save_to_blackboard(self) -> None:
         self.bb.set("arm_cam_ns", self.arm_cam_ns)
         self.bb.set("body_cam_ns", self.body_cam_ns)
-        self.bb.set("inspections", self.inspection_names)
 
         fake_dock_pose = PoseStamped()
         fake_dock_pose.header.frame_id = "robot_odom"
@@ -196,7 +194,7 @@ class CrackBT(base_bt.BaseBT):
 
         root.add_children(
             [   
-                arm_to_home,
+                # arm_to_home,
                 # self.get_inspection_loop(),
                 # crack_photo,
                 test_goto,
