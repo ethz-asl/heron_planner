@@ -5,7 +5,7 @@ import ros_trees as rt
 
 import heron_utils.transform_utils as utils
 
-from nav_msgs.msg import Odometry
+from nav_msgs.msg import Odometry, Path
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import PoseStamped, Pose2D, Twist
 
@@ -17,7 +17,7 @@ from robot_simple_command_manager_msgs.msg import (
 )
 from robot_simple_command_manager_msgs.srv import SetCommandStringRequest
 from robotnik_navigation_msgs.msg import DockGoal
-from heron_msgs.srv import FindOffsetRequest
+from heron_msgs.msg import MoveToPoseActionGoal, MoveThroughPathActionGoal
 
 ################################################################################
 ############################# parameters from config ###############################
@@ -35,7 +35,8 @@ CMD_MANAGER_SRV = rospy.get_param(
 CMD_SEQUENCER_SRV = rospy.get_param(
     "/ugv/cmd_sequencer_srv", "/robot/command_sequencer/command"
 )
-MOVE_TO_ACTION = rospy.get_param("ugv/move_to_action", "/robot/arm/move_to")
+MOVE_TO_ACTION = rospy.get_param("/ugv/move_to_action", "/robot/arm/move_to")
+MOVE_TO_POSE_ACTION = rospy.get_param("/ugv/move_to_pose_action", "/robot/arm/move_to_pose")
 PICKUP_FROM_ACTION = rospy.get_param(
     "/ugv/pickup_from_action", "/robot/arm/pickup_from"
 )
@@ -46,6 +47,8 @@ FIND_OFFSET_SRV = rospy.get_param("/ugv/find_offset_srv", "/robot/find_offset")
 GET_DEPOSIT_SRV = rospy.get_param(
     "/ugv/get_deposit_srv", "/robot/get_deposit_sequence"
 )
+MOVE_THROUGH_ACTION = rospy.get_param("/uvg/move_through_action", "/robot/heron_manipulation/move_through_path")
+ROBOT_BASE_FRAME = rospy.get_param("/ugv/base_frame", "robot_base_footprint")
 
 ################################################################################
 ############################### leaf definitions ###############################
@@ -163,9 +166,34 @@ class Move(_CommandManager):
             rospy.logerr(f"Type {type(data)}: is incorrect")
             raise ValueError
 
+class GoTo(_CommandManager):
+    CMD = "GOTO"
+
+    def __init__(self, task_name="", *args, **kwargs) -> None:
+        super(GoTo, self).__init__(
+            name=task_name if task_name else "Move base",
+            load=True,
+            load_fn=self._load_fn,
+            *args,
+            **kwargs,
+        )
+
+        def _load_fn(self) -> str:
+            data = self._default_load_fn(auto_generate=False)
+
+            if isinstance(data, PoseStamped):
+                pose_arr = utils.array_from_pose(data.pose)
+                yaw = utils.angle_from_quaternion(pose_arr[3:])
+                cmd_str = f"{GoTo.CMD} {pose_arr[0]} {pose_arr[1]} {yaw:.2f}"
+                return RobotSimpleCommandGoal(
+                    command=CommandString(command=cmd_str)
+                )
+            else:
+                rospy.logerr(f"Type {type(data)}: is incorrect")
+                raise ValueError
 
 class GoToGPS(_CommandManager):
-    CMD = "GOTO_GPS"
+    CMD = "RLC_GOTO_GPS"
 
     def __init__(self, task_name="", *args, **kwargs) -> None:
         super(GoToGPS, self).__init__(
@@ -206,7 +234,7 @@ class OmniDock(_CommandManager):
         data = self._default_load_fn(auto_generate=False)
 
         if isinstance(data, str):
-            cmd_str = f"{OmniDock.CMD} {data} 0 0 0"
+            cmd_str = f"{OmniDock.CMD} {data} {ROBOT_BASE_FRAME} 0 0 0"
             return RobotSimpleCommandGoal(
                 command=CommandString(command=cmd_str)
             )
@@ -395,15 +423,60 @@ class CustomCommandSequencer(_CommandSequencer):
             raise ValueError
 
 
-class MoveTo(rt.leaves_ros.ActionLeaf):
+class MoveToPose(rt.leaves_ros.ActionLeaf):
     def __init__(self, task_name="", *args, **kwargs) -> None:
-        super(MoveTo, self).__init__(
+        super(MoveToPose, self).__init__(
             name=task_name if task_name else "Move arm to named position",
-            action_namespace=MOVE_TO_ACTION,
+            action_namespace=MOVE_TO_POSE_ACTION,
+            load_fn = self._load_fn,
             *args,
             **kwargs,
         )
 
+    def _load_fn(self):
+        pose = self._default_load_fn(auto_generate=False)
+        if isinstance(pose, PoseStamped):
+           goal = MoveToPoseActionGoal(
+               pose = pose
+           )
+           return goal 
+        else:
+            rospy.logerr("wrong type of pose")
+            raise ValueError
+        
+    def _result_fn(self):
+        res = self._default_result_fn()
+        rospy.loginfo(f"Moved to pose? {res.success}")
+        rospy.loginfo(f"message: {res.message}")
+        return res.success
+
+
+class MoveThroughPath(rt.leaves_ros.ActionLeaf):
+    def __init__(self, task_name="", *args, **kwargs) -> None:
+        super(MoveThroughPath, self).__init__(
+            name=task_name if task_name else "Move arm through path",
+            action_namespace=MOVE_THROUGH_ACTION,
+            load_fn = self._load_fn,
+            *args,
+            **kwargs,
+        )
+
+    def _load_fn(self):
+        path = self._default_load_fn(auto_generate=False)
+        if isinstance(path, Path):
+           goal = MoveThroughPathActionGoal(
+               path = path
+           )
+           return goal 
+        else:
+            rospy.logerr("wrong type of path")
+            raise ValueError
+        
+    def _result_fn(self):
+        res = self._default_result_fn()
+        rospy.loginfo(f"Moved to pose? {res.success}")
+        rospy.loginfo(f"message: {res.message}")
+        return res.success
 
 class PickUpFrom(_CommandManager):
     CMD = "PICK"
@@ -563,8 +636,6 @@ class AtPose(rt.leaves_ros.SubscriberLeaf):
         else:
             rospy.logerr(f"Subscriber or key not valid types")
             raise ValueError
-
-
 
 
 class GetDepositSeq(rt.leaves_ros.ServiceLeaf):

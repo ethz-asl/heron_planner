@@ -10,6 +10,8 @@ from nav_msgs.msg import Path
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import PoseStamped
 
+from nav_msgs.srv import GetPlanRequest
+
 from heron_msgs.srv import (
     SendImageToKafkaRequest,
     TransformPoseRequest,
@@ -134,6 +136,37 @@ class TransformPose(rt.leaves_ros.ServiceLeaf):
             return res.pose_out
         rospy.logwarn(f"Transform failed.")
         return res.success
+
+class GenerateSimplePath(rt.leaves_ros.ServiceLeaf):
+    def __init__(self, start, goal, task_name="", *args, **kwargs):
+        super(GenerateSimplePath, self).__init__(
+            name=task_name if task_name else "Generate simple path",
+            load_fn=self._load_fn,            
+            result_fn=self._result_fn,
+            *args,
+            **kwargs,
+        )
+        self.start = start
+        self.goal = goal
+
+    def _load_fn(self):
+        if isinstance(self.start, PoseStamped) and isinstance(self.goal, PoseStamped):
+            req = GetPlanRequest(
+                start=self.start,
+                goal=self.goal
+            )
+            return req
+        else:
+            rospy.logerr(f"Start or Goal not pose stamped")
+            raise ValueError
+        
+    def _result_fn(self):
+        res = self._default_result_fn()
+
+        if isinstance(res.plan, Path):
+            rt.data_management.set_value("simple_path", res.plan)
+            return True
+        
 
 class GenerateCrackPath(rt.leaves_ros.ServiceLeaf):
     def __init__(self, task_name="", save_bb_key=None, *args, **kwargs):

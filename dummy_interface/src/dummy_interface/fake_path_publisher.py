@@ -6,6 +6,7 @@ from sensor_msgs.msg import NavSatFix, Image, NavSatStatus
 from std_msgs.msg import String, Header
 from geometry_msgs.msg import Pose, PoseStamped, TransformStamped
 from nav_msgs.msg import Odometry, Path
+from nav_msgs.srv import GetPlan, GetPlanRequest, GetPlanResponse
 import tf2_ros
 import tf_conversions
 import random
@@ -24,8 +25,40 @@ class FakePathPublisher:
         self.end_pub = rospy.Publisher("hlp/crack_end", PoseStamped, queue_size=10)
         self.mid_pub = rospy.Publisher("hlp/crack_mid", PoseStamped, queue_size=10)
 
+        self.path_srv = rospy.Service("hlp/generate_simple_path", GetPlan, self.handle_path)
+
         rospy.loginfo("Fake path publisher initialized.")
 
+    def handle_path(self, req: GetPlanRequest) -> GetPlanResponse:
+        
+        res = GetPlanResponse()
+        res.plan = Path()
+        res.plan.header.frame_id = BASE_FRAME
+        res.plan.header.stamp = rospy.Time.now()
+
+        x_pts = np.linspace(req.start.pose.position.x, req.goal.pose.position.x, 11)     
+        y_pts = np.linspace(req.start.pose.position.y, req.goal.pose.position.y, 11)
+
+        path_pts = np.column_stack((x_pts, y_pts))
+
+        for x, y in path_pts:
+            pose = PoseStamped()
+            pose.header = res.plan.header  
+            pose.pose.position.x = x
+            pose.pose.position.y = y
+            pose.pose.position.z = 0
+            pose.pose.orientation.w = 1
+
+            res.plan.poses.append(pose)
+
+        self.path_pub.publish(res.plan)
+        self.start_pub.publish(res.plan.poses[0])         
+        self.end_pub.publish(res.plan.poses[-1])
+        self.mid_pub.publish(res.plan.poses[len(res.plan.poses)//2])         
+        rospy.loginfo(f"published easy path!")
+
+        return res
+    
     def publish_easy_path(self):
         """create an easy path"""
         path = Path()

@@ -12,6 +12,8 @@ import heron_planner.leaves.hlp_behaviours as hlp
 import heron_planner.leaves.iccs_behaviours as iccs
 import heron_planner.leaves.generic_behaviours as generic
 
+from geometry_msgs.msg import PoseStamped
+
 
 class VisionBT(base_bt.BaseBT):
     def __init__(self) -> None:
@@ -31,6 +33,16 @@ class VisionBT(base_bt.BaseBT):
         self.bb.set("arm_cam_ns", self.arm_cam_ns)
         self.bb.set("body_cam_ns", self.body_cam_ns)
         self.bb.set("inspections", self.inspection_names)
+
+        fake_dock_pose = PoseStamped()
+        fake_dock_pose.header.frame_id = "odom"
+        fake_dock_pose.header.stamp = rospy.Time.now()
+        fake_dock_pose.pose.position.x = 0.0
+        fake_dock_pose.pose.position.y = 0.0
+        fake_dock_pose.pose.position.z = 0.0
+        fake_dock_pose.pose.orientation.w = 1.0
+
+        self.bb.set("fake_dock_pose", fake_dock_pose)
 
     def move_take_snap(
         self, move_loc: str = "home", seq_task_name: str = "MoveToHomeSeq"
@@ -201,6 +213,8 @@ class VisionBT(base_bt.BaseBT):
         pothole_photo = self.find_pothole_seq(img_key="/pothole/inspection")
         crack_photo = self.find_crack_seq(img_key="/crack/inspection")
 
+        dock_midpoint = ugv.OmniDock(load_value="fake_dock")
+        move_to_pose = ugv.MoveToPose()
         # then we would want to dock to position
         # then inspection left
         # redo crack photo

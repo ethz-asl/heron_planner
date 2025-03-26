@@ -5,7 +5,9 @@ ugv:
   cmd_sequencer_action: "/robot/command_sequencer/action"
   cmd_manager_srv: "/robot/command_manager/command"
   cmd_sequencer_srv: "/robot/command_sequencer/command"
+  move_through_path: "/robot/heron_manipulation/move_through_path"
   move_to_action: "/robot/arm/move_to"
+  move_to_pose_action: "/robot/arm/move_to_pose"
   pickup_from_action: "/robot/arm/pickup_from"
   place_on_action: "/robot/arm/place_on"
   dock_action: "/robot/base/dock"
@@ -37,6 +39,8 @@ pothole:
     - "POT_ROLL_OVER" 
 
 cone_place:
+  offset: 0.7
+  is_left_side: True
   gps_points:
     - [37.7745, -122.4195]  # P1
     - [37.7745, -122.4185]  # P2
@@ -48,6 +52,7 @@ cracks:
   offset: 0.7
   is_right_side: True
   # is_right_side: False
+  max_length: 0.6
 
 #TODO position in dummy file & hardcoded pothole size&loc
 test:

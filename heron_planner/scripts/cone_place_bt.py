@@ -26,6 +26,7 @@ class ConePlaceBT(base_bt.BaseBT):
         self.arm_cam_ns = rospy.get_param(
             "ugv/arm_cam_ns", "/robot/arm_camera/front_rgbd_camera/"
         )
+        self.cone_offset = rospy.get_param("/cone_place/offset", 0.7)
 
     def save_to_blackboard(self) -> None:
         self.bb.set("arm_cam_ns", self.arm_cam_ns)
@@ -43,6 +44,30 @@ class ConePlaceBT(base_bt.BaseBT):
         return pt.composites.Sequence(
             name=seq_task_name, children=[move_arm, take_snap], memory=True
         )
+
+    def go_to_cone(self, cone_id : str = "cone_1", seq_task_name="ConePlaceSeq"):
+        # go to cone location
+        go_to_cone = ugv.GoTo(task_name=f"Go to {cone_id}")
+    
+        # move sideways 0.7
+        move_to_offset = ugv.Move(
+            task_name="move to offset", load_value=f"MOVE 0.0 {self.cone_offset}"
+        )
+
+        # place cone
+        pick_up_cone = ugv.PickUpFrom(
+            task_name="Pick up cone 1 from robot", load_value="robot"
+        )
+        place_cone = ugv.PlaceOn(
+            task_name="Place {cone 1} on floor", load_value="floor"
+        )
+
+        return pt.composites.Sequence(
+            name=seq_task_name,
+            children=[go_to_cone, move_to_offset, pick_up_cone, place_cone],
+            memory=True
+        )
+
 
     def get_kafka_photo_seq(
         self,
@@ -87,11 +112,11 @@ class ConePlaceBT(base_bt.BaseBT):
         )
 
         move_forward = ugv.Move(
-            task_name="move forward", load_value="MOVE 3.0 0"
+            task_name="move forward", load_value="MOVE 10.0 0"
         )
 
         move_diagonal = ugv.Move(
-            task_name="move diagonal", load_value="MOVE 1.5 1.5"
+            task_name="move diagonal", load_value="MOVE 5.0 5.0"
         )
 
         pick_up_cone1 = ugv.PickUpFrom(

@@ -36,10 +36,13 @@ import tf2_geometry_msgs
 
 POTHOLE_OFFSET = rospy.get_param("/pothole/offset", 0.5)
 CRACK_OFFSET = rospy.get_param("/cracks/offset", 0.7)
-CRACK_SIDE_RIGHT = rospy.get_param("/cracks/is_right_side", True)
+CRACK_SIDE_RIGHT = rospy.get_param("/cracks/is_left_side", True)
+CONE_OFFSET = rospy.get_param("/cone_place/offset", 0.7)
+CONE_SIDE_LEFT = rospy.get_param("/cone_place/is_left", True)
 CAM_FRAME = rospy.get_param("/ugv/arm_cam_frame", "front_rgbd_camera_rgb_camera_optical_frame")
 BASE_FRAME = rospy.get_param("/ugv/base_frame", "robot_base_footprint")
 MAP_FRAME = rospy.get_param("/ugv/map_frame", "robot_map")
+MAX_CRACK_LENGTH = rospy.get_param("/cracks/max_length")
 
 class HLPServers:
     # class TransformFinder:
@@ -170,6 +173,32 @@ class HLPServers:
         x_smooth, y_smooth = si.splev(u_fine, tck)
         return np.column_stack((x_smooth, y_smooth))
 
+    def trim_path(self, path_points, trim_length: float = 0.6, scale: float = 0.001):
+        """
+        trims the path to ensure its length does not exceed by keeping the middle 60cm segment.
+
+        :param path_points: (N, 2) or (N, 3) NumPy array representing path points
+        :param scale: Scale factor to convert points to meters
+        :return: trimmed path as a NumPy array
+        """
+        # compute cumulative distances along the path
+        distances = np.cumsum(np.linalg.norm(np.diff(path_points, axis=0), axis=1))
+        distances = np.insert(distances, 0, 0)  # start distance is zero
+
+        total_length = distances[-1] * scale
+        if total_length <= trim_length:
+            return path_points  # no need to trim
+
+        # Find the middle point
+        middle_idx = np.searchsorted(distances, distances[-1] / 2)
+
+        # Find the indices for ±trim_length/2 cm range
+        lower_bound = np.searchsorted(distances, distances[middle_idx] - (trim_length/2) / scale)
+        upper_bound = np.searchsorted(distances, distances[middle_idx] + (trim_length/2) / scale)
+
+        # Slice the path within the desired range
+        return path_points[lower_bound:upper_bound + 1]
+
     def handle_crack_req(self, req: FindCrackPathRequest):
 
         # filter to just large segments
@@ -200,6 +229,9 @@ class HLPServers:
 
         scale = 0.001  # in m
         dist = np.linalg.norm(smooth_points[-1] - smooth_points[0]) * scale
+        if dist > MAX_CRACK_LENGTH:
+            smooth_points = self.trim_path(smooth_points, MAX_CRACK_LENGTH)
+
 
         for idx in range(len(smooth_points) - 1):
             cv2.line(
@@ -256,7 +288,7 @@ class HLPServers:
         self.path_start_pub.publish(start)
         self.path_end_pub.publish(end)
         rospy.loginfo("Published crack path")
-        rospy.logwarn(f"PATH: {path}")
+        # rospy.logwarn(f"PATH: {path}")
         return FindCrackPathResponse(success=True, path=path, middle_pose=mid)
 
     def transform_pose(self, pose: PoseStamped, target_frame: str = "odom") -> PoseStamped:
@@ -312,6 +344,15 @@ class HLPServers:
             else:
                 x += CRACK_OFFSET * np.cos(yaw + np.pi/2)
                 y += CRACK_OFFSET * np.sin(yaw + np.pi/2)
+            new_yaw = yaw  # no rotation
+        elif req.defect_type == "cones":
+            if CONE_SIDE_LEFT:
+                x += CONE_OFFSET * np.cos(yaw + np.pi/2)
+                y += CONE_OFFSET * np.sin(yaw + np.pi/2)
+            else:
+                x += CONE_OFFSET * np.cos(yaw - np.pi/2)
+                y += CONE_OFFSET * np.sin(yaw - np.pi/2)
+
             new_yaw = yaw  # no rotation
 
         quat = utils.quaternion_from_angle(new_yaw)
