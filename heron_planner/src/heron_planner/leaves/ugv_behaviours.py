@@ -242,6 +242,54 @@ class OmniDock(_CommandManager):
             rospy.logerr(f"Type {type(data)} is incorrect")
             raise ValueError
 
+class CrackGunOn(_CommandManager):
+    CMD = "SET_DO 10 true"
+
+    def __init__(self, task_name="", *args, **kwargs) -> None:
+        super(CrackGunOn, self).__init__(
+            name=task_name if task_name else "Start crack gun",
+            load=True,
+            load_fn=self._load_fn,
+            *args,
+            **kwargs,
+        )
+
+    def _load_fn(self) -> str:
+        data = self._default_load_fn(auto_generate=False)
+
+        if isinstance(data, str):
+            cmd_str = f"{OmniDock.CMD}"
+            return RobotSimpleCommandGoal(
+                command=CommandString(command=cmd_str)
+            )
+        else:
+            rospy.logerr(f"Type {type(data)} is incorrect")
+            raise ValueError
+
+class CrackGunOff(_CommandManager):
+    CMD = "SET_DO 10 false"
+
+    def __init__(self, task_name="", *args, **kwargs) -> None:
+        super(CrackGunOff, self).__init__(
+            name=task_name if task_name else "Stop crack gun",
+            load=True,
+            load_fn=self._load_fn,
+            *args,
+            **kwargs,
+        )
+
+    def _load_fn(self) -> str:
+        data = self._default_load_fn(auto_generate=False)
+
+        if isinstance(data, str):
+            cmd_str = f"{OmniDock.CMD}"
+            return RobotSimpleCommandGoal(
+                command=CommandString(command=cmd_str)
+            )
+        else:
+            rospy.logerr(f"Type {type(data)} is incorrect")
+            raise ValueError
+
 
 class CustomCommandManager(_CommandManager):
     def __init__(self, task_name="", *args, **kwargs) -> None:

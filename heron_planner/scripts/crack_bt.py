@@ -13,6 +13,7 @@ import heron_planner.leaves.iccs_behaviours as iccs
 import heron_planner.leaves.generic_behaviours as generic
 
 from geometry_msgs.msg import PoseStamped
+from nav_msgs.msg import Path
 
 
 class CrackBT(base_bt.BaseBT):
@@ -27,6 +28,28 @@ class CrackBT(base_bt.BaseBT):
         self.arm_cam_ns = rospy.get_param("/ugv/arm_cam_ns", "/robot/arm_camera")
         self.arm_cam_tf = rospy.get_param("/ugv/arm_cam_tf", "")
         self.use_kafka = rospy.get_param("/kafka", False)
+
+    def generate_path(self) -> None:
+        crack_path = Path()
+        crack_path.header.frame_id = "robot_base_footprint"
+        crack_path.header.stamp = rospy.Time.now()
+
+        poses = [] * PoseStamped()
+
+        pose_1 = PoseStamped()
+        pose_1.header = crack_path.header
+
+        pose_2 = PoseStamped()
+        pose_2.header = crack_path.header
+
+        pose_2 = PoseStamped()
+        pose_2.header = crack_path.header
+
+        pose_2 = PoseStamped()
+        pose_2.header = crack_path.header
+
+        pose_2 = PoseStamped()
+        pose_2.header = crack_path.header
 
     def save_to_blackboard(self) -> None:
         self.bb.set("arm_cam_ns", self.arm_cam_ns)
@@ -137,7 +160,7 @@ class CrackBT(base_bt.BaseBT):
         )
 
         inspection_left = self.move_take_snap(
-            move_loc="inspection_left", seq_task_name="MoveToInspectionLeftSeq"
+            move_loc="low_inspection_left", seq_task_name="MoveToInspectionLeftSeq"
         )
         left_photo = self.get_kafka_photo_seq(
             img_key="/pothole/left", kafka_msg="pothole/inspection-left"
@@ -174,34 +197,28 @@ class CrackBT(base_bt.BaseBT):
             task_name="Move arm to home", load_value="home"
         )
 
-        crack_inspection = self.get_inspection_loop()
-
-        arm_to_left = ugv.MoveArmTo(task_name="Move arm to left", load_value="inspection_left") 
+        inspection_left = self.move_take_snap(
+            move_loc="low_inspection_left", seq_task_name="MoveToInspectionLeftSeq"
+        )
+        
         crack_photo = self.find_crack_seq(img_key="/crack/inspection")
+        dock_to_crack = ugv.OmniDock(load_value="crack_dock")
+        move_through = ugv.MoveThroughPath(load_key="/crack/path")
     
-        dock_midpoint = ugv.OmniDock(load_value="fake_dock")
-        move_to_pose = ugv.MoveToPose()
         # then we would want to dock to position
         # then inspection left
         # redo crack photo
 
-        take_snap = ugv.TakeSnap()
-
-        reverse_to_inspection = ugv.Move(
-            task_name="reverse 1.3m", load_value="MOVE -1.3 0.0"
-        )
 
         test_omni_dock = ugv.OmniDock(load_value="cone_1")
         test_goto = ugv.GoTo(load_key="fake_dock_pose")
 
         root.add_children(
             [   
-                # arm_to_home,
-                arm_to_left,
-                # self.get_inspection_loop(),
+                arm_to_home,
+                inspection_left,
                 crack_photo,
-                # test_goto,
-                # test_omni_dock
+                dock_to_crack,
             ]
         )
 
