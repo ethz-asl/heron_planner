@@ -68,11 +68,12 @@ class PotholeBT(base_bt.BaseBT):
             )
 
         else: 
-            send_img_to_kafka = hlp.SendImageToKafka(
-                task_name=send_kafka_task_name,
-                msg=kafka_msg,
-                load_key=img_key,
-            )
+            pass
+            # send_img_to_kafka = hlp.SendImageToKafka(
+            #     task_name=send_kafka_task_name,
+            #     msg=kafka_msg,
+            #     load_key=img_key,
+            # )
 
         return pt.composites.Sequence(
             name=seq_task_name,
