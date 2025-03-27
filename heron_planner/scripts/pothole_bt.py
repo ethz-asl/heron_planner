@@ -75,7 +75,7 @@ class PotholeBT(base_bt.BaseBT):
 
         return pt.composites.Sequence(
             name=seq_task_name,
-            children=[load_img, send_img_to_kafka],
+            children=[load_img],
             memory=True,
         )
 
