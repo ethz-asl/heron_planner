@@ -132,9 +132,6 @@ class ConePlaceBT(base_bt.BaseBT):
         move_forward = ugv.Move(
             task_name="move forward", load_value="MOVE 5.0 0"
         )
-        turn = ugv.Turn(
-            task_name=""
-        )
 
         move_diagonal = ugv.Move(
             task_name="move diagonal", load_value="MOVE 2.5 2.5"
