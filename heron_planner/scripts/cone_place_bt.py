@@ -111,12 +111,33 @@ class ConePlaceBT(base_bt.BaseBT):
             load_value="home",
         )
 
+
+        dock_to_cone1 = ugv.OmniDock(
+            task_name="Dock to cone1", load_value="cone_1"
+        )
+        dock_to_cone2 = ugv.omnidock(
+            task_name="dock to cone2", load_value="cone_2"
+        )
+
+        go_to_cone1 = ugv.GoTo(
+            task_name="Go to cone 1", load_key="cone_1"
+        )
+        go_to_cone2 = ugv.GoTo(
+            task_name="Go to cone 1", load_key="cone_1"
+        )
+        go_to_cone3 = ugv.GoTo(
+            task_name="Go to cone 1", load_key="cone_1"
+        )
+
         move_forward = ugv.Move(
-            task_name="move forward", load_value="MOVE 10.0 0"
+            task_name="move forward", load_value="MOVE 5.0 0"
+        )
+        turn = ugv.Turn(
+            task_name=""
         )
 
         move_diagonal = ugv.Move(
-            task_name="move diagonal", load_value="MOVE 5.0 5.0"
+            task_name="move diagonal", load_value="MOVE 2.5 2.5"
         )
 
         pick_up_cone1 = ugv.PickUpFrom(
@@ -151,17 +172,16 @@ class ConePlaceBT(base_bt.BaseBT):
         root.add_children(
             [
                 arm_to_home,
+                dock_to_cone1,
                 pick_up_cone1,
                 place_cone1,
-                move_forward,
+                dock_to_cone2,
                 pick_up_cone2,
                 place_cone2,
-                move_forward,
-                pick_up_cone3,
-                place_cone3,
-                move_diagonal,
-                pick_up_cone4,
-                place_cone4
+                # pick_up_cone3,
+                # place_cone3,
+                # pick_up_cone4,
+                # place_cone4
             ]
         )
 
