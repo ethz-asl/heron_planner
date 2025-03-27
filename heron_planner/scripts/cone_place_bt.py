@@ -115,7 +115,7 @@ class ConePlaceBT(base_bt.BaseBT):
         dock_to_cone1 = ugv.OmniDock(
             task_name="Dock to cone1", load_value="cone_1"
         )
-        dock_to_cone2 = ugv.omnidock(
+        dock_to_cone2 = ugv.OmniDock(
             task_name="dock to cone2", load_value="cone_2"
         )
 
