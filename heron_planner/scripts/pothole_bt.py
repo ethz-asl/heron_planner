@@ -108,11 +108,11 @@ class PotholeBT(base_bt.BaseBT):
             name="inspectionLoop",
             children=[
                 inspection_mid,
-                mid_photo,
+                # mid_photo,
                 inspection_left,
-                left_photo,
+                # left_photo,
                 inspection_right,
-                right_photo,
+                # right_photo,
             ],
         )
 
