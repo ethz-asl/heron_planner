@@ -61,11 +61,11 @@ class PotholeBT(base_bt.BaseBT):
             save=True,
         )
         # if rospy.get_param("/kafka", False):
-        send_img_to_kafka = hlp.FakeSendImageToKafka(
-            task_name=send_kafka_task_name,
-            msg=kafka_msg,
-            load_key=img_key
-        )
+        # send_img_to_kafka = hlp.FakeSendImageToKafka(
+        #     task_name=send_kafka_task_name,
+        #     msg=kafka_msg,
+        #     load_key=img_key
+        # )
 
             # send_img_to_kafka = hlp.SendImageToKafka(
             #     task_name=send_kafka_task_name,
