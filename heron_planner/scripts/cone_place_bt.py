@@ -12,10 +12,14 @@ import heron_planner.leaves.hlp_behaviours as hlp
 import heron_planner.leaves.iccs_behaviours as iccs
 import heron_planner.leaves.generic_behaviours as generic
 
+from geometry_msgs.msg import PoseStamped
+
+ROBOT_ODOM = rospy.get_param("/ugv/")
 
 class ConePlaceBT(base_bt.BaseBT):
     def __init__(self) -> None:
         super().__init__("ConePlaceBT")
+        self.load_cones()
 
     def load_parameters(self) -> None:
         self.tree_rate = rospy.get_param("tree_rate", 10)
@@ -27,6 +31,12 @@ class ConePlaceBT(base_bt.BaseBT):
             "ugv/arm_cam_ns", "/robot/arm_camera/front_rgbd_camera/"
         )
         self.cone_offset = rospy.get_param("/cone_place/offset", 0.7)
+
+    def load_cones(self) -> None:
+        cone_1 = PoseStamped()
+        cone_1.header.stamp = rospy.Time.now()
+        cone_1.header.frame_id = ROBOT_ODOM
+
 
     def save_to_blackboard(self) -> None:
         self.bb.set("arm_cam_ns", self.arm_cam_ns)
@@ -123,10 +133,13 @@ class ConePlaceBT(base_bt.BaseBT):
             task_name="Go to cone 1", load_key="cone_1"
         )
         go_to_cone2 = ugv.GoTo(
-            task_name="Go to cone 1", load_key="cone_1"
+            task_name="Go to cone 2", load_key="cone_2"
         )
         go_to_cone3 = ugv.GoTo(
-            task_name="Go to cone 1", load_key="cone_1"
+            task_name="Go to cone 3", load_key="cone_3"
+        )
+        go_to_cone4 = ugv.GoTo(
+            task_name="Go to cone 4", load_key="cone_4"
         )
 
         move_forward = ugv.Move(
