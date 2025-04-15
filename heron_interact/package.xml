@@ -2,18 +2,28 @@
 <package format="2">
     <name>heron_interact</name>
     <version>0.1.0</version>
-    <description>interactive gui to fin paths</description>
+    <description>interactive gui to find paths</description>
 
     <maintainer email="harrisl@ethz.ch">Lucy Harris</maintainer>
 
-    <license>TODO</license>
-    <url></url>
+    <license>BSD</license>
 
     <buildtool_depend>catkin</buildtool_depend>
 
-    <depend>rospy</depend>
-    <depend>geometry_msgs</depend>
-    <depend>sensor_msgs</depend>
-    <depend>std_msgs</depend>
+    <build_depend>rqt_gui</build_depend>
+    <build_depend>rqt_gui_py</build_depend>
+    <build_depend>rospy</build_depend>
+    <build_depend>sensor_msgs</build_depend>
+    <build_depend>cv_bridge</build_depend>
+
+    <exec_depend>rqt_gui</exec_depend>
+    <exec_depend>rqt_gui_py</exec_depend>
+    <exec_depend>rospy</exec_depend>
+    <exec_depend>sensor_msgs</exec_depend>
+    <exec_depend>cv_bridge</exec_depend>
+
+    <export>
+        <rqt_gui plugin="${prefix}/plugin.xml"/>
+    </export>
 
 </package>

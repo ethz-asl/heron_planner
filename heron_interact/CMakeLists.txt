@@ -1,18 +1,38 @@
 cmake_minimum_required(VERSION 3.1)
 project(heron_interact)
 
-find_package(catkin REQUIRED)
-
-catkin_python_setup()
-
-catkin_package(
-  CATKIN_DEPENDS
+find_package(catkin REQUIRED COMPONENTS
+  rqt_gui
+  rqt_gui_py
   rospy
-  std_msgs
-  geometry_msgs
   sensor_msgs
+  cv_bridge
+)
+
+catkin_package()
+# catkin_python_setup()
+
+catkin_install_python(PROGRAMS
+  src/heron_interact/image_path_selector.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
 include_directories(
   ${catkin_INCLUDE_DIRS}
+)
+
+install(PROGRAMS
+  scripts/mymodule
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+
+install(DIRECTORY
+  resource
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
+
+install(FILES
+  plugin.xml
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
