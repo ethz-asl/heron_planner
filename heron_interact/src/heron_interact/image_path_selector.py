@@ -3,8 +3,12 @@ import rospy
 import rospkg
 import cv2
 import numpy as np
+import tf2_ros
+import tf2_geometry_msgs
 
-from sensor_msgs.msg import Image
+from geometry_msgs.msg import PoseStamped
+from sensor_msgs.msg import Image, CameraInfo
+from nav_msgs.msg import Path
 from cv_bridge import CvBridge, CvBridgeError
 
 from qt_gui.plugin import Plugin
@@ -14,7 +18,13 @@ from python_qt_binding.QtCore import Qt, QPoint
 
 from PyQt5.QtGui import QImage, QPixmap
 
-MAX_POINTS = 10
+MAX_CLICKS = rospy.get_param("/cracks/path_length", 10)
+PATH_TOPIC = rospy.get_param("/cracks/path_topic", "/hlp/path")
+BODY_CAM_NS = rospy.get_param("/ugv/body_cam_ns", "/robot/body_camera")
+ARM_CAM_NS = rospy.get_param("/ugv/arm_cam_ns", "/robot/arm_camera")
+ARM_CAM_FRAME = rospy.get_param("/ugv/arm_cam_frame", "front_rgbd_camera_rgb_camera_optical_frame")
+BODY_CAM_FRAME = rospy.get_param("/ugv/body_cam_frame", "front_rgbd_camera_rgb_camera_optical_frame")
+PATH_FRAME = rospy.get_param("/ugv/base_frame", "robot_base_footprint")
 
 class ImagePathSelector(Plugin):
     def __init__(self, context):
@@ -39,38 +49,77 @@ class ImagePathSelector(Plugin):
         self.bridge = CvBridge()
         self.subscriber = None
         self.latest_image = None
-        self.image_topic = ""
 
-        self.points = []
-        self.selection_active = False
+        self.depth_img = None
+        self.cam_info = None
+
+        self.img_sub = None
+        self.depth_sub = None
+        self.info_sub = None
+
+        self.img_topic = ""
+        self.depth_topic = ""
+        self.info_topic = ""
+
+        self.pixels = []
+
+        self.path_pub = rospy.Publisher(PATH_TOPIC, Path, queue_size=1)
+
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
 
         # Connect UI
-        self._widget.comboBox_topic.currentTextChanged.connect(
-            self.on_topic_selected
+        self._widget.comboBox_ns.addItems(["Arm Camera", "Body Camera"])
+        self._widget.comboBox_ns.setCurrentIndex(0) # set default selection
+        self.cam_selected(self._widget.comboBox_ns.currentText())
+        self._widget.comboBox_ns.currentTextChanged.connect(
+            self.cam_selected
         )
-        self._widget.button_start.clicked.connect(self.start_selection)
         self._widget.button_undo.clicked.connect(self.undo_point)
         self._widget.button_clear.clicked.connect(self.clear_points)
         self._widget.button_send.clicked.connect(self.send_path)
         self._widget.label_image.mousePressEvent = self.image_clicked
 
-        self.populate_topic_list()
 
-    def populate_topic_list(self):
-        # Get list of image topics (this can be improved later)
-        import rostopic
+    def cam_selected(self, cam_type):
 
-        topics = rospy.get_published_topics()
-        image_topics = [t[0] for t in topics if t[1] == "sensor_msgs/Image"]
-        self._widget.comboBox_topic.addItems(image_topics)
+        if cam_type == "Arm Camera":
+            rospy.loginfo("Using arm camera")
+            ns = ARM_CAM_NS
+            self.cam_frame = ARM_CAM_FRAME
+        elif cam_type == "Body Camera":
+            rospy.loginfo("Using body camera")
+            ns = BODY_CAM_NS
+            self.cam_frame = BODY_CAM_FRAME
+        
+        self.img_topic = ns + "/rgb/image_raw"
+        self.depth_topic = ns + "/stereo/image_raw"
+        # self.info_topic = ns + "/stereo/camera_info"
+        self.info_topic = ns + "/rgb/camera_info" # TODO check which one is valid
 
-    def on_topic_selected(self, topic):
-        if self.subscriber:
-            self.subscriber.unregister()
-        self.image_topic = topic
-        self.subscriber = rospy.Subscriber(topic, Image, self.image_callback)
+        if self.img_sub:
+            self.img_sub.unregister()
 
-    def image_callback(self, msg):
+        self.img_sub = rospy.Subscriber(self.img_topic, Image, self.img_cb)
+        
+        if self.depth_sub:
+            self.depth_sub.unregister()
+
+        self.depth_sub = rospy.Subscriber(self.depth_topic, Image, self.depth_cb)
+
+        if self.info_sub:
+            self.info_sub.unregister()
+
+        self.info_sub = rospy.Subscriber(self.info_topic, CameraInfo, self.info_cb)
+
+    def depth_cb(self, msg):
+        self.depth_img = msg
+
+
+    def info_cb(self, msg):
+        self.cam_info = msg
+
+    def img_cb(self, msg):
         try:
             cv_img = self.convert_ros_image(msg)
             if cv_img is not None:
@@ -121,11 +170,11 @@ class ImagePathSelector(Plugin):
         if self.latest_image is None:
             return
         img = self.latest_image.copy()
-        for pt in self.points:
+        for pixel in self.pixels:
             # cv2.circle(img, pt, 5, (0, 0, 255), -1)
             cv2.drawMarker(
                 img, 
-                pt, 
+                pixel, 
                 color=[204, 0, 102], 
                 markerType=cv2.MARKER_TILTED_CROSS,
                 line_type=cv2.LINE_AA,
@@ -140,28 +189,114 @@ class ImagePathSelector(Plugin):
         self._widget.label_image.setPixmap(QPixmap.fromImage(qt_img))
 
     def image_clicked(self, event):
-        if not self.selection_active or self.latest_image is None:
+        if self.latest_image is None:
             return
-        if len(self.points) >= MAX_POINTS:
+        if len(self.pixels) >= MAX_CLICKS:
             rospy.logwarn(f"Reached max points!")
             return
         label = self._widget.label_image
         x = int(event.pos().x() * self.latest_image.shape[1] / label.width())
         y = int(event.pos().y() * self.latest_image.shape[0] / label.height())
-        self.points.append((x, y))
+        self.pixels.append((x, y))
         self.update_image()
 
-    def start_selection(self):
-        self.selection_active = True
-
     def undo_point(self):
-        if self.points:
-            self.points.pop()
+        if self.pixels:
+            self.pixels.pop()
             self.update_image()
 
     def clear_points(self):
-        self.points = []
+        self.pixels = []
         self.update_image()
 
+    def project_pixels_to_points(self, pixels):
+        
+        if self.depth_img is None or self.cam_info is None:
+            return None
+
+        try:
+            depth_img = self.bridge.imgmsg_to_cv2(self.depth_img, desired_encoding="passthrough")
+        except CvBridgeError as e:
+            rospy.logerr(f"Depth image conversion error: {e}")
+            return None
+
+
+        K = np.array(self.cam_info.K).reshape(3, 3)
+        fx, fy = K[0, 0], K[1, 1] # focal lengths
+        cx, cy = K[0, 2], K[1, 2] # principal point
+        
+        points = []
+        for (u, v) in pixels:
+            z = depth_img[v, u]/1000.0 # depth at pixel
+            rospy.loginfo(f"Pixel ({u}, {v}) depth = {z}")
+            if z > 0:
+                x = (u - cx) * z / fx
+                y = (v - cy) * z / fy
+                
+                points.append((x,y,z))
+                # convert to optical frame
+                # opt_x = z
+                # opt_y = -x
+                # opt_z = -y
+
+                # points.append((opt_x, opt_y, opt_z))
+            else:
+                rospy.logerr(f"Error with depth")
+
+        return points
+
+
+    def transform_pose(self, pose: PoseStamped, target_frame: str = "odom") -> PoseStamped:
+        try:
+            transform = self.tf_buffer.lookup_transform(
+                target_frame,  # Target frame (e.g., "odom" or "robot_map")
+                pose.header.frame_id,  # Source frame ("camera_link")
+                rospy.Time(0),
+                rospy.Duration(1.0),
+            )
+            return tf2_geometry_msgs.do_transform_pose(pose, transform)
+        except (tf2_ros.LookupException, tf2_ros.ExtrapolationException) as err:
+            rospy.logwarn(f"TF Transform error: {err}")
+            return None
+
     def send_path(self):
-        rospy.loginfo("FAKE: Send path clicked (placeholder)")
+        # get pixel positions to 3d here
+        # need to add tick box area
+        if not self.pixels:
+            rospy.logerr("Select some points first!")
+            return
+
+        path_msg = Path()
+        path_msg.header.stamp = rospy.Time.now()
+        # path_msg.header.frame_id = PATH_FRAME
+        path_msg.header.frame_id = self.cam_frame
+
+        # scale = 0.001 # in meters
+        scale = 1 # in meters
+        points = self.project_pixels_to_points(self.pixels)
+        for (x, y, z) in points:
+            pose = PoseStamped()
+            pose.header.frame_id = self.cam_frame
+            pose.header.stamp = rospy.Time.now()
+            pose.pose.position.x = x * scale
+            pose.pose.position.y = y * scale
+            pose.pose.position.z = z * scale
+            pose.pose.orientation.w = 1 # assume points up
+
+            # tranform pose to robot frame
+            transformed_pose = self.transform_pose(pose, PATH_FRAME)
+            if transformed_pose:
+                transformed_pose.pose.position.z = 0 # road assumed 2D
+                transformed_pose.pose.orientation.w = 1 # fixed orientation so obselete
+                transformed_pose.header.stamp = path_msg.header.stamp
+                # path_msg.poses.append(transformed_pose)
+            else:
+                rospy.logwarn(f"Failed to transform path to {PATH_FRAME}")
+
+            path_msg.poses.append(pose)
+
+
+        self.path_pub.publish(path_msg)
+        rospy.loginfo(f"published path with [{len(path_msg.poses)}] points")
+        
+
