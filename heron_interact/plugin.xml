@@ -1,13 +1,18 @@
 <library path="src">
-  <class name="ImagePathSelector"
+  <!-- <class name="ImagePathSelector"
          type="heron_interact.image_path_selector.ImagePathSelector"
+         base_class_type="rqt_gui_py::Plugin"> -->
+  <class name="HeronGUI"
+         type="heron_interact.heron_gui.HeronGUI"
          base_class_type="rqt_gui_py::Plugin">
     <description>
       RQT plugin to select points on an image and visualize them.
     </description>
     <qtgui>
-        <label>Image Path Selector</label>
-        <icon type="theme">system-help</icon>
+        <label>Heron GUI</label>
+        <!-- <icon type="theme">system-help</icon> -->
+        <!-- <icon type="theme">face-devilish</icon> -->
+        <icon type="theme">emblem-favorite</icon>
         <statustip>Can click and make paths! woo!</statustip>
     </qtgui>
   </class>

@@ -12,8 +12,12 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package()
 # catkin_python_setup()
 
+# catkin_install_python(PROGRAMS
+#   src/heron_interact/image_path_selector.py
+#   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+# )
 catkin_install_python(PROGRAMS
-  src/heron_interact/image_path_selector.py
+  src/heron_interact/heron_gui.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

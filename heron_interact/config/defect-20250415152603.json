@@ -1,0 +1,20 @@
+{
+  "id": "defect-20250415152603",
+  "type": "Pothole",
+  "bounding_box": {
+    "top_left": {
+      "latitude": 37.973834624470534,
+      "longitude": 23.292434293905167
+    },
+    "bottom_right": {
+      "latitude": 37.973835456893404,
+      "longitude": 23.292433262558205
+    },
+    "centroid": {
+      "latitude": 37.973835026767254,
+      "longitude": 23.292433881999333
+    }
+  },
+  "coordinate_system": "WGS 84",
+  "filename": "DJI_0024.JPG"
+}

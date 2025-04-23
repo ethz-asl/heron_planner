@@ -3,7 +3,8 @@
 import sys
 
 # from heron_interact.my_module import MyPlugin
-from heron_interact.image_path_selector import ImagePathSelector
+# from heron_interact.image_path_selector import ImagePathSelector
+from heron_interact.heron_gui import HeronGUI
 from rqt_gui.main import Main
 
 plugin = 'mymodule'

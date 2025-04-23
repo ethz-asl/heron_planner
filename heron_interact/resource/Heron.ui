@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWidget</class>
+ <widget class="QWidget" name="MainWidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>538</width>
+    <height>327</height>
+   </rect>
+  </property>
+  <layout class="QVBoxLayout" name="mainLayout">
+   <item>
+    <widget class="QTabWidget" name="tabWidget">
+     <property name="currentIndex">
+      <number>0</number>
+     </property>
+     <widget class="QWidget" name="tab_planner">
+      <attribute name="title">
+       <string>High Level Planner</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayoutPlanner">
+       <item>
+        <widget class="QGroupBox" name="group_mission">
+         <property name="title">
+          <string>Mission Capture</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_2">
+          <item>
+           <layout class="QHBoxLayout" name="layout_h_defects">
+            <item>
+             <widget class="QPushButton" name="button_load_mission">
+              <property name="text">
+               <string>Load Mission</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="label_defects">
+              <property name="text">
+               <string>No. defects found:</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="layout_h_mission">
+            <item>
+             <widget class="QLabel" name="label_map">
+              <property name="frameShape">
+               <enum>QFrame::Box</enum>
+              </property>
+              <property name="text">
+               <string/>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="group_start_mission">
+         <property name="title">
+          <string>Start Mission</string>
+         </property>
+         <layout class="QVBoxLayout" name="layout_start_mission">
+          <item>
+           <layout class="QHBoxLayout" name="layout_bt_row">
+            <item>
+             <widget class="QComboBox" name="combo_bt_type">
+              <item>
+               <property name="text">
+                <string>Cone Placement</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Cracks</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Potholes</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Road Markings</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Cone Pick Up</string>
+               </property>
+              </item>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="layout_mission_buttons">
+            <item>
+             <widget class="QPushButton" name="button_start">
+              <property name="autoFillBackground">
+               <bool>false</bool>
+              </property>
+              <property name="text">
+               <string>Start</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="button_stop">
+              <property name="text">
+               <string>Stop</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="button_pause">
+              <property name="text">
+               <string>Pause</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="layout_h_status">
+            <item>
+             <widget class="QLabel" name="label_status">
+              <property name="text">
+               <string>Status:</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tab_image">
+      <attribute name="title">
+       <string>Image Selector</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayoutImage">
+       <item>
+        <widget class="QGroupBox" name="group_image">
+         <property name="title">
+          <string>Choose camera</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout">
+          <item>
+           <widget class="QComboBox" name="comboBox_ns"/>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_image">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+              <horstretch>1</horstretch>
+              <verstretch>1</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="frameShape">
+             <enum>QFrame::Box</enum>
+            </property>
+            <property name="scaledContents">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="group_select">
+         <property name="title">
+          <string>Select number of points in image</string>
+         </property>
+         <layout class="QHBoxLayout" name="horizontalLayout">
+          <item>
+           <layout class="QHBoxLayout" name="buttonLayoutImage">
+            <item>
+             <widget class="QPushButton" name="button_send">
+              <property name="text">
+               <string>Send Path</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="button_send_tf">
+              <property name="text">
+               <string>Send to TF</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="button_send_carrot">
+              <property name="autoFillBackground">
+               <bool>false</bool>
+              </property>
+              <property name="text">
+               <string>Send Carrot</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="button_undo">
+              <property name="text">
+               <string>Undo</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="button_clear">
+              <property name="text">
+               <string>Clear</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
