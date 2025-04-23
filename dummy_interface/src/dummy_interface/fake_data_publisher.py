@@ -70,6 +70,11 @@ class FakeDataPublisher:
                 "front_rgbd_camera_rgb_camera_optical_frame", 
                 0.0, 0.0, 0.05,
                 roll=np.deg2rad(180)
+            ),
+            self.create_transform(
+                "front_rgbd_camera_rgb_camera_optical_frame", 
+                "robot/arm_camera_rgb_camera_optical_frame",
+                0.0, 0.0, 0.0            
             )
         ]
 

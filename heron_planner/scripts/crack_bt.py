@@ -219,6 +219,7 @@ class CrackBT(base_bt.BaseBT):
                 inspection_left,
                 crack_photo,
                 dock_to_crack,
+                move_through,
             ]
         )
 
