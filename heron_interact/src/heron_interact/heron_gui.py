@@ -9,7 +9,7 @@ import numpy as np
 import tf2_ros
 import tf2_geometry_msgs
 
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, TransformStamped
 from sensor_msgs.msg import Image, CameraInfo, NavSatFix
 from nav_msgs.msg import Path
 from std_msgs.msg import Header, String
@@ -30,6 +30,7 @@ ARM_CAM_NS = rospy.get_param("/ugv/arm_cam_ns", "/robot/arm_camera")
 ARM_CAM_FRAME = rospy.get_param("/ugv/arm_cam_frame", "front_rgbd_camera_rgb_camera_optical_frame")
 BODY_CAM_FRAME = rospy.get_param("/ugv/body_cam_frame", "front_rgbd_camera_rgb_camera_optical_frame")
 PATH_FRAME = rospy.get_param("/ugv/base_frame", "robot_base_footprint")
+MAP_FRAME = rospy.get_param("/ugv/map_frame", "robot_map")
 
 class HeronGUI(Plugin):
     def __init__(self, context):
@@ -74,6 +75,18 @@ class HeronGUI(Plugin):
 
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
+        self.tf_broadcaster = tf2_ros.TransformBroadcaster()
+        self.tf_timer = rospy.Timer(rospy.Duration(0.1), self.broadcast_tf)
+
+        self.defect_transform = None
+
+        self.carrot_timer = None
+        self.carrot_transform = None
+        self.carrot_start = None
+        self.carrot_end = None
+        self.carrot_progress = 0.0
+        self.carrot_speed = 0.005 # units per 10hz (TODO make rosparam)
+        self.carrot_offset = 0.0 #1.5 # how far left/right of road (TODO check L/R)
 
         # Connect UI
         # panel 1 - mission
@@ -97,6 +110,8 @@ class HeronGUI(Plugin):
         self._widget.button_undo.clicked.connect(self.undo_point)
         self._widget.button_clear.clicked.connect(self.clear_points)
         self._widget.button_send.clicked.connect(self.send_path)
+        self._widget.button_send_tf.clicked.connect(self.send_tf)
+        self._widget.button_send_carrot.clicked.connect(self.send_carrot)
         self._widget.label_image.mousePressEvent = self.image_clicked
 
         rospy.Subscriber("/hlp/state", String, self.hlp_state_cb)
@@ -106,16 +121,43 @@ class HeronGUI(Plugin):
 
     def load_mission(self):
 
-        print("PRESSED LOAD MISSION")
+        rospy.loginfo(f"Loading mission data...")
         folder = rospkg.RosPack().get_path("heron_interact") + "/config"
         defect_coords = self.load_defect_coords(folder)
         mission_coords = self.load_mission_coords(folder)
+
+        # Load image here
+        img_path = os.path.join(folder, "img1.jpg")
+        img = cv2.imread(img_path, cv2.IMREAD_COLOR)  # Load color image
+        if img is None:
+            rospy.logerr(f"Failed to load image from {img_path}")
+            return
+
+        # Convert BGR (OpenCV default) to RGB
+        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
         pubs = self.create_pubs(defect_coords, mission_coords)
 
         combined_coords = defect_coords + mission_coords
 
         rospy.loginfo(f"Publishing {len(defect_coords)} defects")
         self._widget.label_defects.setText(f"No. defects found: {str(len(defect_coords))}")
+        
+        # convert to QImage
+        height, width, channel = img_rgb.shape
+        bytes_per_line = 3 * width
+        qt_img = QImage(
+            img_rgb.data, width, height, bytes_per_line, QImage.Format_RGB888
+        )
+    
+        # resize
+        target_width = 800
+        target_height = 600
+        qt_img = qt_img.scaled(target_width, target_height, aspectRatioMode=Qt.KeepAspectRatio)
+
+        # set to QLabel
+        self._widget.label_map.setPixmap(QPixmap.fromImage(qt_img))
+
         self.pub_navsat(pubs, combined_coords)
 
 
@@ -363,6 +405,10 @@ class HeronGUI(Plugin):
         qt_img = QImage(
             img.data, width, height, bytes_per_line, QImage.Format_RGB888
         ).rgbSwapped()
+        # resize
+        target_width = 800
+        target_height = 600
+        qt_img = qt_img.scaled(target_width, target_height, aspectRatioMode=Qt.KeepAspectRatio)
         self._widget.label_image.setPixmap(QPixmap.fromImage(qt_img))
 
     def image_clicked(self, event):
@@ -477,3 +523,126 @@ class HeronGUI(Plugin):
         rospy.loginfo(f"published path with [{len(path_msg.poses)}] points")
         
 
+    def send_tf(self):
+
+        if not self.pixels:
+            rospy.logerr("Select a point first!")
+            return
+        
+        if len(self.pixels) > 1:
+            rospy.logwarn(f"Using first clicked point!!!")
+        
+        points = self.project_pixels_to_points([self.pixels[0]])
+
+        if not points:
+            rospy.logerr(f"Could not project point")
+            return
+        
+        x, y, z = points[0]
+
+        # create pose in cam frame
+        pose = PoseStamped()
+        pose.header.frame_id = self.cam_frame
+        pose.header.stamp = rospy.Time.now()
+        pose.pose.position.x = x 
+        pose.pose.position.y = y 
+        pose.pose.position.z = z 
+        pose.pose.orientation.w = 1 # assume points up
+
+        # transform to global frame
+        transformed_pose = self.transform_pose(pose, target_frame=MAP_FRAME)
+        if transformed_pose is None:
+            rospy.logerr(f"Failed to transform point to global frame.")
+            return
+        
+        tf_msg = TransformStamped()
+        tf_msg.header.stamp = rospy.Time.now()
+        tf_msg.header.frame_id = MAP_FRAME
+        tf_msg.child_frame_id = "pothole" #TODO could change to defect type :)
+
+        tf_msg.transform.translation.x = transformed_pose.pose.position.x
+        tf_msg.transform.translation.y = transformed_pose.pose.position.y
+        tf_msg.transform.translation.z = 0 # on the ground
+        tf_msg.transform.rotation.w = 1 # assume up
+
+        self.defect_transform = tf_msg
+
+    def send_carrot(self):
+
+        if not self.pixels:
+            rospy.logerr("Select 2 points first!")
+            return
+        
+        if len(self.pixels) < 2:
+            rospy.logerr(f"Select exactly 2 points!!!")
+            return
+        
+        # sort pixels by vertical position descending (start is closer to robot)
+        sorted_pixels = sorted(self.pixels[:2], key=lambda p: p[1], reverse=True)
+        points = self.project_pixels_to_points(sorted_pixels)
+
+        if len(points) != 2:
+            rospy.logerr(f"Could not project both points")
+            return
+        
+        poses = []
+        for (x, y, z) in points:
+            pose = PoseStamped()
+            pose.header.stamp = rospy.Time.now()
+            pose.header.frame_id = self.cam_frame  # e.g., "camera_link"
+            pose.pose.position.x = x
+            pose.pose.position.y = y
+            pose.pose.position.z = z
+            pose.pose.orientation.w = 1.0
+
+            transformed_pose = self.transform_pose(pose, MAP_FRAME)
+            if not transformed_pose:
+                rospy.logerr("Failed to transform carrot point to robot_map frame")
+                return
+            
+            poses.append(transformed_pose.pose.position)
+        
+        self.carrot_start = poses[0]
+        self.carrot_end = poses[1]
+
+        self.carrot_progress = 0
+
+        # start broadcasting to move the carrot 
+        if self.carrot_timer:
+            self.carrot_timer.shutdown()
+
+        self.carrot_timer = rospy.Timer(rospy.Duration(0.1), self.broadcast_carrot_tf)
+        rospy.loginfo(f"Started carrot follower")
+
+    def broadcast_tf(self, event):
+        if self.defect_transform:
+            self.defect_transform.header.stamp = rospy.Time.now()
+            self.tf_broadcaster.sendTransform(self.defect_transform)
+
+    def broadcast_carrot_tf(self, event):
+        if self.carrot_start is None or self.carrot_end is None:
+            return
+
+        # Linear interpolation from start to end
+        t = self.carrot_progress
+        if t > 1.0:
+            rospy.loginfo("Carrot reached endpoint.")
+            self.carrot_timer.shutdown()
+            return
+
+        x = (1 - t) * self.carrot_start.x + t * self.carrot_end.x 
+        y = (1 - t) * self.carrot_start.y + t * self.carrot_end.y + self.carrot_offset
+
+        transform = TransformStamped()
+        transform.header.stamp = rospy.Time.now()
+        transform.header.frame_id = MAP_FRAME # your global frame
+        transform.child_frame_id = "carrot"
+
+        transform.transform.translation.x = x
+        transform.transform.translation.y = y
+        transform.transform.translation.z = 0
+
+        transform.transform.rotation.w = 1
+
+        self.tf_broadcaster.sendTransform(transform)
+        self.carrot_progress += self.carrot_speed

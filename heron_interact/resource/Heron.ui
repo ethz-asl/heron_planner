@@ -10,6 +10,9 @@
     <height>327</height>
    </rect>
   </property>
+  <property name="styleSheet">
+   <string notr="true">color rgb(250, 141, 20)</string>
+  </property>
   <layout class="QVBoxLayout" name="mainLayout">
    <item>
     <widget class="QTabWidget" name="tabWidget">
@@ -38,6 +41,9 @@
             </item>
             <item>
              <widget class="QLabel" name="label_defects">
+              <property name="frameShape">
+               <enum>QFrame::Box</enum>
+              </property>
               <property name="text">
                <string>No. defects found:</string>
               </property>
@@ -48,6 +54,22 @@
           <item>
            <layout class="QHBoxLayout" name="layout_h_mission">
             <item>
+              <widget class="QLabel" name="label_map">
+                <property name="sizePolicy">
+                  <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+                    <horstretch>1</horstretch>
+                    <verstretch>1</verstretch>
+                  </sizepolicy>
+                </property>
+                <property name="frameShape">
+                  <enum>QFrame::Box</enum>
+                </property>
+                <property name="scaledContents">
+                  <bool>true</bool>
+                </property>
+              </widget>
+            </item>
+            <!-- <item>
              <widget class="QLabel" name="label_map">
               <property name="frameShape">
                <enum>QFrame::Box</enum>
@@ -56,7 +78,7 @@
                <string/>
               </property>
              </widget>
-            </item>
+            </item> -->
            </layout>
           </item>
          </layout>
@@ -108,22 +130,31 @@
               <property name="autoFillBackground">
                <bool>false</bool>
               </property>
+              <property name="styleSheet">
+               <string notr="true">background-color: rgb(138, 226, 52);</string>
+              </property>
               <property name="text">
                <string>Start</string>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="button_stop">
+             <widget class="QPushButton" name="button_pause">
+              <property name="styleSheet">
+               <string notr="true">background-color: rgb(252, 233, 79);</string>
+              </property>
               <property name="text">
-               <string>Stop</string>
+               <string>Pause</string>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="button_pause">
+             <widget class="QPushButton" name="button_stop">
+              <property name="styleSheet">
+               <string notr="true">background-color: rgb(239, 41, 41);</string>
+              </property>
               <property name="text">
-               <string>Pause</string>
+               <string>Stop</string>
               </property>
              </widget>
             </item>
@@ -133,6 +164,9 @@
            <layout class="QHBoxLayout" name="layout_h_status">
             <item>
              <widget class="QLabel" name="label_status">
+              <property name="frameShape">
+               <enum>QFrame::Box</enum>
+              </property>
               <property name="text">
                <string>Status:</string>
               </property>
@@ -188,6 +222,9 @@
            <layout class="QHBoxLayout" name="buttonLayoutImage">
             <item>
              <widget class="QPushButton" name="button_send">
+              <property name="styleSheet">
+               <string notr="true">background-color: rgb(192, 142, 255);</string>
+              </property>
               <property name="text">
                <string>Send Path</string>
               </property>
@@ -195,6 +232,9 @@
             </item>
             <item>
              <widget class="QPushButton" name="button_send_tf">
+              <property name="styleSheet">
+               <string notr="true">background-color: rgb(83, 255, 221);</string>
+              </property>
               <property name="text">
                <string>Send to TF</string>
               </property>
@@ -204,6 +244,9 @@
              <widget class="QPushButton" name="button_send_carrot">
               <property name="autoFillBackground">
                <bool>false</bool>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">background-color: rgb(245, 121, 0);</string>
               </property>
               <property name="text">
                <string>Send Carrot</string>
