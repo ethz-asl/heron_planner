@@ -90,14 +90,14 @@ class HeronGUI(Plugin):
 
         # Connect UI
         # panel 1 - mission
-        self._widget.button_load_mission.clicked.connect(self.load_mission)
-        self._widget.combo_bt_type.setCurrentIndex(0)
-        self.bt_selected(self._widget.combo_bt_type.currentText())
-        self._widget.combo_bt_type.currentTextChanged.connect(self.bt_selected)
+        # self._widget.button_load_mission.clicked.connect(self.load_mission)
+        # self._widget.combo_bt_type.setCurrentIndex(0)
+        # self.bt_selected(self._widget.combo_bt_type.currentText())
+        # self._widget.combo_bt_type.currentTextChanged.connect(self.bt_selected)
 
-        self._widget.button_start.clicked.connect(self.start_bt)
-        self._widget.button_stop.clicked.connect(self.stop_bt)
-        self._widget.button_pause.clicked.connect(self.pause_bt)
+        # self._widget.button_start.clicked.connect(self.start_bt)
+        # self._widget.button_stop.clicked.connect(self.stop_bt)
+        # self._widget.button_pause.clicked.connect(self.pause_bt)
 
 
         # panel 2 - img selector
