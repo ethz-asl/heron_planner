@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 
 <launch>
-    <arg name="dummy_interface" default="true" />
-    <arg name="fake_data" default="true" /> 
+    <arg name="dummy_interface" default="false" />
+    <arg name="fake_data" default="false" /> 
     <arg name="fake_images" default="false" /> 
     <arg name="pub_to_kafka" default="false"/>
     <arg name="flask_server" default="false"/>

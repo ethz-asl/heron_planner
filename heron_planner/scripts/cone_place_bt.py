@@ -14,7 +14,7 @@ import heron_planner.leaves.generic_behaviours as generic
 
 from geometry_msgs.msg import PoseStamped
 
-ROBOT_ODOM = rospy.get_param("/ugv/")
+ROBOT_ODOM = rospy.get_param("/ugv/odom_topic", "robot/odom")
 
 class ConePlaceBT(base_bt.BaseBT):
     def __init__(self) -> None:
@@ -23,7 +23,6 @@ class ConePlaceBT(base_bt.BaseBT):
 
     def load_parameters(self) -> None:
         self.tree_rate = rospy.get_param("tree_rate", 10)
-        self.inspection_names = rospy.get_param("pothole/inspection_names")
         self.body_cam_ns = rospy.get_param(
             "ugv/body_cam_ns", "/robot/base_camera/front_rgbd_camera/"
         )
@@ -41,7 +40,6 @@ class ConePlaceBT(base_bt.BaseBT):
     def save_to_blackboard(self) -> None:
         self.bb.set("arm_cam_ns", self.arm_cam_ns)
         self.bb.set("body_cam_ns", self.body_cam_ns)
-        self.bb.set("inspections", self.inspection_names)
 
     def move_take_snap(
         self, move_loc: str = "home", seq_task_name: str = "MoveToHomeSeq"
