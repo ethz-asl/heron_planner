@@ -15,8 +15,9 @@ ugv:
   find_offset_srv: "/robot/find_offset"
   get_deposit_srv: "/robot/get_deposit_sequence"
   body_cam_ns: "/robot/body_camera"
+  body_cam_frame: "robot_lifting_unit_camera_rgb_camera_optical_frame"
   arm_cam_ns: "/robot/arm_camera"
-  arm_cam_frame: "front_rgbd_camera_rgb_camera_optical_frame"
+  arm_cam_frame: "robot/arm_camera_rgb_camera_optical_frame"
   base_frame: "robot_base_footprint"
   map_frame: "robot_map"
 
