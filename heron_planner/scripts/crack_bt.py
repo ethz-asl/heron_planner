@@ -189,7 +189,7 @@ class CrackBT(base_bt.BaseBT):
     def build_root(self) -> pt.behaviour.Behaviour:
         """build root"""
 
-        root = pt.composites.Sequence(name="VisionTestSequence", memory=True)
+        root = pt.composites.Sequence(name="CrackSequence", memory=True)
 
         wait_for_enter = generic.WaitForEnterKey()
 
@@ -215,6 +215,7 @@ class CrackBT(base_bt.BaseBT):
             [   
                 arm_to_home,
                 inspection_left,
+                get_path,
                 # dock_to_crack,
                 move_through,
                 arm_to_home,

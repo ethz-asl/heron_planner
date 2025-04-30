@@ -53,7 +53,7 @@ class BaseBT:
             if self.tree and self.tree.root:
                 graph = render.dot_graph(self.tree.root, include_status=True)
                 svg_tree = graph.create_svg().decode("utf-8")
-                self.hlp_tree_pub.publish(svg_tree)
+                # self.hlp_tree_pub.publish(svg_tree)
             rate.sleep()
 
     def start_svg_publisher(self) -> None:
