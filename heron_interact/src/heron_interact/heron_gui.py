@@ -30,7 +30,7 @@ ARM_CAM_NS = rospy.get_param("/ugv/arm_cam_ns", "/robot/arm_camera")
 ARM_CAM_FRAME = rospy.get_param("/ugv/arm_cam_frame", "front_rgbd_camera_rgb_camera_optical_frame")
 BODY_CAM_FRAME = rospy.get_param("/ugv/body_cam_frame", "front_rgbd_camera_rgb_camera_optical_frame")
 PATH_FRAME = rospy.get_param("/ugv/base_frame", "robot_base_footprint")
-MAP_FRAME = rospy.get_param("/ugv/map_frame", "robot_map")
+MAP_FRAME = rospy.get_param("/ugv/map_frame", "robot_odom")
 
 class HeronGUI(Plugin):
     def __init__(self, context):
