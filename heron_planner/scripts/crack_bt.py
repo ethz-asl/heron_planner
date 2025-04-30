@@ -19,6 +19,8 @@ from nav_msgs.msg import Path
 class CrackBT(base_bt.BaseBT):
     def __init__(self) -> None:
         super().__init__("CrackTestBT")
+        
+        # self.path = rospy.Subscriber("/hlp/path", Path, self.path_cb)
 
     def load_parameters(self) -> None:
         self.tree_rate = rospy.get_param("tree_rate", 10)
@@ -28,6 +30,11 @@ class CrackBT(base_bt.BaseBT):
         self.arm_cam_ns = rospy.get_param("/ugv/arm_cam_ns", "/robot/arm_camera")
         self.arm_cam_tf = rospy.get_param("/ugv/arm_cam_tf", "")
         self.use_kafka = rospy.get_param("/kafka", False)
+
+    def path_cb(self, msg):
+        self.path = msg
+        # rospy.loginfo(f"Got path: {self.path}")
+        self.bb.set("crack_path", self.path)
 
     def generate_path(self) -> None:
         crack_path = Path()
@@ -194,32 +201,30 @@ class CrackBT(base_bt.BaseBT):
         wait_for_enter = generic.WaitForEnterKey()
 
         arm_to_home = ugv.MoveArmTo(
-            task_name="Move arm to home", load_value="home"
+            task_name="Move arm to change tool position", load_value="change_tool_position"
         )
 
         inspection_left = self.move_take_snap(
-            move_loc="low_inspection_left", seq_task_name="MoveToInspectionLeftSeq"
+            move_loc="inspection_tested", seq_task_name="MoveToInspectionLeftSeq"
         )
         
         # crack_photo = self.find_crack_seq(img_key="/crack/inspection")
         get_path = hlp.GetPath(save_key="/crack/path")
-        wait = generic.WaitForEnterKey()
+        wait_for_path = generic.WaitForEnterKey(task_name="Wait for path")
         # dock_to_crack = ugv.OmniDock(load_value="crack_dock")
-        move_through = ugv.MoveThroughPath(load_key="/crack/path")
+        # move_through = ugv.MoveThroughPath(load_key="/crack/path")
+        wait_for_completion = generic.WaitForEnterKey(task_name="Wait for completion")
     
         # then we would want to dock to position
         # then inspection left
         # redo crack photo
 
-
         root.add_children(
             [   
                 arm_to_home,
                 inspection_left,
-                wait,
-                get_path,
-                # dock_to_crack,
-                move_through,
+                wait_for_path,
+                wait_for_completion,
                 arm_to_home,
             ]
         )
