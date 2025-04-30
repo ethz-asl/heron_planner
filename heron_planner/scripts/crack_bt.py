@@ -203,6 +203,7 @@ class CrackBT(base_bt.BaseBT):
         
         # crack_photo = self.find_crack_seq(img_key="/crack/inspection")
         get_path = hlp.GetPath(save_key="/crack/path")
+        wait = generic.WaitForEnterKey()
         # dock_to_crack = ugv.OmniDock(load_value="crack_dock")
         move_through = ugv.MoveThroughPath(load_key="/crack/path")
     
@@ -215,6 +216,7 @@ class CrackBT(base_bt.BaseBT):
             [   
                 arm_to_home,
                 inspection_left,
+                wait,
                 get_path,
                 # dock_to_crack,
                 move_through,
