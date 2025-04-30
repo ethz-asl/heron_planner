@@ -135,8 +135,8 @@ class HeronGUI(Plugin):
             return
 
         # Convert BGR (OpenCV default) to RGB
-        #img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        img_rgb = img
+        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        #img_rgb = img
         pubs = self.create_pubs(defect_coords, mission_coords)
 
         combined_coords = defect_coords + mission_coords
