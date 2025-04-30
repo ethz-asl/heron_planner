@@ -686,3 +686,4 @@ class HeronGUI(Plugin):
 
         self.tf_broadcaster.sendTransform(transform)
         self.carrot_progress += self.carrot_speed
+
