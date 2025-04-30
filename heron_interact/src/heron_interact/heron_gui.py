@@ -71,7 +71,7 @@ class HeronGUI(Plugin):
 
         self.pixels = []
 
-        self.path_pub = rospy.Publisher(PATH_TOPIC, Path, queue_size=1)
+        self.path_pub = rospy.Publisher(PATH_TOPIC, Path, queue_size=1, latch=True)
 
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
