@@ -534,7 +534,7 @@ class HeronGUI(Plugin):
             # tranform pose to robot frame
             transformed_pose = self.transform_pose(pose, PATH_FRAME)
             if transformed_pose:
-                #transformed_pose.pose.position.z = 0 # road assumed 2D
+                transformed_pose.pose.position.z = 0.41 # road assumed 2D
                 transformed_pose.pose.orientation.x = 0
                 transformed_pose.pose.orientation.y = 0
                 transformed_pose.pose.orientation.z = 0
@@ -685,3 +685,4 @@ class HeronGUI(Plugin):
 
         self.tf_broadcaster.sendTransform(transform)
         self.carrot_progress += self.carrot_speed
+
