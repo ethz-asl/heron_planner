@@ -205,7 +205,7 @@ class CrackBT(base_bt.BaseBT):
         )
 
         inspection_left = self.move_take_snap(
-            move_loc="low_inspection_left", seq_task_name="MoveToInspectionLeftSeq"
+            move_loc="inspection_tested", seq_task_name="MoveToInspectionLeftSeq"
         )
         
         # crack_photo = self.find_crack_seq(img_key="/crack/inspection")
