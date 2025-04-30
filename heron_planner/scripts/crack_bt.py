@@ -189,7 +189,7 @@ class CrackBT(base_bt.BaseBT):
     def build_root(self) -> pt.behaviour.Behaviour:
         """build root"""
 
-        root = pt.composites.Sequence(name="VisionTestSequence", memory=True)
+        root = pt.composites.Sequence(name="CrackSequence", memory=True)
 
         wait_for_enter = generic.WaitForEnterKey()
 
@@ -201,8 +201,10 @@ class CrackBT(base_bt.BaseBT):
             move_loc="low_inspection_left", seq_task_name="MoveToInspectionLeftSeq"
         )
         
-        crack_photo = self.find_crack_seq(img_key="/crack/inspection")
-        dock_to_crack = ugv.OmniDock(load_value="crack_dock")
+        # crack_photo = self.find_crack_seq(img_key="/crack/inspection")
+        get_path = hlp.GetPath(save_key="/crack/path")
+        wait = generic.WaitForEnterKey()
+        # dock_to_crack = ugv.OmniDock(load_value="crack_dock")
         move_through = ugv.MoveThroughPath(load_key="/crack/path")
     
         # then we would want to dock to position
@@ -210,16 +212,15 @@ class CrackBT(base_bt.BaseBT):
         # redo crack photo
 
 
-        test_omni_dock = ugv.OmniDock(load_value="cone_1")
-        test_goto = ugv.GoTo(load_key="fake_dock_pose")
-
         root.add_children(
             [   
                 arm_to_home,
                 inspection_left,
-                crack_photo,
-                dock_to_crack,
+                wait,
+                get_path,
+                # dock_to_crack,
                 move_through,
+                arm_to_home,
             ]
         )
 

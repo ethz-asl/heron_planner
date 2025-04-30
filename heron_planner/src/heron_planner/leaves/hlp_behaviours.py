@@ -243,6 +243,33 @@ class FindOffset(rt.leaves_ros.ServiceLeaf):
         rospy.logwarn(f"Error finding offset")
         return res.success
 
+class GetPath(rt.leaves_ros.SubscriberLeaf):
+    def __init__(
+        self,
+        task_name="",
+        *args,
+        **kwargs,
+    ) -> None:
+        super(GetPath, self).__init__(
+            name=task_name if task_name else "Get path",
+            topic_name="/hlp/path",
+            topic_class=Path,
+            result_fn=self._result_fn,
+            *args,
+            **kwargs,
+        )
+
+
+    def _result_fn(self) -> bool:
+        path = self._default_result_fn()
+
+        if isinstance(path, Path):
+            rospy.loginfo(f"Getting path")
+            return path
+        else:
+            rospy.logerr(f"Subscriber or key not valid types")
+            raise ValueError
+
 class PopFromList(rt.leaves.Leaf):
 
     def __init__(self, task_name="", pop_position=0, *args, **kwargs):
