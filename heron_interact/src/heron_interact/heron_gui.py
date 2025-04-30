@@ -71,7 +71,7 @@ class HeronGUI(Plugin):
 
         self.pixels = []
 
-        self.path_pub = rospy.Publisher(PATH_TOPIC, Path, queue_size=1, latch=True)
+        self.path_pub = rospy.Publisher(PATH_TOPIC, Path, queue_size=1)
 
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
@@ -544,6 +544,7 @@ class HeronGUI(Plugin):
                 transformed_pose.pose.orientation.z = 0
                 transformed_pose.pose.orientation.w = 1 # fixed orientation so obselete
                 transformed_pose.header.stamp = path_msg.header.stamp
+                transformed_pose.header.frame_id = PATH_FRAME
                 path_msg.poses.append(transformed_pose)
             else:
                 rospy.logwarn(f"Failed to transform path to {PATH_FRAME}")
