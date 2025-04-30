@@ -19,6 +19,8 @@ from nav_msgs.msg import Path
 class CrackBT(base_bt.BaseBT):
     def __init__(self) -> None:
         super().__init__("CrackTestBT")
+        
+        self.path = rospy.Subscriber("/hlp/path", Path, self.path_cb)
 
     def load_parameters(self) -> None:
         self.tree_rate = rospy.get_param("tree_rate", 10)
@@ -28,6 +30,11 @@ class CrackBT(base_bt.BaseBT):
         self.arm_cam_ns = rospy.get_param("/ugv/arm_cam_ns", "/robot/arm_camera")
         self.arm_cam_tf = rospy.get_param("/ugv/arm_cam_tf", "")
         self.use_kafka = rospy.get_param("/kafka", False)
+
+    def path_cb(self, msg):
+        self.path = msg
+        # rospy.loginfo(f"Got path: {self.path}")
+        self.bb.set("crack_path", self.path)
 
     def generate_path(self) -> None:
         crack_path = Path()
@@ -211,13 +218,12 @@ class CrackBT(base_bt.BaseBT):
         # then inspection left
         # redo crack photo
 
-
         root.add_children(
             [   
                 arm_to_home,
                 inspection_left,
                 wait,
-                get_path,
+                # get_path,
                 # dock_to_crack,
                 move_through,
                 arm_to_home,
