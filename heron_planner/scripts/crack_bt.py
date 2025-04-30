@@ -194,7 +194,7 @@ class CrackBT(base_bt.BaseBT):
         wait_for_enter = generic.WaitForEnterKey()
 
         arm_to_home = ugv.MoveArmTo(
-            task_name="Move arm to home", load_value="home"
+            task_name="Move arm to change tool position", load_value="change_tool_position"
         )
 
         inspection_left = self.move_take_snap(

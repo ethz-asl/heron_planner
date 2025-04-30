@@ -267,7 +267,8 @@ class GetPath(rt.leaves_ros.SubscriberLeaf):
             rospy.loginfo(f"Getting path")
             return path
         else:
-            rospy.logerr(f"Subscriber or key not valid types")
+            rospy.loginfo(f"type path {path}")
+            rospy.logerr(f"Subsciber not a valid type")
             raise ValueError
 
 class PopFromList(rt.leaves.Leaf):
