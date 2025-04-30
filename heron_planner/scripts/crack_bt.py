@@ -223,7 +223,7 @@ class CrackBT(base_bt.BaseBT):
             [   
                 arm_to_home,
                 inspection_left,
-                wait_for_path,
+                # wait_for_path,
                 wait_for_completion,
                 arm_to_home,
             ]
