@@ -25,7 +25,7 @@ from PyQt5.QtGui import QImage, QPixmap
 
 MAX_CLICKS = rospy.get_param("/cracks/path_length", 10)
 PATH_TOPIC = rospy.get_param("/cracks/path_topic", "/hlp/path")
-BODY_CAM_NS = rospy.get_param("/ugv/body_cam_ns", "/robot/body_camera")
+BODY_CAM_NS = rospy.get_param("/ugv/body_cam_ns", "/robot/body_camera/body_camera")
 ARM_CAM_NS = rospy.get_param("/ugv/arm_cam_ns", "/robot/arm_camera")
 ARM_CAM_FRAME = rospy.get_param("/ugv/arm_cam_frame", "front_rgbd_camera_rgb_camera_optical_frame")
 BODY_CAM_FRAME = rospy.get_param("/ugv/body_cam_frame", "front_rgbd_camera_rgb_camera_optical_frame")
