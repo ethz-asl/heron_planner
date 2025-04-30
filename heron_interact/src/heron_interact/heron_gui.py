@@ -92,13 +92,13 @@ class HeronGUI(Plugin):
         # Connect UI
         # panel 1 - mission
         self._widget.button_load_mission.clicked.connect(self.load_mission)
-        self._widget.combo_bt_type.setCurrentIndex(0)
-        self.bt_selected(self._widget.combo_bt_type.currentText())
-        self._widget.combo_bt_type.currentTextChanged.connect(self.bt_selected)
+        #self._widget.combo_bt_type.setCurrentIndex(0)
+        #self.bt_selected(self._widget.combo_bt_type.currentText())
+        #self._widget.combo_bt_type.currentTextChanged.connect(self.bt_selected)
 
-        self._widget.button_start.clicked.connect(self.start_bt)
-        self._widget.button_stop.clicked.connect(self.stop_bt)
-        self._widget.button_pause.clicked.connect(self.pause_bt)
+        #self._widget.button_start.clicked.connect(self.start_bt)
+        #self._widget.button_stop.clicked.connect(self.stop_bt)
+        #self._widget.button_pause.clicked.connect(self.pause_bt)
 
 
         # panel 2 - img selector
@@ -118,6 +118,7 @@ class HeronGUI(Plugin):
         rospy.Subscriber("/hlp/state", String, self.hlp_state_cb)
 
     def hlp_state_cb(self, msg: String):
+        return
         self._widget.label_status.setText(f"Status: {msg.data}")
 
     def load_mission(self):
@@ -258,6 +259,7 @@ class HeronGUI(Plugin):
             rospy.logerr(f"[RQT] Failed to start BT: {e}")
 
     def start_bt(self):
+        return
         try: 
             rospy.wait_for_service("/hlp/start", timeout=3)
             srv = rospy.ServiceProxy("/hlp/start", Trigger)
@@ -269,6 +271,7 @@ class HeronGUI(Plugin):
             rospy.logerr(f"Service /hlp/start not available: {ros_err}")
 
     def pause_bt(self):
+        return
         try: 
             rospy.wait_for_service("/hlp/pause", timeout=3)
             srv = rospy.ServiceProxy("/hlp/pause", Trigger)
@@ -280,6 +283,7 @@ class HeronGUI(Plugin):
             rospy.logerr(f"Service /hlp/pause not available: {ros_err}")
 
     def stop_bt(self):
+        return
         try: 
             rospy.wait_for_service("/hlp/stop", timeout=3)
             srv = rospy.ServiceProxy("/hlp/stop", Trigger)
