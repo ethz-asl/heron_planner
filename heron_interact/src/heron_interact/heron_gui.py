@@ -454,7 +454,7 @@ class HeronGUI(Plugin):
                 dists = np.sqrt((non_zero_coords[:, 1] - x) ** 2 + (non_zero_coords[:, 0] - y) ** 2)
                 nearest_idx = np.argmin(dists)
                 nearest_y, nearest_x = non_zero_coords[nearest_idx]
-                return depth_image[nearest_y, nearest_x]
+                return depth_image[nearest_y, nearest_x]/1000.0
 
         return 0  # or np.nan, if no valid
 
@@ -480,6 +480,7 @@ class HeronGUI(Plugin):
             rospy.loginfo(f"Pixel ({u}, {v}) depth = {z}")
             if z < 0.001:
                 z = self.get_nearest_valid_depth(depth_img, u, v)
+                rospy.loginfo(f"Updated depth: ({u}, {v}) depth = {z}")
 
             if z > 0.001:
                 x = (u - cx) * z / fx
@@ -532,7 +533,10 @@ class HeronGUI(Plugin):
             # tranform pose to robot frame
             transformed_pose = self.transform_pose(pose, PATH_FRAME)
             if transformed_pose:
-                transformed_pose.pose.position.z = 0 # road assumed 2D
+                #transformed_pose.pose.position.z = 0 # road assumed 2D
+                transformed_pose.pose.orientation.x = 0
+                transformed_pose.pose.orientation.y = 0
+                transformed_pose.pose.orientation.z = 0
                 transformed_pose.pose.orientation.w = 1 # fixed orientation so obselete
                 transformed_pose.header.stamp = path_msg.header.stamp
                 path_msg.poses.append(transformed_pose)
