@@ -85,8 +85,9 @@ class HeronGUI(Plugin):
         self.carrot_start = None
         self.carrot_end = None
         self.carrot_progress = 0.0
-        self.carrot_speed = 0.005 # units per 10hz (TODO make rosparam)
-        self.carrot_offset = 0.0 #1.5 # how far left/right of road (TODO check L/R)
+        self.carrot_speed = rospy.get_param("/ugv/road_markings/speed", 0.005) # units per 10hz (TODO make rosparam)
+        self.carrot_offset = rospy.get_param("/ugv/road_markings/offset", 0.0) #1.5 # how far left/right of road (TODO check L/R)
+        self.carrot_right = rospy.get_param("/ugv/road_markings/is_right_side", True) 
 
         # Connect UI
         # panel 1 - mission

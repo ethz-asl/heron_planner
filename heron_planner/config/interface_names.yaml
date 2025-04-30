@@ -55,6 +55,11 @@ cracks:
   # is_right_side: False
   max_length: 0.6
 
+road_markings:
+  offset: 0.0 # change when we know
+  is_right_side: True
+  speed: 0.005 # units per 10Hz
+
 #TODO position in dummy file & hardcoded pothole size&loc
 test:
   arm: True
