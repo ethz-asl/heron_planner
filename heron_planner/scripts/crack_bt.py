@@ -20,7 +20,7 @@ class CrackBT(base_bt.BaseBT):
     def __init__(self) -> None:
         super().__init__("CrackTestBT")
         
-        self.path = rospy.Subscriber("/hlp/path", Path, self.path_cb)
+        # self.path = rospy.Subscriber("/hlp/path", Path, self.path_cb)
 
     def load_parameters(self) -> None:
         self.tree_rate = rospy.get_param("tree_rate", 10)
@@ -223,7 +223,7 @@ class CrackBT(base_bt.BaseBT):
                 arm_to_home,
                 inspection_left,
                 wait,
-                # get_path,
+                get_path,
                 # dock_to_crack,
                 move_through,
                 arm_to_home,
