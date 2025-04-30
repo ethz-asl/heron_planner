@@ -90,14 +90,14 @@ class HeronGUI(Plugin):
 
         # Connect UI
         # panel 1 - mission
-        # self._widget.button_load_mission.clicked.connect(self.load_mission)
-        # self._widget.combo_bt_type.setCurrentIndex(0)
-        # self.bt_selected(self._widget.combo_bt_type.currentText())
-        # self._widget.combo_bt_type.currentTextChanged.connect(self.bt_selected)
+        self._widget.button_load_mission.clicked.connect(self.load_mission)
+        self._widget.combo_bt_type.setCurrentIndex(0)
+        self.bt_selected(self._widget.combo_bt_type.currentText())
+        self._widget.combo_bt_type.currentTextChanged.connect(self.bt_selected)
 
-        # self._widget.button_start.clicked.connect(self.start_bt)
-        # self._widget.button_stop.clicked.connect(self.stop_bt)
-        # self._widget.button_pause.clicked.connect(self.pause_bt)
+        self._widget.button_start.clicked.connect(self.start_bt)
+        self._widget.button_stop.clicked.connect(self.stop_bt)
+        self._widget.button_pause.clicked.connect(self.pause_bt)
 
 
         # panel 2 - img selector
@@ -134,8 +134,8 @@ class HeronGUI(Plugin):
             return
 
         # Convert BGR (OpenCV default) to RGB
-        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-
+        #img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        img_rgb = img
         pubs = self.create_pubs(defect_coords, mission_coords)
 
         combined_coords = defect_coords + mission_coords
@@ -221,6 +221,7 @@ class HeronGUI(Plugin):
             pub.publish(msg)
 
     def bt_selected(self, bt_type):
+        return # Remove this to put the BT back
         rospy.loginfo(f"[RQT] BT selected: {bt_type}")
 
         # self.stop_bt()  # always stop any existing BT node
@@ -343,6 +344,7 @@ class HeronGUI(Plugin):
             cv_img = self.convert_ros_image(msg)
             if cv_img is not None:
                 self.latest_image = cv_img
+                self.cam_frame = msg.header.frame_id
                 self.update_image()
             else:
                 rospy.logerr(f"Image conversion failed.")
@@ -352,7 +354,7 @@ class HeronGUI(Plugin):
     def convert_ros_image(self, msg):
         try:
             # directly convert to rgb
-            cv_img = self.bridge.imgmsg_to_cv2(msg, desired_encoding="rgb8")
+            cv_img = self.bridge.imgmsg_to_cv2(msg, desired_encoding="bgr8")
             return cv_img
         except CvBridgeError as err:
             try:
@@ -376,8 +378,7 @@ class HeronGUI(Plugin):
                     return cv2.cvtColor(cv_img, cv2.COLOR_GRAY2RGB)
                 
                 elif msg.encoding == "8UC3":
-                    return cv_img  # assume it's already RGB/BGR
-                
+                    return cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)  # assume it's already RGB/BGR
                 else:
                     rospy.logwarn(f"Unsupported image encoding: {msg.encoding}")
                     return None
@@ -432,6 +433,31 @@ class HeronGUI(Plugin):
         self.pixels = []
         self.update_image()
 
+    def get_nearest_valid_depth(self, depth_image, x, y, max_radius=20):
+        h, w = depth_image.shape
+
+        for r in range(1, max_radius + 1):
+            x_min = max(x - r, 0)
+            x_max = min(x + r + 1, w)
+            y_min = max(y - r, 0)
+            y_max = min(y + r + 1, h)
+
+            # Extract square window
+            window = depth_image[y_min:y_max, x_min:x_max]
+
+            # Find non-zero values
+            non_zero = np.argwhere(window > 0)
+
+            if non_zero.size > 0:
+                # Compute distances to center pixel (x, y)
+                non_zero_coords = non_zero + [y_min, x_min]  # map local to global coords
+                dists = np.sqrt((non_zero_coords[:, 1] - x) ** 2 + (non_zero_coords[:, 0] - y) ** 2)
+                nearest_idx = np.argmin(dists)
+                nearest_y, nearest_x = non_zero_coords[nearest_idx]
+                return depth_image[nearest_y, nearest_x]
+
+        return 0  # or np.nan, if no valid
+
     def project_pixels_to_points(self, pixels):
         
         if self.depth_img is None or self.cam_info is None:
@@ -452,17 +478,14 @@ class HeronGUI(Plugin):
         for (u, v) in pixels:
             z = depth_img[v, u]/1000.0 # depth at pixel
             rospy.loginfo(f"Pixel ({u}, {v}) depth = {z}")
-            if z > 0:
+            if z < 0.001:
+                z = self.get_nearest_valid_depth(depth_img, u, v)
+
+            if z > 0.001:
                 x = (u - cx) * z / fx
                 y = (v - cy) * z / fy
                 
                 points.append((x,y,z))
-                # convert to optical frame
-                # opt_x = z
-                # opt_y = -x
-                # opt_z = -y
-
-                # points.append((opt_x, opt_y, opt_z))
             else:
                 rospy.logerr(f"Error with depth")
 
@@ -599,6 +622,17 @@ class HeronGUI(Plugin):
             if not transformed_pose:
                 rospy.logerr("Failed to transform carrot point to robot_map frame")
                 return
+            
+            poses.append(transformed_pose.pose.position)
+        
+        self.carrot_start = poses[0]
+        self.carrot_end = poses[1]
+
+        self.carrot_progress = 0
+
+        # start broadcasting to move the carrot 
+        if self.carrot_timer:
+            self.carrot_timer.shutdown()
             
             poses.append(transformed_pose.pose.position)
         
