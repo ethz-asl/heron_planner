@@ -18,6 +18,7 @@ catkin_package()
 # )
 catkin_install_python(PROGRAMS
   src/heron_interact/heron_gui.py
+  src/heron_interact/carrot_tf_publisher.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

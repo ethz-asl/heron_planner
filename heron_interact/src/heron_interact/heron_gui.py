@@ -522,7 +522,7 @@ class HeronGUI(Plugin):
 
         path_msg = Path()
         path_msg.header.stamp = rospy.Time.now()
-        path_msg.header.frame_id = BASE_FRAME
+        path_msg.header.frame_id = ODOM_FRAME
         # path_msg.header.frame_id = self.cam_frame
 
         # scale = 0.001 # in meters
@@ -538,7 +538,7 @@ class HeronGUI(Plugin):
             pose.pose.orientation.w = 1 # assume points up
 
             # tranform pose to robot frame
-            transformed_pose = self.transform_pose(pose, BASE_FRAME)
+            transformed_pose = self.transform_pose(pose, ODOM_FRAME)
             if transformed_pose:
                 #transformed_pose.pose.position.z = 0.41 # road assumed 2D
                 transformed_pose.pose.orientation.x = 0
@@ -546,10 +546,10 @@ class HeronGUI(Plugin):
                 transformed_pose.pose.orientation.z = 0
                 transformed_pose.pose.orientation.w = 1 # fixed orientation so obselete
                 transformed_pose.header.stamp = path_msg.header.stamp
-                transformed_pose.header.frame_id = BASE_FRAME
+                transformed_pose.header.frame_id = ODOM_FRAME
                 path_msg.poses.append(transformed_pose)
             else:
-                rospy.logwarn(f"Failed to transform path to {BASE_FRAME}")
+                rospy.logwarn(f"Failed to transform path to {ODOM_FRAME}")
 
             # path_msg.poses.append(pose)
 
