@@ -46,44 +46,6 @@ class PaintBT(base_bt.BaseBT):
         )
 
 
-    def get_inspection_loop(self) -> pt.composites.Composite:
-        """loop through inspection positons and find pothole"""
-
-        inspection_mid = self.move_take_snap(
-            move_loc="inspection_mid_old",
-            seq_task_name="MoveToInspectionMidSeq",
-        )
-        mid_photo = self.get_kafka_photo_seq(
-            img_key="/pothole/mid", kafka_msg="pothole/inspection-mid"
-        )
-
-        inspection_left = self.move_take_snap(
-            move_loc="low_inspection_left", seq_task_name="MoveToInspectionLeftSeq"
-        )
-        left_photo = self.get_kafka_photo_seq(
-            img_key="/pothole/left", kafka_msg="pothole/inspection-left"
-        )
-
-        inspection_right = self.move_take_snap(
-            move_loc="inspection_right",
-            seq_task_name="MoveToInspectionRightSeq",
-        )
-        right_photo = self.get_kafka_photo_seq(
-            img_key="/pothole/right", kafka_msg="pothole/inspection-right"
-        )
-
-        return pt.composites.Sequence(
-            name="inspectionLoop",
-            children=[
-                inspection_mid,
-                mid_photo,
-                inspection_left,
-                left_photo,
-                inspection_right,
-                right_photo,
-            ],
-        )
-
     def build_root(self) -> pt.behaviour.Behaviour:
         """build root"""
 
@@ -118,6 +80,7 @@ class PaintBT(base_bt.BaseBT):
 
         root.add_children(
             [   
+            wait_for_completion,
             start_paint,
             move_forward,
             stop_paint,

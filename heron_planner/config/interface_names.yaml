@@ -20,6 +20,7 @@ ugv:
   arm_cam_frame: "robot/arm_camera_rgb_camera_optical_frame"
   base_frame: "robot_base_footprint"
   map_frame: "robot_map"
+  odom_frame: "robot_odom"
 
 kafka: False
 

@@ -32,6 +32,7 @@ ARM_CAM_FRAME = rospy.get_param("/ugv/arm_cam_frame", "front_rgbd_camera_rgb_cam
 BODY_CAM_FRAME = rospy.get_param("/ugv/body_cam_frame", "front_rgbd_camera_rgb_camera_optical_frame")
 BASE_FRAME = rospy.get_param("/ugv/base_frame", "robot_base_footprint")
 MAP_FRAME = rospy.get_param("/ugv/map_frame", "robot_odom")
+ODOM_FRAME = rospy.get_param("/ugv/odom_frame", "robot_odom")
 
 class HeronGUI(Plugin):
     def __init__(self, context):
@@ -584,14 +585,14 @@ class HeronGUI(Plugin):
         pose.pose.orientation.w = 1 # assume points up
 
         # transform to global frame
-        transformed_pose = self.transform_pose(pose, target_frame=MAP_FRAME)
+        transformed_pose = self.transform_pose(pose, target_frame=ODOM_FRAME)
         if transformed_pose is None:
             rospy.logerr(f"Failed to transform point to global frame.")
             return
         
         tf_msg = TransformStamped()
         tf_msg.header.stamp = rospy.Time.now()
-        tf_msg.header.frame_id = MAP_FRAME
+        tf_msg.header.frame_id = ODOM_FRAME
         tf_msg.child_frame_id = "pothole" #TODO could change to defect type :)
 
         tf_msg.transform.translation.x = transformed_pose.pose.position.x
@@ -601,7 +602,7 @@ class HeronGUI(Plugin):
         # lookup the base frame transform (map -> base_link)
         try:
             base_tf = self.tf_buffer.lookup_transform(
-                MAP_FRAME, BASE_FRAME, rospy.Time(0), rospy.Duration(1.0)
+                ODOM_FRAME, BASE_FRAME, rospy.Time(0), rospy.Duration(1.0)
             )
         except (tf2_ros.LookupException, tf2_ros.ExtrapolationException) as e:
             rospy.logerr(f"TF lookup failed: {e}")
@@ -621,6 +622,11 @@ class HeronGUI(Plugin):
         tf_msg.transform.rotation.w = q_yaw[3]
 
         self.defect_transform = tf_msg
+
+    def broadcast_tf(self, event):
+        if self.defect_transform:
+            self.defect_transform.header.stamp = rospy.Time.now()
+            self.tf_broadcaster.sendTransform(self.defect_transform)
 
     def send_carrot(self):
 
@@ -680,10 +686,6 @@ class HeronGUI(Plugin):
         self.carrot_timer = rospy.Timer(rospy.Duration(0.1), self.broadcast_carrot_tf)
         rospy.loginfo(f"Started carrot follower")
 
-    def broadcast_tf(self, event):
-        if self.defect_transform:
-            self.defect_transform.header.stamp = rospy.Time.now()
-            self.tf_broadcaster.sendTransform(self.defect_transform)
 
     def broadcast_carrot_tf(self, event):
         if self.carrot_start is None or self.carrot_end is None:
