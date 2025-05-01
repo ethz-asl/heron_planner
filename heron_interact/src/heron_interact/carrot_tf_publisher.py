@@ -13,7 +13,7 @@ class CarrotTFPublisher:
     def __init__(self):
         rospy.init_node('carrot_tf_publisher')
 
-        self.speed = rospy.get_param('~speed', 0.5)  # meters per second
+        self.speed = rospy.get_param('~speed', 0.1)  # meters per second
         self.path_sub = rospy.Subscriber('/hlp/path', Path, self.path_callback)
 
 
