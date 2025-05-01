@@ -112,7 +112,7 @@ class CarrotTFPublisher:
         if not self.finished:
             rospy.loginfo_throttle(1, f"Progress: {ratio*100:0.2f}%, Position: {x:.2f}, {y:.2f}")
 
-        if ratio >= 1.0:
+        if ratio >= 1.0 and not self.finished:
             self.finished = True
             rospy.loginfo("Finished.")
 
