@@ -85,7 +85,7 @@ class CarrotTFPublisher:
         
         seconds_to_wait = 5.0
 
-        elapsed = max((rospy.Time.now() - self.start_time - seconds_to_wait).to_sec(), 0.0)
+        elapsed = max((rospy.Time.now() - self.start_time).to_sec() - 5.0, 0.0)
         ratio = min(elapsed / self.duration, 1.0)
 
         # Linear interpolation
