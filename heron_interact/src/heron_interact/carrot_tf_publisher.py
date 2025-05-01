@@ -1,0 +1,91 @@
+#!/usr/bin/env python
+
+import rospy
+import tf2_ros
+import math
+from geometry_msgs.msg import TransformStamped
+from nav_msgs.msg import Path
+from tf.transformations import quaternion_from_euler
+
+class CarrotTFPublisher:
+    def __init__(self):
+        rospy.init_node('carrot_tf_publisher')
+
+        self.speed = rospy.get_param('~speed', 0.5)  # meters per second
+        self.path_sub = rospy.Subscriber('/hlp/path', Path, self.path_callback)
+
+        self.br = tf2_ros.TransformBroadcaster()
+
+        self.start = None
+        self.end = None
+        self.duration = 0.0
+        self.start_time = None
+        self.yaw = 0.0
+        self.finished = True
+
+
+        self.timer = rospy.Timer(rospy.Duration(0.01), self.publish_tf)  # 10 Hz
+
+    def path_callback(self, msg):
+        if len(msg.poses) != 2:
+            rospy.logwarn("Path must contain exactly 2 poses.")
+            return
+
+        self.start = msg.poses[0].pose
+        self.end = msg.poses[1].pose
+
+        dx = self.end.position.x - self.start.position.x
+        dy = self.end.position.y - self.start.position.y
+        dz = self.end.position.z - self.start.position.z
+
+        distance = math.sqrt(dx**2 + dy**2 + dz**2)
+        self.duration = distance / self.speed if self.speed > 0 else 0
+        self.start_time = rospy.Time.now()
+
+        # Compute yaw angle from start to end
+        self.yaw = math.atan2(dy, dx)
+
+        rospy.loginfo("Received path. Duration: {:.2f}s, Yaw: {:.2f} rad, Start: ({:.2f}, {:.2f}), End: ({:.2f}, {:.2f})".format(self.duration, self.yaw, self.start.position.x, self.start.position.y, self.end.position.x, self.end.position.y))
+        self.finished = False
+
+    def publish_tf(self, event):
+        if self.finished or not self.start or not self.end or self.duration <= 0 or not self.start_time:
+            return
+
+        elapsed = (rospy.Time.now() - self.start_time).to_sec()
+        ratio = min(elapsed / self.duration, 1.0)
+
+
+        # Linear interpolation
+        x = (1 - ratio) * self.start.position.x + ratio * self.end.position.x
+        y = (1 - ratio) * self.start.position.y + ratio * self.end.position.y
+        z = (1 - ratio) * self.start.position.z + ratio * self.end.position.z
+
+        # Use yaw to get orientation quaternion
+        q = quaternion_from_euler(0, 0, self.yaw)
+
+        t = TransformStamped()
+        t.header.stamp = rospy.Time.now()
+        t.header.frame_id = "robot_odom"
+        t.child_frame_id = "carrot"
+        t.transform.translation.x = x
+        t.transform.translation.y = y
+        t.transform.translation.z = z
+        t.transform.rotation.x = q[0]
+        t.transform.rotation.y = q[1]
+        t.transform.rotation.z = q[2]
+        t.transform.rotation.w = q[3]
+
+        self.br.sendTransform(t)
+        rospy.loginfo_throttle(1, f"Progress: {ratio*100:0.2f}%, Position: {x:.2f}, {y:.2f}")
+
+        if ratio >= 1.0:
+            self.finished = True
+            rospy.loginfo("Finished.")
+
+if __name__ == '__main__':
+    try:
+        CarrotTFPublisher()
+        rospy.spin()
+    except rospy.ROSInterruptException:
+        pass
