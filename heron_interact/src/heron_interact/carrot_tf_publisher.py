@@ -3,17 +3,22 @@
 import rospy
 import tf2_ros
 import math
+import geometry_msgs.msg
 from geometry_msgs.msg import TransformStamped
 from nav_msgs.msg import Path
 from tf.transformations import quaternion_from_euler
+
 
 class CarrotTFPublisher:
     def __init__(self):
         rospy.init_node('carrot_tf_publisher')
 
-        self.speed = rospy.get_param('~speed', 0.5)  # meters per second
+        self.speed = rospy.get_param('~speed', 0.1)  # meters per second
         self.path_sub = rospy.Subscriber('/hlp/path', Path, self.path_callback)
 
+
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
         self.br = tf2_ros.TransformBroadcaster()
 
         self.start = None
@@ -48,13 +53,38 @@ class CarrotTFPublisher:
         rospy.loginfo("Received path. Duration: {:.2f}s, Yaw: {:.2f} rad, Start: ({:.2f}, {:.2f}), End: ({:.2f}, {:.2f})".format(self.duration, self.yaw, self.start.position.x, self.start.position.y, self.end.position.x, self.end.position.y))
         self.finished = False
 
+    def publish_current_tf(self):
+        try:
+            # Lookup the transform from robot_odom to robot_base_frame
+            transform = self.tf_buffer.lookup_transform(
+                'robot_odom',           # target_frame (parent)
+                'robot_base_footprint',     # source_frame (child)
+                rospy.Time(0),          # get latest available
+                rospy.Duration(1.0)     # timeout
+            )
+
+            # Modify the transform to use "carrot" as the child frame
+            new_transform = geometry_msgs.msg.TransformStamped()
+            new_transform.header.stamp = rospy.Time.now()
+            new_transform.header.frame_id = "robot_odom"   # parent
+            new_transform.child_frame_id = "carrot"        # new child
+            new_transform.transform = transform.transform
+
+            # Broadcast the new transform
+            self.br.sendTransform(new_transform)
+
+        except (tf2_ros.LookupException,
+                tf2_ros.ConnectivityException,
+                tf2_ros.ExtrapolationException):
+            rospy.logwarn_throttle(5.0, "TF2 lookup failed. Retrying...")
+
     def publish_tf(self, event):
-        if self.finished or not self.start or not self.end or self.duration <= 0 or not self.start_time:
+        if not self.start or not self.end or self.duration <= 0 or not self.start_time:
+            self.publish_current_tf()
             return
 
         elapsed = (rospy.Time.now() - self.start_time).to_sec()
         ratio = min(elapsed / self.duration, 1.0)
-
 
         # Linear interpolation
         x = (1 - ratio) * self.start.position.x + ratio * self.end.position.x
@@ -77,7 +107,8 @@ class CarrotTFPublisher:
         t.transform.rotation.w = q[3]
 
         self.br.sendTransform(t)
-        rospy.loginfo_throttle(1, f"Progress: {ratio*100:0.2f}%, Position: {x:.2f}, {y:.2f}")
+        if not self.finished:
+            rospy.loginfo_throttle(1, f"Progress: {ratio*100:0.2f}%, Position: {x:.2f}, {y:.2f}")
 
         if ratio >= 1.0:
             self.finished = True
