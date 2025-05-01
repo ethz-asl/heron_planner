@@ -538,7 +538,7 @@ class HeronGUI(Plugin):
             # tranform pose to robot frame
             transformed_pose = self.transform_pose(pose, PATH_FRAME)
             if transformed_pose:
-                transformed_pose.pose.position.z = 0.41 # road assumed 2D
+                #transformed_pose.pose.position.z = 0.41 # road assumed 2D
                 transformed_pose.pose.orientation.x = 0
                 transformed_pose.pose.orientation.y = 0
                 transformed_pose.pose.orientation.z = 0
@@ -676,6 +676,8 @@ class HeronGUI(Plugin):
 
         x = (1 - t) * self.carrot_start.x + t * self.carrot_end.x 
         y = (1 - t) * self.carrot_start.y + t * self.carrot_end.y + self.carrot_offset
+
+        rospy.loginfo(f"Carrot updated: {100.0*t:.2f}% ({x}, {y})")
 
         transform = TransformStamped()
         transform.header.stamp = rospy.Time.now()
