@@ -82,7 +82,8 @@ class PaintBT(base_bt.BaseBT):
             [   
             wait_for_completion,
             start_paint,
-            move_forward,
+            dock_to_carrot,
+            # move_forward,
             stop_paint,
             ]
         )
