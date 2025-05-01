@@ -58,7 +58,7 @@ class PaintBT(base_bt.BaseBT):
         # wait for TF follower to start (or not?)
         wait_for_completion = generic.WaitForEnterKey(task_name="Has TF path been completed?")
         
-        move_forward = ugv.Move("Move forward", load_value="MOVE 5.0 0")
+        move_forward = ugv.Move("Move forward", load_value="MOVE 1.0 0")
         wait_until_paint = generic.Wait(task_name="Wait to start painting", duration=0.1)
         start_paint = ugv.PaintOn()
         wait_after_paint = generic.Wait(task_name="Wait to stop painting", duration=30)
@@ -67,16 +67,16 @@ class PaintBT(base_bt.BaseBT):
         dock_to_carrot = ugv.OmniDock(load_value="carrot")
         dock_to_pothole = ugv.OmniDock(load_value="pothole")
 
-        root.add_children(
-            [   
-            wait_for_completion,
-            dock_to_pothole,
-            # start_paint,
-            # dock_to_carrot,
-            # move_forward,
-            # stop_paint,
-            ]
-        )
+        # root.add_children(
+        #     [   
+        #     wait_for_completion,
+        #     dock_to_pothole,
+        #     # start_paint,
+        #     # dock_to_carrot,
+        #     # move_forward,
+        #     # stop_paint,
+        #     ]
+        # )
 
         root.add_children(
             [   

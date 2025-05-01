@@ -359,26 +359,27 @@ class RollerUp(_CommandSequencer):
         )
 
 class PaintOn(_CommandSequencer):
-    CMD = "ENABLE_PAINT_MS"
+    CMD = CommandString(command="ENABLE_PAINT_MS")
 
-    def __init__(self, task_name="", *args, **kwargs) -> None:
+    def __init__(self, *args, **kwargs) -> None:
         super(PaintOn, self).__init__(
-            name=task_name if task_name else "Start painting",
-            load=True,
-            *args,
-            **kwargs,
+            name="Start painting", 
+            load_value=PaintOn.CMD, 
+            *args, 
+            **kwargs
         )
 
 class PaintOff(_CommandSequencer):
-    CMD = "DISABLE_PAINT_MS"
+    CMD = CommandString(command="DISABLE_PAINT_MS")
 
-    def __init__(self, task_name="", *args, **kwargs) -> None:
+    def __init__(self, *args, **kwargs) -> None:
         super(PaintOff, self).__init__(
-            name=task_name if task_name else "Stop painting",
-            load=True,
-            *args,
-            **kwargs,
+            name="Start painting", 
+            load_value=PaintOff.CMD, 
+            *args, 
+            **kwargs
         )
+
 
 class RollerCommand(_CommandManager):
     CMD = "ROLLER_COMMAND"
