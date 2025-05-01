@@ -82,8 +82,10 @@ class CarrotTFPublisher:
         if not self.start or not self.end or self.duration <= 0 or not self.start_time:
             self.publish_current_tf()
             return
+        
+        seconds_to_wait = 5.0
 
-        elapsed = (rospy.Time.now() - self.start_time).to_sec()
+        elapsed = max((rospy.Time.now() - self.start_time - seconds_to_wait).to_sec(), 0.0)
         ratio = min(elapsed / self.duration, 1.0)
 
         # Linear interpolation
