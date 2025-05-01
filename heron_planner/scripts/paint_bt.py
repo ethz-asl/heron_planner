@@ -67,16 +67,16 @@ class PaintBT(base_bt.BaseBT):
         dock_to_carrot = ugv.OmniDock(load_value="carrot")
         dock_to_pothole = ugv.OmniDock(load_value="pothole")
 
-        root.add_children(
-            [   
-            wait_for_completion,
-            dock_to_pothole,
-            # start_paint,
-            # dock_to_carrot,
-            # move_forward,
-            # stop_paint,
-            ]
-        )
+        # root.add_children(
+        #     [   
+        #     wait_for_completion,
+        #     dock_to_pothole,
+        #     # start_paint,
+        #     # dock_to_carrot,
+        #     # move_forward,
+        #     # stop_paint,
+        #     ]
+        # )
 
         root.add_children(
             [   
