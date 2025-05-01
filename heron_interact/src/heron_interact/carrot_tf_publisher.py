@@ -79,13 +79,12 @@ class CarrotTFPublisher:
             rospy.logwarn_throttle(5.0, "TF2 lookup failed. Retrying...")
 
     def publish_tf(self, event):
-        if self.finished or not self.start or not self.end or self.duration <= 0 or not self.start_time:
+        if not self.start or not self.end or self.duration <= 0 or not self.start_time:
             self.publish_current_tf()
             return
 
         elapsed = (rospy.Time.now() - self.start_time).to_sec()
         ratio = min(elapsed / self.duration, 1.0)
-
 
         # Linear interpolation
         x = (1 - ratio) * self.start.position.x + ratio * self.end.position.x
@@ -108,6 +107,7 @@ class CarrotTFPublisher:
         t.transform.rotation.w = q[3]
 
         self.br.sendTransform(t)
+        if not self.finished:
         rospy.loginfo_throttle(1, f"Progress: {ratio*100:0.2f}%, Position: {x:.2f}, {y:.2f}")
 
         if ratio >= 1.0:
