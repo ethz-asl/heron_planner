@@ -242,6 +242,7 @@ class OmniDock(_CommandManager):
             rospy.logerr(f"Type {type(data)} is incorrect")
             raise ValueError
 
+
 class CrackGunOn(_CommandManager):
     CMD = "SET_DO 10 true"
 
@@ -357,6 +358,27 @@ class RollerUp(_CommandSequencer):
             name="Raise Roller", load_value=RollerUp.CMD, *args, **kwargs
         )
 
+class PaintOn(_CommandSequencer):
+    CMD = "ENABLE_PAINT_MS"
+
+    def __init__(self, task_name="", *args, **kwargs) -> None:
+        super(PaintOn, self).__init__(
+            name=task_name if task_name else "Start painting",
+            load=True,
+            *args,
+            **kwargs,
+        )
+
+class PaintOff(_CommandSequencer):
+    CMD = "DISABLE_PAINT_MS"
+
+    def __init__(self, task_name="", *args, **kwargs) -> None:
+        super(PaintOff, self).__init__(
+            name=task_name if task_name else "Stop painting",
+            load=True,
+            *args,
+            **kwargs,
+        )
 
 class RollerCommand(_CommandManager):
     CMD = "ROLLER_COMMAND"
