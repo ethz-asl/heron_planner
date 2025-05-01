@@ -8,6 +8,7 @@ import cv2
 import numpy as np
 import tf2_ros
 import tf2_geometry_msgs
+import tf.transformations as tft
 
 from geometry_msgs.msg import PoseStamped, TransformStamped
 from sensor_msgs.msg import Image, CameraInfo, NavSatFix
@@ -29,7 +30,7 @@ BODY_CAM_NS = rospy.get_param("/ugv/body_cam_ns", "/robot/body_camera/body_camer
 ARM_CAM_NS = rospy.get_param("/ugv/arm_cam_ns", "/robot/arm_camera")
 ARM_CAM_FRAME = rospy.get_param("/ugv/arm_cam_frame", "front_rgbd_camera_rgb_camera_optical_frame")
 BODY_CAM_FRAME = rospy.get_param("/ugv/body_cam_frame", "front_rgbd_camera_rgb_camera_optical_frame")
-PATH_FRAME = rospy.get_param("/ugv/base_frame", "robot_base_footprint")
+BASE_FRAME = rospy.get_param("/ugv/base_frame", "robot_base_footprint")
 MAP_FRAME = rospy.get_param("/ugv/map_frame", "robot_odom")
 
 class HeronGUI(Plugin):
@@ -520,7 +521,7 @@ class HeronGUI(Plugin):
 
         path_msg = Path()
         path_msg.header.stamp = rospy.Time.now()
-        path_msg.header.frame_id = PATH_FRAME
+        path_msg.header.frame_id = BASE_FRAME
         # path_msg.header.frame_id = self.cam_frame
 
         # scale = 0.001 # in meters
@@ -536,7 +537,7 @@ class HeronGUI(Plugin):
             pose.pose.orientation.w = 1 # assume points up
 
             # tranform pose to robot frame
-            transformed_pose = self.transform_pose(pose, PATH_FRAME)
+            transformed_pose = self.transform_pose(pose, BASE_FRAME)
             if transformed_pose:
                 #transformed_pose.pose.position.z = 0.41 # road assumed 2D
                 transformed_pose.pose.orientation.x = 0
@@ -544,10 +545,10 @@ class HeronGUI(Plugin):
                 transformed_pose.pose.orientation.z = 0
                 transformed_pose.pose.orientation.w = 1 # fixed orientation so obselete
                 transformed_pose.header.stamp = path_msg.header.stamp
-                transformed_pose.header.frame_id = PATH_FRAME
+                transformed_pose.header.frame_id = BASE_FRAME
                 path_msg.poses.append(transformed_pose)
             else:
-                rospy.logwarn(f"Failed to transform path to {PATH_FRAME}")
+                rospy.logwarn(f"Failed to transform path to {BASE_FRAME}")
 
             # path_msg.poses.append(pose)
 
@@ -596,7 +597,28 @@ class HeronGUI(Plugin):
         tf_msg.transform.translation.x = transformed_pose.pose.position.x
         tf_msg.transform.translation.y = transformed_pose.pose.position.y
         tf_msg.transform.translation.z = 0 # on the ground
-        tf_msg.transform.rotation.w = 1 # assume up
+
+        # lookup the base frame transform (map -> base_link)
+        try:
+            base_tf = self.tf_buffer.lookup_transform(
+                MAP_FRAME, BASE_FRAME, rospy.Time(0), rospy.Duration(1.0)
+            )
+        except (tf2_ros.LookupException, tf2_ros.ExtrapolationException) as e:
+            rospy.logerr(f"TF lookup failed: {e}")
+            return
+
+        # extract yaw from base_link orientation
+        q = base_tf.transform.rotation
+        _, _, yaw = tft.euler_from_quaternion([q.x, q.y, q.z, q.w])
+
+        # convert yaw back to quaternion (with roll=0, pitch=0)
+        q_yaw = tft.quaternion_from_euler(0, 0, yaw)
+
+        # Set the orientation of the pothole frame
+        tf_msg.transform.rotation.x = q_yaw[0]
+        tf_msg.transform.rotation.y = q_yaw[1]
+        tf_msg.transform.rotation.z = q_yaw[2]
+        tf_msg.transform.rotation.w = q_yaw[3]
 
         self.defect_transform = tf_msg
 
