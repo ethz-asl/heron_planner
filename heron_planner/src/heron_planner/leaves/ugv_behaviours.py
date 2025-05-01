@@ -362,7 +362,7 @@ class PaintOn(_CommandSequencer):
     CMD = CommandString(command="ENABLE_PAINT_MS")
 
     def __init__(self, *args, **kwargs) -> None:
-        super(PaintOn).__init__(
+        super(PaintOn, self).__init__(
             name="Start painting", 
             load_value=PaintOn.CMD, 
             *args, 
@@ -373,7 +373,7 @@ class PaintOff(_CommandSequencer):
     CMD = CommandString(command="DISABLE_PAINT_MS")
 
     def __init__(self, *args, **kwargs) -> None:
-        super(PaintOff).__init__(
+        super(PaintOff, self).__init__(
             name="Start painting", 
             load_value=PaintOff.CMD, 
             *args, 
