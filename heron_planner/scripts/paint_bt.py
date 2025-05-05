@@ -80,6 +80,7 @@ class PaintBT(base_bt.BaseBT):
 
         root.add_children(
             [   
+            stop_paint,
             wait_for_completion,
             start_paint,
             dock_to_carrot,
