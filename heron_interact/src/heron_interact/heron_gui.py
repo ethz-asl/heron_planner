@@ -686,6 +686,10 @@ class HeronGUI(Plugin):
         self.carrot_timer = rospy.Timer(rospy.Duration(0.1), self.broadcast_carrot_tf)
         rospy.loginfo(f"Started carrot follower")
 
+    def broadcast_tf(self, event):
+        if self.defect_transform:
+            self.defect_transform.header.stamp = rospy.Time.now()
+            self.tf_broadcaster.sendTransform(self.defect_transform)
 
     def broadcast_carrot_tf(self, event):
         if self.carrot_start is None or self.carrot_end is None:
